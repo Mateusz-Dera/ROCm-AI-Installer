@@ -78,7 +78,7 @@ while true; do
                 echo "Install Python 3.11 first"
                 exit 1
             fi
-            sudo apt install -y cmake libtcmalloc-minimal4 imagemagick ffmpeg
+            sudo apt install -y cmake libtcmalloc-minimal4 imagemagick ffmpeg python3.11-venv
             mkdir -p $installation_path
             cd $installation_path
             rm -Rf stable-diffusion-webui
