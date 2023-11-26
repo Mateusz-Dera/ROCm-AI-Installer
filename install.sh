@@ -114,7 +114,8 @@ EOF
                 wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
                 sudo apt-get update
                 sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev
-                tar xvf -O Python-3.10.11.tgz
+                rm Python-3.10.11.tgz
+                tar xvf Python-3.10.11.tgz
                 cd Python-3.10.11
                 ./configure --enable-optimizations --with-ensurepip=install
                 make -j 4
