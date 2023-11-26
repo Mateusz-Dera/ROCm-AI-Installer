@@ -94,6 +94,7 @@ while true; do
             pip install onnx
             pip install super-gradients
             pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
+            pip install requests
             tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
@@ -171,7 +172,6 @@ EOF
             export HIP_VISIBLE_DEVICES=0
             export HSA_OVERRIDE_GFX_VERSION=11.0.0
             CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python
-            pip install requests
             tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
