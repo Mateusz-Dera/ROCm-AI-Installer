@@ -17,4 +17,11 @@ A script that automatically installs all the required stuff to run selected AIs 
 TODO
 
 ## Supported AIs
-TODO
+stable-diffusion-webui 
+https://github.com/AUTOMATIC1111/stable-diffusion-webui
+
+text-generation-webui
+https://github.com/oobabooga/text-generation-webui
+
+SillyTavern with Extras and chromadb
+https://github.com/SillyTavern/SillyTavern
