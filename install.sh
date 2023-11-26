@@ -97,7 +97,7 @@ while true; do
             tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-#export TF_ENABLE_ONEDNN_OPTS=0
+export TF_ENABLE_ONEDNN_OPTS=0
 export TORCH_COMMAND="pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6"
 export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
@@ -108,7 +108,78 @@ EOF
             ;;
         2)
             # Action for Option 2
-            whiptail --msgbox "You selected text-generation-webui" 10 120
+            if ! command -v python3.10 &> /dev/null; then
+                cd /tmp
+                wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
+                sudo apt-get update
+                sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev
+                tar xvf -O Python-3.10.11.tgz
+                cd Python-3.10.11
+                ./configure --enable-optimizations --with-ensurepip=install
+                make -j 4
+                sudo make altinstall
+            fi
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -Rf text-generation-webui
+            git clone https://github.com/oobabooga/text-generation-webui.git
+            cd $installation_path/text-generation-webui
+            python3.10 -m venv .venv
+            source $installation_path/text-generation-webui/.venv/bin/activate
+            pip install cmake colorama filelock lit numpy --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install torch torchvision torchtext torchaudio torchdata triton pytorch-triton pytorch-triton-rocm --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install torch-grammar
+            cd $installation_path
+            git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
+            cd $installation_path/bitsandbytes-rocm-5.6 
+            BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm/
+            pip install --upgrade pip
+            pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install gradio psutil markdown transformers accelerate datasets peft
+            pip install gensim tables blosc2 cython
+            pip install spyder python-lsp-black 
+            pip install jaxlib-rocm
+            pip install jax==0.4.6
+            pip install tensorflow-rocm
+            pip install cupy-rocm-5-0
+            pip install loader
+            pip install logger
+            pip install -U scikit-learn
+            pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly
+            cd $installation_path/text-generation-webui
+            mkdir repositories
+            cd $installation_path/text-generation-webui/repositories
+            git clone https://github.com/turboderp/exllama
+            cd exllama
+            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            cd $installation_path/text-generation-webui/repositories
+            git clone https://github.com/turboderp/exllamav2.git
+            cd exllamav2
+            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install fastparquet
+            python setup.py install --user
+            pip install -U . 
+            cd $installation_path/text-generation-webui
+            pip install bs4
+            pip install gradio==3.40.0
+            pip install tiktoken
+            pip install SpeechRecognition
+            pip install sse_starlette
+            pip install chromadb==0.4.15 sentence_transformers pytextrank num2words optuna
+            export CXX=hipcc
+            export HIP_VISIBLE_DEVICES=0
+            export HSA_OVERRIDE_GFX_VERSION=11.0.0
+            CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python
+            pip install requests
+            tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/.venv/bin/activate
+export TF_ENABLE_ONEDNN_OPTS=0
+python3.10 server.py --listen --loader=exllama --auto-devices --extensions sd_api_pictures send_pictures gallery api superboogav2
+EOF
+            chmod u+x run.sh
             ;;
         3)
             # Submenu for SillyTavern
