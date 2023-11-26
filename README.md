@@ -30,8 +30,11 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
 https://github.com/oobabooga/text-generation-webui
+
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
+
 https://github.com/turboderp/exllama
+
 https://github.com/turboderp/exllamav2.git
 
 ### SillyTavern with Extras and chromadb
