@@ -1,10 +1,13 @@
 # ROCm-AI-Installer
-A script that automatically installs all the required stuff to run selected AIs on AMD Radeon 7900XTX.
+A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 # Work in progress
 
 ## Info
 [![Version](https://img.shields.io/badge/0.0-version-orange.svg)](https://github.com/Mateusz-Dera/Gasp/edit/main/README.md)
+
+Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm-5.7.md
+
 ### Test platform:
 |Name|Info|
 |:---|:---|
@@ -17,7 +20,9 @@ A script that automatically installs all the required stuff to run selected AIs 
 TODO
 
 ## Supported AIs
-TODO stable-diffusion-webui 
+stable-diffusion-webui (Python 3.11 with venv)
+> [!WARNING]  
+> After installation, it will download missing components and may show errors or even crash on first startup. Just run the startup script again.
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 TODO text-generation-webui

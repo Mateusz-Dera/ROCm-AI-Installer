@@ -1,4 +1,26 @@
 #!/bin/bash
+
+# ROCM-AI-Installer
+# Copyright © 2023 Mateusz Dera
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install -y git whiptail
@@ -12,7 +34,7 @@ installation_path="$default_installation_path"
 show_menu() {
     whiptail --title "Menu Example" --menu "Choose an option:" 15 100 4 \
     0 "Set Installation Path ($installation_path)" \
-    1 "text-generation-webui" \
+    1 "stable-diffusion-webui" \
     2 "text-generation-webui" \
     3 "SillyTavern" \
     2>&1 > /dev/tty
@@ -52,7 +74,37 @@ while true; do
             ;;
         1)
             # Action for Option 1
-            whiptail --msgbox "You selected text-generation-webui" 10 120
+            if ! command -v python3.11 &> /dev/null; then
+                echo "Install Python 3.11 first"
+                exit 1
+            fi
+            sudo apt install -y cmake libtcmalloc-minimal4 imagemagick ffmpeg
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -Rf stable-diffusion-webui
+            git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+            cd stable-diffusion-webui
+            python3.11 -m venv .venv
+            source .venv/bin/activate
+            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6
+            pip install gensim tables -U 
+            pip install tensorflow-rocm
+            pip install cupy-rocm-4-3 cupy-rocm-5-0
+            pip install accelerate -U
+            pip install onnx
+            pip install super-gradients
+            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
+            tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+#export TF_ENABLE_ONEDNN_OPTS=0
+export TORCH_COMMAND="pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6"
+export COMMANDLINE_ARGS="--api"
+#export CUDA_VISIBLE_DEVICES="1"
+source $installation_path/stable-diffusion-webui/.venv/bin/activate
+$installation_path/stable-diffusion-webui/webui.sh 
+EOF
+            chmod +x run.sh
             ;;
         2)
             # Action for Option 2
