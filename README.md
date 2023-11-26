@@ -22,9 +22,6 @@ TODO
 ## Supported AIs
 ### stable-diffusion-webui
 (Python 3.11 with venv)
-> [!WARNING]  
-> After installation, it will download missing components and may show errors or even crash on first startup. Just run the startup script again.
-
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
