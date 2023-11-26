@@ -17,7 +17,13 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |OS|Ubuntu 23.10|
 
 ## Instalation:
-TODO
+1. Add the user to the required groups.
+```bash
+sudo adduser `whoami` video
+sudo adduser `whoami` render
+```
+2. Reboot
+3. TODO
 
 ## Supported AIs
 ### stable-diffusion-webui
