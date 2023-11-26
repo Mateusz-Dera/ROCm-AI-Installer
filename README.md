@@ -20,14 +20,17 @@ Part of the installation script is based on this guide: https://github.com/nktic
 TODO
 
 ## Supported AIs
-stable-diffusion-webui (Python 3.11 with venv)
+### stable-diffusion-webui
+(Python 3.11 with venv)
 > [!WARNING]  
 > After installation, it will download missing components and may show errors or even crash on first startup. Just run the startup script again.
 
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
-TODO text-generation-webui
+### text-generation-webui
+TODO
 https://github.com/oobabooga/text-generation-webui
 
-TODO SillyTavern with Extras and chromadb
+### SillyTavern with Extras and chromadb
+TODO
 https://github.com/SillyTavern/SillyTavern
