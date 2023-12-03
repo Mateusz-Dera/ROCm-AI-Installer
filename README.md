@@ -38,13 +38,16 @@ sudo adduser `whoami` render
 TODO
 (Python 3.11 with venv)
 > [!TIP]
-> If you want to modify the parameters at startup, modify the webui-user.sh file in the text-generation-webui directory after installation.
+> If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
 (Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
+
+> [!WARNING]
+> The script may show the error "o module named 'torchvision.transforms.functional_tensor'", this is normal.
 
 https://github.com/oobabooga/text-generation-webui
 

@@ -22,7 +22,6 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm5.7
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-
 tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
@@ -34,3 +33,5 @@ source $installation_path/stable-diffusion-webui/.venv/bin/activate
 $installation_path/stable-diffusion-webui/webui.sh 
 EOF
 chmod +x run.sh
+$installation_path/stable-diffusion-webui/run.sh
+sed -i 's/from torchvision.transforms.functional_tensor import rgb_to_grayscale/from torchvision.transforms.functional import rgb_to_grayscale/' .venv/lib/python3.11/site-packages/basicsr/data/degradations.py
