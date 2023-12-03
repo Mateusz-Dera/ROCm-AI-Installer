@@ -33,7 +33,9 @@ sudo adduser `whoami` render
 3. TODO
 
 ## Supported AIs
+
 ### stable-diffusion-webui
+TODO
 (Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the webui-user.sh file in the text-generation-webui directory after installation.

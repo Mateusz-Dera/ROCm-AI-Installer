@@ -52,7 +52,7 @@ sudo apt-add-repository -y -s -s
 sudo apt install -y "linux-headers-$(uname -r)" \
 	"linux-modules-extra-$(uname -r)"
 
-sudo apt-get install -y whiptail wget git git-lfs libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+sudo apt-get install -y whiptail wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
 
 sudo rm /etc/ld.so.conf.d/rocm.conf
 sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
@@ -122,7 +122,7 @@ while true; do
             rm -rf text-generation-webui
             git clone https://github.com/oobabooga/text-generation-webui
             cd text-generation-webui
-            python3.11 -m venv .venv
+            python3.11 -m venv .venv --prompt TextGen
             source .venv/bin/activate
             pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
                 mpmath fsspec MarkupSafe certifi filelock networkx \

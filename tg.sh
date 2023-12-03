@@ -9,14 +9,28 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 sudo apt install -y wget git python3 python3-venv libgl1 libglib2.0-0
 #
 
+ if ! command -v python3.11 &> /dev/null; then
+    echo "Install Python 3.11 first"
+    exit 1
+fi
 mkdir -p $installation_path
 cd $installation_path
-sudo rm -rf stable-diffusion-webui
+rm -Rf stable-diffusion-webui
 git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
 cd stable-diffusion-webui
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
 
-sudo rm -rf webui-user.sh
-tee --append webui-user.sh <<EOF
- export TORCH_COMMAND="pip install --pre torch==2.2.0.dev20231128 torchvision==0.17.0.dev20231128+rocm5.7 --index-url https://download.pytorch.org/whl/nightly/rocm5.7"
- export COMMANDLINE_ARGS="--api"
+tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export TF_ENABLE_ONEDNN_OPTS=0
+export TORCH_COMMAND="pip install torch torchvision --index-url https://download.pytorch.org/whl/nightly/rocm5.7"
+export COMMANDLINE_ARGS="--api"
+#export CUDA_VISIBLE_DEVICES="1"
+source $installation_path/stable-diffusion-webui/.venv/bin/activate
+$installation_path/stable-diffusion-webui/webui.sh 
 EOF
+chmod +x run.sh
