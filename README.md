@@ -20,6 +20,8 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ## Instalation:
 > [!WARNING]
 > The first startup after installation of the selected interface may take longer.
+
+> [!WARNING]
 > This script does not download any models. If the interface does not have defaults, download your own.
 
 1. Add the user to the required groups.
