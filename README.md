@@ -15,8 +15,13 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |OS|Ubuntu 23.04|
+|Kernel|6.2.0-37-generic|
 
 ## Instalation:
+> [!WARNING]
+> The first startup after installation of the selected interface may take longer.
+> This script does not download any models. If the interface does not have defaults, download your own.
+
 1. Add the user to the required groups.
 ```bash
 sudo adduser `whoami` video
@@ -28,6 +33,8 @@ sudo adduser `whoami` render
 ## Supported AIs
 ### stable-diffusion-webui
 (Python 3.11 with venv)
+> [!TIP]
+> If you want to modify the parameters at startup, modify the webui-user.sh file in the text-generation-webui directory after installation.
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui

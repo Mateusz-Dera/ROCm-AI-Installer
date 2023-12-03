@@ -21,14 +21,45 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-sudo apt-get update
-sudo apt-get upgrade -y
-sudo apt-get install -y git whiptail
+arch="x86_64"
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Default installation path
 default_installation_path="$HOME/AI"
 # Global variable for installation path
 installation_path="$default_installation_path"
+
+sudo apt-get update
+sudo apt-get upgrade -y
+
+sudo add-apt-repository -y -s deb http://security.ubuntu.com/ubuntu jammy main universe
+
+sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+sudo rm /etc/apt/keyrings/rocm.gpg
+sudo rm /etc/apt/sources.list.d/rocm.list
+wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
+    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7.2 jammy main" \
+    | sudo tee --append /etc/apt/sources.list.d/rocm.list
+echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
+    | sudo tee /etc/apt/preferences.d/rocm-pin-600 
+sudo rm /etc/apt/sources.list.d/amdgpu.list
+echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/latest/ubuntu jammy main' \
+    | sudo tee /etc/apt/sources.list.d/amdgpu.list
+sudo apt update -y 
+
+sudo apt-add-repository -y -s -s
+sudo apt install -y "linux-headers-$(uname -r)" \
+	"linux-modules-extra-$(uname -r)"
+
+sudo apt-get install -y whiptail wget git git-lfs libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+
+sudo rm /etc/ld.so.conf.d/rocm.conf
+sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
+/opt/rocm/lib
+/opt/rocm/lib64
+EOF
+sudo ldconfig
 
 # Function to display the main menu
 show_menu() {
@@ -78,107 +109,59 @@ while true; do
                 echo "Install Python 3.11 first"
                 exit 1
             fi
-            sudo apt install -y cmake libtcmalloc-minimal4 imagemagick ffmpeg python3.11-venv
-            mkdir -p $installation_path
-            cd $installation_path
-            rm -Rf stable-diffusion-webui
-            git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
-            cd stable-diffusion-webui
-            python3.11 -m venv .venv
-            source .venv/bin/activate
-            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6
-            pip install gensim tables -U 
-            pip install tensorflow-rocm
-            pip install cupy-rocm-4-3 cupy-rocm-5-0
-            pip install accelerate -U
-            pip install onnx
-            pip install super-gradients
-            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
-            pip install requests
-            tee --append run.sh <<EOF
-#!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TF_ENABLE_ONEDNN_OPTS=0
-export TORCH_COMMAND="pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6"
-export COMMANDLINE_ARGS="--api"
-#export CUDA_VISIBLE_DEVICES="1"
-source $installation_path/stable-diffusion-webui/.venv/bin/activate
-$installation_path/stable-diffusion-webui/webui.sh 
-EOF
-            chmod +x run.sh
+            
             ;;
         2)
             # Action for Option 2
-            if ! command -v python3.10 &> /dev/null; then
-                cd /tmp
-                wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
-                sudo apt-get update
-                sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev
-                rm Python-3.10.11.tgz
-                tar xvf Python-3.10.11.tgz
-                cd Python-3.10.11
-                ./configure --enable-optimizations --with-ensurepip=install
-                make -j 4
-                sudo make altinstall
+            if ! command -v python3.11 &> /dev/null; then
+                echo "Install Python 3.11 first"
+                exit 1
             fi
             mkdir -p $installation_path
             cd $installation_path
-            rm -Rf text-generation-webui
-            git clone https://github.com/oobabooga/text-generation-webui.git
-            cd $installation_path/text-generation-webui
-            python3.10 -m venv .venv
-            source $installation_path/text-generation-webui/.venv/bin/activate
-            pip install cmake colorama filelock lit numpy --index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            pip install torch torchvision torchtext torchaudio torchdata triton pytorch-triton pytorch-triton-rocm --index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            pip install torch-grammar
+            rm -rf text-generation-webui
+            git clone https://github.com/oobabooga/text-generation-webui
+            cd text-generation-webui
+            python3.11 -m venv .venv
+            source .venv/bin/activate
+            pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
+                mpmath fsspec MarkupSafe certifi filelock networkx \
+                sympy packaging requests \
+                    --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install --pre torch==2.2.0.dev20231128   --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install torchdata==0.7.1
+            pip install --pre torch==2.2.0.dev20231128 torchvision==0.17.0.dev20231128+rocm5.7 torchtext==0.17.0.dev20231128+cpu torchaudio triton pytorch-triton pytorch-triton-rocm    --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
             cd $installation_path
+            rm -rf bitsandbytes-rocm-5.6
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
-            cd $installation_path/bitsandbytes-rocm-5.6 
+            cd bitsandbytes-rocm-5.6/
             BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm/
-            pip install --upgrade pip
+            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-5.7.2/
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            pip install gradio psutil markdown transformers accelerate datasets peft
-            pip install gensim tables blosc2 cython
-            pip install spyder python-lsp-black 
-            pip install jaxlib-rocm
-            pip install jax==0.4.6
-            pip install tensorflow-rocm
-            pip install cupy-rocm-5-0
-            pip install loader
-            pip install logger
-            pip install -U scikit-learn
+
             pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly
+
+            pip install cmake ninja
+
+            cd $installation_path
+            rm -rf flash-attention
+            git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
+            cd flash-attention
+            pip install . --offload-arch $arch
+
             cd $installation_path/text-generation-webui
-            mkdir repositories
-            cd $installation_path/text-generation-webui/repositories
-            git clone https://github.com/turboderp/exllama
-            cd exllama
-            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            cd $installation_path/text-generation-webui/repositories
-            git clone https://github.com/turboderp/exllamav2.git
-            cd exllamav2
-            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            pip install fastparquet
-            python setup.py install --user
-            pip install -U . 
-            cd $installation_path/text-generation-webui
-            pip install bs4
-            pip install gradio==3.40.0
-            pip install tiktoken
-            pip install SpeechRecognition
-            pip install sse_starlette
-            pip install chromadb==0.4.15 sentence_transformers pytextrank num2words optuna
-            export CXX=hipcc
-            export HIP_VISIBLE_DEVICES=0
-            export HSA_OVERRIDE_GFX_VERSION=11.0.0
-            CMAKE_ARGS="-DLLAMA_HIPBLAS=on" pip install llama-cpp-python
+            sed -i "s@bitsandbytes==@bitsandbytes>=@g" requirements_amd.txt 
+            pip install -r requirements_amd.txt 
+
+            git clone https://github.com/turboderp/exllama repositories/exllama
+            git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
+
             tee --append run.sh <<EOF
 #!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-source $installation_path/.venv/bin/activate
-export TF_ENABLE_ONEDNN_OPTS=0
-python3.10 server.py --listen --loader=exllama --auto-devices --extensions sd_api_pictures send_pictures gallery api superboogav2
+source $installation_path/text-generation-webui/.venv/bin/activate
+python server.py --listen --loader=exllama  \
+  --auto-devices --extensions sd_api_pictures send_pictures gallery 
 EOF
             chmod u+x run.sh
             ;;
