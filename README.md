@@ -14,7 +14,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |CPU|AMD Ryzen 7900X3D|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|OS|Ubuntu 23.10|
+|OS|Ubuntu 23.04|
 
 ## Instalation:
 1. Add the user to the required groups.
@@ -31,13 +31,15 @@ sudo adduser `whoami` render
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
-(Python 3.10 with venv)
+(Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
 https://github.com/oobabooga/text-generation-webui
 
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
+
+https://github.com/ROCmSoftwarePlatform/flash-attention
 
 https://github.com/turboderp/exllama
 
