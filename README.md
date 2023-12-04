@@ -16,6 +16,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |OS|Ubuntu 23.04|
 |Kernel|6.2.0-37-generic|
+|ROCm|5.7.2|
 
 ## Instalation:
 > [!WARNING]
