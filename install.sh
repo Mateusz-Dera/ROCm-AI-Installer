@@ -226,7 +226,7 @@ requests-oauthlib==1.3.1
 resize-right==0.0.2
 rpds-py==0.13.2
 rsa==4.9
-safetensors==0.3.1
+safetensors==0.3.2
 scikit-image==0.21.0
 scipy==1.11.4
 semantic-version==2.10.0
@@ -350,7 +350,7 @@ EOF
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
 
             pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly==2.1.0.post20231203000508
-            pip install ninja==1.11.1.1
+            pip install ninja==1.11.1
 
             cd $installation_path
             rm -rf flash-attention
@@ -360,7 +360,7 @@ EOF
             pip install . --offload-arch $arch
 
             cd $installation_path/text-generation-webui
-            echo -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
             tee --append custom_requirements_amd.txt <<EOF
 accelerate==0.24.1  
 huggingface-hub==0.19.4 
@@ -454,6 +454,8 @@ setproctitle==1.3.3
 smmap==5.0.1
 wandb==0.16.0
 gitdb==4.0.11
+fastparquet==2023.10.1
+pygments==2.17.2
 
 git+https://github.com/oobabooga/torch-grammar.git
 
@@ -493,24 +495,27 @@ EOF
             # pip install -r requirements_amd.txt 
             pip install -r custom_requirements_amd.txt 
 
-            git clone https://github.com/turboderp/exllama repositories/exllama
-            git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
+            git clone https://github.com/turboderp/exllama.git repositories/exllama
+            git clone https://github.com/turboderp/exllamav2.git repositories/exllamav2
 
             cd $installation_path/text-generation-webui/repositories/exllama
-            pip install -r requirements.txt
+            git checkout 3b013cd53c7d413cf99ca04c7c28dd5c95117c0d
+            # pip install -r requirements.txt
+            
             cd $installation_path/text-generation-webui/repositories/exllamav2
-            pip install -r requirements.txt
+            git checkout 5c974259bd245ace74ba4e8dda319d1f87d04c70
+            # pip install -r requirements.txt
 
-#             cd $installation_path/text-generation-webui
+            # cd $installation_path/text-generation-webui
 
-#             tee --append run.sh <<EOF
-# #!/bin/bash
-# export HSA_OVERRIDE_GFX_VERSION=11.0.0
-# source $installation_path/text-generation-webui/.venv/bin/activate
-# python server.py --api --listen --loader=exllama  \
-#   --auto-devices --extensions sd_api_pictures send_pictures gallery 
-# EOF
-#             chmod u+x run.sh
+            tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/text-generation-webui/.venv/bin/activate
+python server.py --api --listen --loader=exllama  \
+  --auto-devices --extensions sd_api_pictures send_pictures gallery 
+EOF
+            chmod u+x run.sh
             ;;
         3)
             # Submenu for SillyTavern
