@@ -7,4 +7,9 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 sudo apt install -y git
 
-https://github.com/SillyTavern/SillyTavern.git
+mkdir -p $installation_path
+cd $installation_path
+rm -Rf SillyTavern
+git clone https://github.com/SillyTavern/SillyTavern.git
+cd SillyTavern
+sudo snap install node --classic

@@ -52,7 +52,7 @@ sudo apt-add-repository -y -s -s
 sudo apt install -y "linux-headers-$(uname -r)" \
 	"linux-modules-extra-$(uname -r)"
 
-sudo apt-get install -y whiptail wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+sudo apt-get install -y whiptail wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
 
 sudo rm /etc/ld.so.conf.d/rocm.conf
 sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
@@ -178,8 +178,16 @@ EOF
             git clone https://github.com/turboderp/exllama repositories/exllama
             git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
 
+            cd $installation_path/text-generation-webui/repositories/exllama
+            pip install -r requirements.txt
+            cd $installation_path/text-generation-webui/repositories/exllamav2
+            pip install -r requirements.txt
+
+            cd $installation_path/text-generation-webui
+
             tee --append run.sh <<EOF
 #!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
 source $installation_path/text-generation-webui/.venv/bin/activate
 python server.py --listen --loader=exllama  \
   --auto-devices --extensions sd_api_pictures send_pictures gallery 
