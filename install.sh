@@ -357,7 +357,7 @@ EOF
             git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
             cd flash-attention
             git checkout 3d2b6f5d037782cc2c906909a46fb7e2e1b48b25
-            pip install . --offload-arch $arch
+            pip install .
 
             cd $installation_path/text-generation-webui
 
@@ -456,12 +456,11 @@ wandb==0.16.0
 gitdb==4.0.11
 fastparquet==2023.10.1
 pygments==2.17.2
+SpeechRecognition==3.10.0
+sse-starlette==1.8.2
+tiktoken==0.5.2
 
 git+https://github.com/oobabooga/torch-grammar.git
-
-# bitsandbytes
-bitsandbytes==0.38.1; platform_system != "Windows"
-https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.38.1-py3-none-win_amd64.whl; platform_system == "Windows"
 
 # llama-cpp-python (CPU only, AVX2)
 https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.19+cpuavx2-cp311-cp311-manylinux_2_31_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
@@ -506,7 +505,7 @@ EOF
             git checkout 5c974259bd245ace74ba4e8dda319d1f87d04c70
             # pip install -r requirements.txt
 
-            # cd $installation_path/text-generation-webui
+            cd $installation_path/text-generation-webui
 
             tee --append run.sh <<EOF
 #!/bin/bash

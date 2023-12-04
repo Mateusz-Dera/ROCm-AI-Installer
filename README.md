@@ -20,7 +20,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 
 ## Instalation:
 > [!WARNING]
-> The first startup after installation of the selected interface may take longer.
+> First startup after installation of the selected interface may take longer.
 
 > [!WARNING]
 > This script does not download any models. If the interface does not have defaults, download your own.
@@ -43,7 +43,6 @@ TODO
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
-TODO fix exlama exlamav2
 (Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
