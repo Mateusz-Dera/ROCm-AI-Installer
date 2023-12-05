@@ -517,23 +517,29 @@ EOF
             chmod u+x run.sh
             ;;
         3)
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -Rf SillyTavern
+            git clone https://github.com/SillyTavern/SillyTavern.git
+            cd SillyTavern
+            sudo snap install node --classic
             # Submenu for SillyTavern
-            submenu_choice=$(show_sillytavern_submenu)
+            # submenu_choice=$(show_sillytavern_submenu)
             
-            case $submenu_choice in
-                1)
-                    # Action for SillyTavern
-                    whiptail --msgbox "You selected SillyTavern" 10 120
-                    ;;
-                2)
-                    # Action for SillyTavern + Extras + chromadb + XTTS-v2
-                    whiptail --msgbox "You selected SillyTavern + Extras + chromadb + XTTS-v2" 10 120
-                    ;;
-                *)
-                    # Cancel
-                    ;;
-            esac
-            ;;
+            # case $submenu_choice in
+            #     1)
+            #         # Action for SillyTavern
+            #         whiptail --msgbox "You selected SillyTavern" 10 120
+            #         ;;
+            #     2)
+            #         # Action for SillyTavern + Extras + chromadb + XTTS-v2
+            #         whiptail --msgbox "You selected SillyTavern + Extras + chromadb + XTTS-v2" 10 120
+            #         ;;
+            #     *)
+            #         # Cancel
+            #         ;;
+            # esac
+            # ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
