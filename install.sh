@@ -539,7 +539,7 @@ EOF
             #         # Cancel
             #         ;;
             # esac
-            # ;;
+            ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
