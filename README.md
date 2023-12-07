@@ -11,11 +11,12 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ### Test platform:
 |Name|Info|
 |:---|:---|
-|CPU|AMD Ryzen 7900X3D|
+|CPU|AMD Ryzen 7900X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
+|Motherboard|B650E PG Riptide WiFi (BIOS 1.28)|
 |OS|Ubuntu 23.04|
-|Kernel|6.2.0-37-generic|
+|Kernel|6.2.0-39-generic|
 |ROCm|5.7.2|
 
 ## Instalation:
@@ -43,7 +44,10 @@ TODO
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
-(Python 3.11 with venv)
+(Python 3.11 with miniforge)
+
+https://github.com/conda-forge/miniforge
+
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
