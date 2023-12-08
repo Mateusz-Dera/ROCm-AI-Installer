@@ -44,6 +44,7 @@ TODO
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
+TODO exllama + exllamav2
 (Python 3.11 with miniforge)
 
 https://github.com/conda-forge/miniforge
