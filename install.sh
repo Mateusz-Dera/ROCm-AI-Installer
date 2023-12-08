@@ -348,6 +348,8 @@ EOF
 
             cd $installation_path/text-generation-webui
 
+            pip install SpeechRecognition sse_starlette tiktoken
+
             tee --append run.sh <<EOF
 #!/bin/bash
 source "${HOME}/conda/etc/profile.d/conda.sh"
