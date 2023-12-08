@@ -350,9 +350,8 @@ EOF
 
             tee --append run.sh <<EOF
 #!/bin/bash
-## activate conda
-conda activate textgen
-## command to run server... 
+source "${HOME}/conda/etc/profile.d/conda.sh"
+conda activate textgen 
 python server.py --listen --loader=exllama  \
   --auto-devices --extensions sd_api_pictures send_pictures gallery 
 conda deactivate
