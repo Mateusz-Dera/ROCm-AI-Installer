@@ -290,9 +290,27 @@ EOF
 
             conda install -y cmake ninja
 
+            # conda remove --name textgen --all -y
             conda create -n textgen python=3.11 -y
             conda activate textgen
-            
+
+            mkdir -p $installation_path
+
+            cd $installation_path
+            rm -rf text-generation-webui
+            git clone https://github.com/oobabooga/text-generation-webui
+            cd $installation_path/text-generation-webui
+
+            cd $installation_path/text-generation-webui
+            rm -rf flash-attention
+            git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
+            cd flash-attention
+            pip install .
+
+            echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+            echo "Basic packages"
+            echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+
             pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
                 mpmath fsspec MarkupSafe certifi filelock networkx \
                 sympy packaging requests \
@@ -301,12 +319,7 @@ EOF
             pip install torchdata==0.7.1
             pip install --pre torch==2.2.0.dev20231128 torchvision==0.17.0.dev20231128+rocm5.7 torchtext==0.17.0.dev20231128+cpu torchaudio triton pytorch-triton pytorch-triton-rocm    --index-url https://download.pytorch.org/whl/nightly/rocm5.7
 
-            cd $installation_path/AI
-            rm -rf text-generation-webui
-            git clone https://github.com/oobabooga/text-generation-webui
-            cd text-generation-webui
-
-            cd $installation_path/AI/text-generation-webui
+            cd $installation_path/text-generation-webui
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
             cd bitsandbytes-rocm-5.6/
             BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
@@ -314,13 +327,9 @@ EOF
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
             pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly
 
-            cd $installation_path/AI/text-generation-webui
-            rm -rf flash-attention
-            git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
-            cd flash-attention
-            pip install .
+            pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly
 
-            cd $installation_path/AI/text-generation-webui
+            cd $installation_path/text-generation-webui
             rm -rf text-generation-webui
             git clone https://github.com/oobabooga/text-generation-webui
             cd text-generation-webui
@@ -331,13 +340,13 @@ EOF
             git clone https://github.com/turboderp/exllama repositories/exllama
             git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
 
-            cd $installation_path/AI/text-generation-webui/repositories/exllama
+            cd $installation_path/text-generation-webui/repositories/exllama
             pip install -r requirements.txt
 
-            cd $installation_path/AI/text-generation-webui/repositories/exllamav2
+            cd $installation_path/text-generation-webui/repositories/exllamav2
             pip install -r requirements.txt
 
-            cd $installation_path/AI/text-generation-webui
+            cd $installation_path/text-generation-webui
 
             tee --append run.sh <<EOF
 #!/bin/bash
