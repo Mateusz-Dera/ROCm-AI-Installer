@@ -352,7 +352,7 @@ EOF
 #!/bin/bash
 source "${HOME}/conda/etc/profile.d/conda.sh"
 conda activate textgen 
-python server.py --listen --loader=exllama  \
+python server.py --api --listen --loader=exllama  \
   --auto-devices --extensions sd_api_pictures send_pictures gallery 
 conda deactivate
 EOF
