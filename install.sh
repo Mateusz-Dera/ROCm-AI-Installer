@@ -353,7 +353,8 @@ EOF
             tee --append run.sh <<EOF
 #!/bin/bash
 source "${HOME}/conda/etc/profile.d/conda.sh"
-conda activate textgen 
+conda activate textgen
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python server.py --api --listen --loader=exllama  \
   --auto-devices --extensions sd_api_pictures send_pictures gallery 
 conda deactivate
