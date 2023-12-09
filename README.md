@@ -17,7 +17,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
 |OS|Ubuntu 23.04|
 |Kernel|6.2.0-39-generic|
-|ROCm|5.7.1|
+|ROCm|5.7.2|
 
 ## Instalation:
 > [!WARNING]

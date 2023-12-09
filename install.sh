@@ -41,7 +41,7 @@ sudo rm /etc/apt/keyrings/rocm.gpg
 sudo rm /etc/apt/sources.list.d/rocm.list
 wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7.1 jammy main" \
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7.2 jammy main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 
 sudo rm /etc/apt/preferences.d/rocm-pin-600
@@ -339,7 +339,7 @@ EOF
             # pip install torchdata==0.7.1
             # pip install --pre torch==2.2.0.dev20231128 torchvision==0.17.0.dev20231128+rocm5.7 torchtext==0.17.0.dev20231128+cpu torchaudio triton pytorch-triton pytorch-triton-rocm    --index-url https://download.pytorch.org/whl/nightly/rocm5.7
 
-            cd $installation_path
+            cd $installation_path/text-generation-webui
             rm -rf bitsandbytes-rocm-5.6
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
             cd bitsandbytes-rocm-5.6/
@@ -351,13 +351,13 @@ pluggy==1.3.0
 pytest==7.4.3
 EOF
             BUILD_CUDA_EXT=0 pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-5.7.1/
+            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-5.7.2/
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
 
             pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly==2.1.0.post20231203000508
             pip install ninja==1.11.1
 
-            cd $installation_path
+            cd $installation_path/text-generation-webui
             rm -rf flash-attention
             git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
             cd flash-attention
