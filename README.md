@@ -17,7 +17,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
 |OS|Ubuntu 23.04|
 |Kernel|6.2.0-39-generic|
-|ROCm|5.7.2|
+|ROCm|5.7.1|
 
 ## Instalation:
 > [!WARNING]
@@ -32,22 +32,28 @@ sudo adduser `whoami` video
 sudo adduser `whoami` render
 ```
 2. Reboot
-3. TODO
+```bash
+sudo reboot
+```
+3. Run installer 
+```bash
+wget -O - https://example.com/script.sh | bash
+```
+4. Go to the installation path with the selected interface and run:
+```bash
+./run.sh
+```
 
 ## Supported AIs
 
 ### stable-diffusion-webui
-TODO
 (Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
-TODO exllama + exllamav2
-(Python 3.11 with miniforge)
-
-https://github.com/conda-forge/miniforge
+(Python 3.11 with venv)
 
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
