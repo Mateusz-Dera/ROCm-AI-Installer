@@ -50,6 +50,7 @@ wget -O - https://example.com/script.sh | bash
 (Python 3.11 with venv)
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
+
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 ### text-generation-webui
@@ -60,6 +61,9 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 > [!WARNING]
 > The script may show the error "o module named 'torchvision.transforms.functional_tensor'", this is normal.
+
+> [!Caution]
+> If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
 
 https://github.com/oobabooga/text-generation-webui
 
@@ -72,5 +76,12 @@ https://github.com/turboderp/exllama
 https://github.com/turboderp/exllamav2.git
 
 ### SillyTavern with Extras and chromadb
-TODO
 https://github.com/SillyTavern/SillyTavern
+
+TODO
+
+1. run.sh
+
+2. Extras 
+
+3. chromadb
