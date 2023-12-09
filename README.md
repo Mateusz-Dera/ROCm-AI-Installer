@@ -56,6 +56,11 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 ### text-generation-webui
 (Python 3.11 with venv)
 
+Supported:
+* llamaccp
+* exllama
+* exllamav2
+
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
@@ -77,6 +82,8 @@ https://github.com/turboderp/exllamav2.git
 
 ### SillyTavern with Extras and chromadb
 https://github.com/SillyTavern/SillyTavern
+
+https://github.com/SillyTavern/SillyTavern-Extras
 
 TODO
 

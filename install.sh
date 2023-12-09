@@ -76,14 +76,6 @@ show_menu() {
     2>&1 > /dev/tty
 }
 
-# Function to display the SillyTavern submenu
-show_sillytavern_submenu() {
-    whiptail --title "SillyTavern Submenu" --menu "Choose an option for SillyTavern:" 15 150 2 \
-    1 "SillyTavern" \
-    2 "SillyTavern + Extras + chromadb + XTTS-v2" \
-    2>&1 > /dev/tty
-}
-
 # Function to set the installation path
 set_installation_path() {
     # Prompt for installation path, using the default if the user leaves it blank
@@ -122,7 +114,6 @@ while true; do
             git checkout 4afaaf8a020c1df457bcf7250cb1c7f609699fa7
             python3.11 -m venv .venv --prompt StableDiffusion
             source .venv/bin/activate
-            # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm5.7
             tee --append custom_requirements.txt <<EOF
 absl-py==2.0.0
 accelerate==0.21.0
@@ -331,14 +322,6 @@ typing_extensions==4.8.0
 urllib3==1.26.13
 EOF
             pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            # pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
-            #     mpmath fsspec MarkupSafe certifi filelock networkx \
-            #     sympy packaging requests \
-            #         --index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            # pip install --pre torch==2.2.0.dev20231128   --index-url https://download.pytorch.org/whl/nightly/rocm5.7
-            # pip install torchdata==0.7.1
-            # pip install --pre torch==2.2.0.dev20231128 torchvision==0.17.0.dev20231128+rocm5.7 torchtext==0.17.0.dev20231128+cpu torchaudio triton pytorch-triton pytorch-triton-rocm    --index-url https://download.pytorch.org/whl/nightly/rocm5.7
-
             cd $installation_path/text-generation-webui
             rm -rf bitsandbytes-rocm-5.6
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
@@ -495,8 +478,6 @@ https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_
 https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+rocm5.6-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
 https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+rocm5.6-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
 EOF
-            # sed -i "s@bitsandbytes==@bitsandbytes>=@g" requirements_amd.txt 
-            # pip install -r requirements_amd.txt 
             pip install -r custom_requirements_amd.txt 
 
             git clone https://github.com/turboderp/exllama.git repositories/exllama
@@ -504,11 +485,9 @@ EOF
 
             cd $installation_path/text-generation-webui/repositories/exllama
             git checkout 3b013cd53c7d413cf99ca04c7c28dd5c95117c0d
-            # pip install -r requirements.txt
-            
+
             cd $installation_path/text-generation-webui/repositories/exllamav2
             git checkout 5c974259bd245ace74ba4e8dda319d1f87d04c70
-            # pip install -r requirements.txt
 
             cd $installation_path/text-generation-webui
 
@@ -525,28 +504,40 @@ EOF
             chmod u+x run.sh
             ;;
         3)
+            # Basic
+            sudo snap install node --classic
             mkdir -p $installation_path
             cd $installation_path
             rm -Rf SillyTavern
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
-            sudo snap install node --classic
-            # Submenu for SillyTavern
-            # submenu_choice=$(show_sillytavern_submenu)
+            git checkout f43d738dfd10b9430130ec1bd2805aac02c6ecf0
+            tee --append run.sh <<EOF
+#!/bin/bash
+$installation_path/SillyTavern/start.sh
+EOF
+            chmod +x run.sh
+
+            # Extras
+            cd $installation_path
+
+            rm -Rf SillyTavern-extras
+            git clone https://github.com/SillyTavern/SillyTavern-extras
+            cd SillyTavern-extras
+            git checkout 1363fd242dde04fa58d12870fda020ef5c9162c0
             
-            # case $submenu_choice in
-            #     1)
-            #         # Action for SillyTavern
-            #         whiptail --msgbox "You selected SillyTavern" 10 120
-            #         ;;
-            #     2)
-            #         # Action for SillyTavern + Extras + chromadb + XTTS-v2
-            #         whiptail --msgbox "You selected SillyTavern + Extras + chromadb + XTTS-v2" 10 120
-            #         ;;
-            #     *)
-            #         # Cancel
-            #         ;;
-            # esac
+            python3.11 -m venv .venv --prompt SillyTavern-extras
+            source .venv/bin/activate
+
+            pip install -r requirements.txt
+            
+            cd $installation_path/SillyTavern-extras
+            tee --append run.sh <<EOF
+#!/bin/bash
+source $installation_path/SillyTavern-extras/.venv/bin/activate
+python $installation_path/SillyTavern-extras/server.py --listen --enable-modules=chromadb
+EOF
+            chmod +x run.sh
             ;;
         *)
             # Cancel or Exit
