@@ -268,7 +268,7 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export TF_ENABLE_ONEDNN_OPTS=0
 export TORCH_COMMAND="pip install torch==2.2.0.dev20231203+rocm5.7 torchvision==0.17.0.dev20231203+rocm5.7 --index-url https://download.pytorch.org/whl/nightly/rocm5.7"
-export COMMANDLINE_ARGS="--api"
+export COMMANDLINE_ARGS="--api --no-half-vae"
 #export CUDA_VISIBLE_DEVICES="1"
 source $installation_path/stable-diffusion-webui/.venv/bin/activate
 $installation_path/stable-diffusion-webui/webui.sh 
@@ -511,7 +511,7 @@ EOF
             rm -Rf SillyTavern
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
-            git checkout f43d738dfd10b9430130ec1bd2805aac02c6ecf0
+            git checkout 6f610204d6794ad3ccea9395e1a132d7bf727909
             tee --append run.sh <<EOF
 #!/bin/bash
 $installation_path/SillyTavern/start.sh
