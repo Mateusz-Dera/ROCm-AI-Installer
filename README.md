@@ -46,6 +46,7 @@ wget -O - https://example.com/script.sh | bash
 
 ### stable-diffusion-webui
 (Python 3.11 with venv)
+
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 > [!TIP]
