@@ -57,6 +57,16 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 ### text-generation-webui
 (Python 3.11 with venv)
 
+https://github.com/oobabooga/text-generation-webui
+
+https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
+
+https://github.com/ROCmSoftwarePlatform/flash-attention
+
+https://github.com/turboderp/exllama
+
+https://github.com/turboderp/exllamav2.git
+
 Supported:
 * llamaccp
 * exllama
@@ -70,16 +80,6 @@ Supported:
 
 > [!Caution]
 > If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
-
-https://github.com/oobabooga/text-generation-webui
-
-https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
-
-https://github.com/ROCmSoftwarePlatform/flash-attention
-
-https://github.com/turboderp/exllama
-
-https://github.com/turboderp/exllamav2.git
 
 ### SillyTavern (1.11.0) with Smart Context
 https://github.com/SillyTavern/SillyTavern
