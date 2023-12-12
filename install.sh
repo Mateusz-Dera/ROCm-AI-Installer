@@ -589,11 +589,13 @@ EOF
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
             git checkout 6f610204d6794ad3ccea9395e1a132d7bf727909
-            tee --append run.sh <<EOF
-#!/bin/bash
-$installation_path/SillyTavern/start.sh
-EOF
-            chmod +x run.sh
+            mv ./start.sh ./run.sh
+
+            # Default config
+            cd ./default
+            sed -i 's/listen: false/listen: true/' config.yaml
+            sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
+            sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
 
             # Extras
             cd $installation_path
@@ -601,7 +603,7 @@ EOF
             rm -Rf SillyTavern-extras
             git clone https://github.com/SillyTavern/SillyTavern-extras
             cd SillyTavern-extras
-            git checkout 1363fd242dde04fa58d12870fda020ef5c9162c0
+            git checkout 2e6ab8be46f492f3ca4081fedbea13574e8659c0
             
             python3.11 -m venv .venv --prompt SillyTavern-extras
             source .venv/bin/activate

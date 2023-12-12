@@ -83,15 +83,10 @@ https://github.com/turboderp/exllama
 
 https://github.com/turboderp/exllamav2.git
 
-### SillyTavern with Extras and chromadb
+### SillyTavern (1.11.0) with Smart Context
 https://github.com/SillyTavern/SillyTavern
 
 https://github.com/SillyTavern/SillyTavern-Extras
 
-TODO
-
-1. run.sh
-
-2. Extras 
-
-3. chromadb
+> [!WARNING]
+> SillyTavern and SillyTavern-Extras are launched separately.
