@@ -57,6 +57,11 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 ### text-generation-webui
 (Python 3.11 with venv)
 
+Supported:
+* llamaccp
+* exllama
+* exllamav2
+
 https://github.com/oobabooga/text-generation-webui
 
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
@@ -66,11 +71,6 @@ https://github.com/ROCmSoftwarePlatform/flash-attention
 https://github.com/turboderp/exllama
 
 https://github.com/turboderp/exllamav2.git
-
-Supported:
-* llamaccp
-* exllama
-* exllamav2
 
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
