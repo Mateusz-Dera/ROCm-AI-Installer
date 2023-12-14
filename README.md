@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/1.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/1.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm-5.7.md
 
@@ -89,6 +89,3 @@ https://github.com/SillyTavern/SillyTavern-Extras
 
 > [!WARNING]
 > SillyTavern and SillyTavern-Extras are launched separately.
-
-<!-- ### koboldcpp-rocm
-https://github.com/YellowRoseCx/koboldcpp-rocm -->

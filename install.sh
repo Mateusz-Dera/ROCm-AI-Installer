@@ -583,6 +583,7 @@ EOF
         3)
             # Basic
             sudo snap install node --classic
+            sudo apt -y install build-essential libgtk-3-dev
             mkdir -p $installation_path
             cd $installation_path
             rm -Rf SillyTavern
@@ -608,13 +609,163 @@ EOF
             python3.11 -m venv .venv --prompt SillyTavern-extras
             source .venv/bin/activate
 
-            pip install -r requirements.txt
+            tee --append custom_requirements.txt <<EOF
+accelerate==0.25.0
+aiohttp==3.9.1
+aiosignal==1.3.1
+annotated-types==0.6.0
+anyio==3.7.1
+asgiref==3.7.2
+attrs==23.1.0
+backoff==2.2.1
+bcrypt==4.1.1
+blinker==1.7.0
+Brotli==1.1.0
+cachetools==5.3.2
+certifi==2023.7.22
+cffi==1.16.0
+charset-normalizer==3.3.2
+chroma-hnswlib==0.7.3
+chromadb==0.4.19
+click==8.1.7
+cmake==3.28.0
+colorama==0.4.6
+coloredlogs==15.0.1
+contourpy==1.2.0
+cycler==0.12.1
+Deprecated==1.2.14
+diffusers==0.24.0
+edge-tts==6.1.9
+fastapi==0.105.0
+filelock==3.13.1
+Flask==3.0.0
+flask-cloudflared==0.0.14
+Flask-Compress==1.14
+Flask-Cors==4.0.0
+flatbuffers==23.5.26
+fonttools==4.46.0
+frozenlist==1.4.0
+fsspec==2023.12.2
+google-auth==2.25.2
+googleapis-common-protos==1.62.0
+grpcio==1.60.0
+h11==0.14.0
+httptools==0.6.1
+huggingface-hub==0.19.4
+humanfriendly==10.0
+idna==3.6
+importlib-metadata==6.11.0
+importlib-resources==6.1.1
+itsdangerous==2.1.2
+Jinja2==3.1.2
+joblib==1.3.2
+kiwisolver==1.4.5
+kubernetes==28.1.0
+lit==17.0.6
+llvmlite==0.41.1
+loguru==0.7.2
+Markdown==3.5.1
+MarkupSafe==2.1.3
+matplotlib==3.8.2
+mmh3==4.0.1
+monotonic==1.6
+more-itertools==10.1.0
+mpmath==1.3.0
+multidict==6.0.4
+networkx==3.2.1
+nltk==3.8.1
+numba==0.58.1
+numpy==1.26.2
+oauthlib==3.2.2
+onnxruntime==1.16.3
+openai-whisper==20231117
+opentelemetry-api==1.21.0
+opentelemetry-exporter-otlp-proto-common==1.21.0
+opentelemetry-exporter-otlp-proto-grpc==1.21.0
+opentelemetry-instrumentation==0.42b0
+opentelemetry-instrumentation-asgi==0.42b0
+opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-proto==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-semantic-conventions==0.42b0
+opentelemetry-util-http==0.42b0
+outcome==1.3.0.post0
+overrides==7.4.0
+packaging==23.2
+Pillow==9.5.0
+posthog==3.1.0
+protobuf==4.25.1
+psutil==5.9.6
+pulsar-client==3.3.0
+pyasn1==0.5.1
+pyasn1-modules==0.3.0
+pycparser==2.21
+pydantic==2.5.2
+pydantic_core==2.14.5
+pydub==0.25.1
+pyparsing==3.1.1
+PyPika==0.48.9
+PySocks==1.7.1
+python-dateutil==2.8.2
+python-dotenv==1.0.0
+pytorch-triton-rocm==2.1.0
+PyYAML==6.0.1
+regex==2023.10.3
+requests==2.31.0
+requests-oauthlib==1.3.1
+rsa==4.9
+safetensors==0.4.1
+scikit-learn==1.3.2
+scipy==1.11.4
+selenium==4.16.0
+sentence-transformers==2.2.2
+sentencepiece==0.1.99
+silero-api-server==0.3.1
+six==1.16.0
+sniffio==1.3.0
+sortedcontainers==2.4.0
+sounddevice==0.4.6
+soundfile==0.12.1
+srt==3.5.3
+starlette==0.27.0
+sympy==1.12
+tenacity==8.2.3
+threadpoolctl==3.2.0
+tiktoken==0.5.2
+tokenizers==0.15.0
+torch==2.1.0+rocm5.6
+torchaudio==2.1.0+rocm5.6
+torchvision==0.16.0+rocm5.6
+tqdm==4.66.1
+transformers==4.36.1
+trio==0.23.2
+trio-websocket==0.11.1
+triton==2.1.0
+typer==0.9.0
+typing_extensions==4.9.0
+urllib3==1.26.18
+uvicorn==0.24.0.post1
+uvloop==0.19.0
+vosk==0.3.45
+watchfiles==0.21.0
+websocket-client==1.7.0
+websockets==12.0
+webuiapi==0.9.6
+Werkzeug==3.0.1
+wrapt==1.16.0
+wsproto==1.2.0
+wxPython==4.2.1
+yarl==1.9.4
+zipp==3.17.0
+EOF
+
+            pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
             
             cd $installation_path/SillyTavern-extras
             tee --append run.sh <<EOF
 #!/bin/bash
 source $installation_path/SillyTavern-extras/.venv/bin/activate
-python $installation_path/SillyTavern-extras/server.py --listen --enable-modules=chromadb
+python $installation_path/SillyTavern-extras/server.py --cuda --listen --enable-modules=chromadb
 EOF
             chmod +x run.sh
             ;;
