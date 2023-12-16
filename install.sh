@@ -764,6 +764,8 @@ EOF
             cd $installation_path/SillyTavern-extras
             tee --append run.sh <<EOF
 #!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
 source $installation_path/SillyTavern-extras/.venv/bin/activate
 python $installation_path/SillyTavern-extras/server.py --cuda --listen --enable-modules=chromadb
 EOF
