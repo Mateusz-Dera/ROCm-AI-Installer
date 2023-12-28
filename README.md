@@ -54,10 +54,7 @@ wget -O - https://example.com/script.sh | bash
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 > [!TIP]
-> If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
-
-> [!TIP]
-> Superboogav2 requirements are installed, but the extension is disabled by default.
+> If you want to modify the parameters at startup, modify the webui-user.sh file in the text-generation-webui directory after installation.
 
 ### text-generation-webui
 (Python 3.11 with venv)
