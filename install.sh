@@ -21,8 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-arch="x86_64"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
+ROCM_VERSION=6.0
+# arch="x86_64"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -41,7 +42,7 @@ sudo rm /etc/apt/keyrings/rocm.gpg
 sudo rm /etc/apt/sources.list.d/rocm.list
 wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7.2 jammy main" \
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION jammy main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 
 sudo rm /etc/apt/preferences.d/rocm-pin-600

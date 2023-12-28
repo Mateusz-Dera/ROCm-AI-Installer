@@ -4,7 +4,7 @@ A script that automatically installs all the required stuff to run selected AI i
 ## Info
 [![Version](https://img.shields.io/badge/1.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm-5.7.md
+Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
 ### Test platform:
 |Name|Info|
@@ -15,7 +15,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
 |OS|Ubuntu 22.04|
 |Kernel|6.2.0-39-generic|
-|ROCm|5.7.2|
+|ROCm|6.0|
 
 ## Instalation:
 > [!WARNING]
