@@ -13,7 +13,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
-|OS|Ubuntu 23.04|
+|OS|Ubuntu 22.04|
 |Kernel|6.2.0-39-generic|
 |ROCm|5.7.2|
 
@@ -89,3 +89,7 @@ https://github.com/SillyTavern/SillyTavern-Extras
 
 > [!WARNING]
 > SillyTavern and SillyTavern-Extras are launched separately.
+
+### DreamCraft3D
+(Python 3.11 with venv)
+https://github.com/deepseek-ai/DreamCraft3D

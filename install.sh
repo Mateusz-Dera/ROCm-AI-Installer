@@ -33,7 +33,7 @@ sudo apt-get update
 sudo apt-get -y upgrade
 sudo apt purge -y rocm*
 
-sudo add-apt-repository -y -s deb http://security.ubuntu.com/ubuntu jammy main universe
+#sudo add-apt-repository -y -s deb http://security.ubuntu.com/ubuntu jammy main universe
 
 sudo mkdir --parents --mode=0755 /etc/apt/keyrings
 sudo rm /etc/apt/keyrings/rocm.gpg
@@ -57,7 +57,7 @@ sudo apt-add-repository -y -s -s
 sudo apt install -y "linux-headers-$(uname -r)" \
 	"linux-modules-extra-$(uname -r)"
 
-sudo apt-get install -y whiptail wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+sudo apt-get install -y python3.11 python3.11-venv python3.11-dev whiptail wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
 
 sudo rm /etc/ld.so.conf.d/rocm.conf
 sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
