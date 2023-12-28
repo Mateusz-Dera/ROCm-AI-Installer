@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/1.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/2.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -24,10 +24,6 @@ Part of the installation script is based on this guide: https://github.com/nktic
 > [!WARNING]
 > This script does not download any models. If the interface does not have defaults, download your own.
 
-> [!TIP]
-> It should work on 23.04 if you add the jammy repository.
-
-
 1. Add the user to the required groups.
 ```bash
 sudo adduser `whoami` video
@@ -46,7 +42,7 @@ wget -O - https://example.com/script.sh | bash
 ./run.sh
 ```
 
-## Supported AIs
+## Supported
 
 ### stable-diffusion-webui
 (Python 3.11 with venv)
@@ -54,31 +50,24 @@ wget -O - https://example.com/script.sh | bash
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 > [!TIP]
-> If you want to modify the parameters at startup, modify the webui-user.sh file in the text-generation-webui directory after installation.
+> If you want to modify the parameters at startup, modify the webui-user.sh file in the stable-diffusion-webui directory after installation.
 
 ### text-generation-webui
 (Python 3.11 with venv)
 
 Supported:
 * llamaccp
-* exllama
+* ~~exllama~~
 * exllamav2
 
 https://github.com/oobabooga/text-generation-webui
 
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
 
-https://github.com/ROCmSoftwarePlatform/flash-attention
-
-https://github.com/turboderp/exllama
-
 https://github.com/turboderp/exllamav2.git
 
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
-
-> [!WARNING]
-> The script may show the error "o module named 'torchvision.transforms.functional_tensor'", this is normal.
 
 > [!Caution]
 > If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
