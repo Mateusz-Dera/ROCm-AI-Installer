@@ -24,6 +24,10 @@ Part of the installation script is based on this guide: https://github.com/nktic
 > [!WARNING]
 > This script does not download any models. If the interface does not have defaults, download your own.
 
+> [!TIP]
+> Should work on 23.04 if you add
+``````
+
 1. Add the user to the required groups.
 ```bash
 sudo adduser `whoami` video
