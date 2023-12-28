@@ -25,8 +25,8 @@ Part of the installation script is based on this guide: https://github.com/nktic
 > This script does not download any models. If the interface does not have defaults, download your own.
 
 > [!TIP]
-> Should work on 23.04 if you add
-``````
+> It should work on 23.04 if you add the jammy repository.
+
 
 1. Add the user to the required groups.
 ```bash
