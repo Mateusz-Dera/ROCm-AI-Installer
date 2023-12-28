@@ -54,7 +54,7 @@ wget -O - https://example.com/script.sh | bash
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 > [!TIP]
-> If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
+> If you want to modify the parameters at startup, modify the run.sh file in the stable-diffusion-webui directory after installation.
 
 ### text-generation-webui
 (Python 3.11 with venv)
