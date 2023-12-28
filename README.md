@@ -56,9 +56,6 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
-> [!TIP]
-> Superboogav2 requirements are installed, but the extension is disabled by default.
-
 ### text-generation-webui
 (Python 3.11 with venv)
 
@@ -76,6 +73,9 @@ https://github.com/ROCmSoftwarePlatform/flash-attention
 https://github.com/turboderp/exllama
 
 https://github.com/turboderp/exllamav2.git
+
+> [!TIP]
+> Superboogav2 requirements are installed, but the extension is disabled by default.
 
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
