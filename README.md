@@ -90,6 +90,6 @@ https://github.com/SillyTavern/SillyTavern-Extras
 > [!WARNING]
 > SillyTavern and SillyTavern-Extras are launched separately.
 
-### DreamCraft3D
-(Python 3.11 with venv)
-https://github.com/deepseek-ai/DreamCraft3D
+<!-- ### DreamCraft3D -->
+<!-- (Python 3.11 with venv) -->
+<!-- https://github.com/deepseek-ai/DreamCraft3D -->
