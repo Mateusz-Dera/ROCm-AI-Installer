@@ -12,7 +12,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |CPU|AMD Ryzen 7900X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
+|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 2.02)|
 |OS|Ubuntu 22.04|
 |Kernel|6.2.0-39-generic|
 |ROCm|5.7.3|
