@@ -2,9 +2,9 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/2.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/1.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
+Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm-5.7.md
 
 ### Test platform:
 |Name|Info|
@@ -15,7 +15,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.28)|
 |OS|Ubuntu 22.04|
 |Kernel|6.2.0-39-generic|
-|ROCm|6.0|
+|ROCm|5.7.3|
 
 ## Instalation:
 > [!WARNING]
@@ -57,12 +57,13 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 Supported:
 * llamaccp
-* ~~exllama~~
 * exllamav2
 
 https://github.com/oobabooga/text-generation-webui
 
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
+
+https://github.com/ROCmSoftwarePlatform/flash-attention
 
 https://github.com/turboderp/exllamav2.git
 
