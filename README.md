@@ -79,6 +79,7 @@ https://github.com/turboderp/exllamav2.git
 > If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
 
 ### SillyTavern (1.11.0) with Smart Context
+(Node + Python 3.11 with venv)
 
 https://github.com/SillyTavern/SillyTavern
 
