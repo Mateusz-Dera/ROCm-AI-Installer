@@ -24,6 +24,9 @@ Part of the installation script is based on this guide: https://github.com/nktic
 > [!WARNING]
 > This script does not download any models. If the interface does not have defaults, download your own.
 
+> [!WARNING]
+> If you update, back up your settings and models, as reinstalling deletes the selected interface directory
+
 1. Add the user to the required groups.
 ```bash
 sudo adduser `whoami` video
@@ -37,7 +40,10 @@ sudo reboot
 ```bash
 wget -O - https://example.com/script.sh | bash
 ```
-4. Go to the installation path with the selected interface and run:
+4. Select installation path.
+5. Select ROCm installation if you are upgrading or running the script for the first time.
+6. Install selected interfaces
+7. Go to the installation path with the selected interface and run:
 ```bash
 ./run.sh
 ```
