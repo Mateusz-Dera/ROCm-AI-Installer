@@ -149,30 +149,45 @@ accelerate==0.25.0
 aiofiles==23.2.1
 aiohttp==3.9.1
 aiosignal==1.3.1
+alembic==1.13.1
 altair==5.2.0
 annotated-types==0.6.0
 anyio==4.2.0
 appdirs==1.4.4
+asttokens==2.4.1
 attrs==23.1.0
 auto-gptq @ https://github.com/jllllll/AutoGPTQ/releases/download/v0.6.0/auto_gptq-0.6.0+rocm5.6-cp311-cp311-linux_x86_64.whl
+backoff==2.2.1
+beautifulsoup4==4.12.2
+blis==0.7.11
 cachetools==5.3.2
+catalogue==2.0.10
 certifi==2022.12.7
 chardet==5.2.0
 charset-normalizer==2.1.1
+chromadb==0.3.18
 click==8.1.7
+clickhouse-connect==0.6.23
+cloudpathlib==0.16.0
 cmake==3.28.1
 colorama==0.4.6
 coloredlogs==15.0.1
+colorlog==6.8.0
+confection==0.1.4
 contourpy==1.2.0
 cramjam==2.7.0
 cycler==0.12.1
+cymem==2.0.8
 DataProperty==1.0.1
 datasets==2.16.0
 dill==0.3.7
 diskcache==5.6.3
 distro==1.9.0
 docker-pycreds==0.4.0
+docopt==0.6.2
+duckdb==0.9.2
 einops==0.7.0
+executing==2.0.1
 exllama @ https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+rocm5.6-cp311-cp311-linux_x86_64.whl
 exllamav2==0.0.11
 fastapi==0.108.0
@@ -190,13 +205,18 @@ google-auth-oauthlib==1.2.0
 gptq-for-llama @ https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+rocm5.6-cp311-cp311-linux_x86_64.whl
 gradio==3.50.2
 gradio_client==0.6.1
+graphviz==0.20.1
+greenlet==3.0.3
 grpcio==1.60.0
 h11==0.14.0
+hnswlib==0.8.0
 hqq==0.1.1.post1
 httpcore==1.0.2
+httptools==0.6.1
 httpx==0.26.0
 huggingface-hub==0.20.1
 humanfriendly==10.0
+icecream==2.1.3
 idna==3.4
 importlib-resources==6.1.1
 iniconfig==2.0.0
@@ -206,36 +226,46 @@ jsonlines==4.0.0
 jsonschema==4.20.0
 jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
+langcodes==3.3.0
 lion-pytorch==0.1.2
 lit==15.0.7
 llama_cpp_python @ https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.25+cpuavx2-cp311-cp311-manylinux_2_31_x86_64.whl
 llama_cpp_python_cuda @ https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.25+rocm5.6.1-cp311-cp311-manylinux_2_31_x86_64.whl
 lm-eval==0.3.0
+lxml==5.0.0
+lz4==4.3.2
+Mako==1.3.0
 Markdown==3.5.1
 markdown-it-py==3.0.0
 MarkupSafe==2.1.3
 matplotlib==3.8.2
 mbstrdecoder==1.1.3
 mdurl==0.1.2
+monotonic==1.6
 mpmath==1.2.1
 multidict==6.0.4
 multiprocess==0.70.15
+murmurhash==1.0.10
 networkx==3.0rc1
 ninja==1.11.1.1
 nltk==3.8.1
+num2words==0.5.13
 numexpr==2.8.8
 numpy==1.24.4
 oauthlib==3.2.2
 openai==1.6.1
 optimum==1.16.1
+optuna==3.5.0
 orjson==3.9.10
 packaging==22.0
-pandas==2.1.4
+pandas==2.0.3
 pathvalidate==3.2.0
 peft==0.7.1
 Pillow==10.1.0
 pluggy==1.3.0
 portalocker==2.8.2
+posthog==2.4.2
+preshed==3.0.9
 protobuf==4.23.4
 psutil==5.9.7
 pyarrow==14.0.2
@@ -244,14 +274,16 @@ pyasn1==0.5.1
 pyasn1-modules==0.3.0
 pybind11==2.11.1
 pycountry==23.12.11
-pydantic==2.5.3
+pydantic==1.10.13
 pydantic_core==2.14.6
 pydub==0.25.1
 Pygments==2.17.2
 pyparsing==3.1.1
 pytablewriter==1.2.0
 pytest==7.4.3
+pytextrank==3.2.5
 python-dateutil==2.8.2
+python-dotenv==1.0.0
 python-multipart==0.0.6
 pytorch-triton==2.2.0+e28a256d71
 pytorch-triton-rocm==2.2.0+dafe145982
@@ -271,14 +303,22 @@ safetensors==0.4.1
 scikit-learn==1.3.2
 scipy==1.11.4
 semantic-version==2.10.0
+sentence-transformers==2.2.2
 sentencepiece==0.1.99
 sentry-sdk==1.39.1
 setproctitle==1.3.3
 six==1.16.0
+smart-open==6.4.0
 smmap==5.0.1
 sniffio==1.3.0
+soupsieve==2.5
+spacy==3.7.2
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
 SpeechRecognition==3.10.1
+SQLAlchemy==2.0.24
 sqlitedict==2.1.0
+srsly==2.4.8
 sse-starlette==1.8.2
 starlette==0.32.0.post1
 sympy==1.11.1
@@ -287,6 +327,7 @@ tcolorpy==0.1.4
 tensorboard==2.15.1
 tensorboard-data-server==0.7.2
 termcolor==2.4.0
+thinc==8.2.2
 threadpoolctl==3.2.0
 tiktoken==0.5.2
 timm==0.9.12
@@ -302,11 +343,16 @@ tqdm-multiprocess==0.0.11
 transformers==4.36.2
 triton==2.1.0
 typepy==1.3.2
+typer==0.9.0
 typing_extensions==4.8.0
 tzdata==2023.4
 urllib3==1.26.13
 uvicorn==0.25.0
+uvloop==0.19.0
 wandb==0.16.1
+wasabi==1.1.2
+watchfiles==0.21.0
+weasel==0.3.4
 websockets==11.0.3
 Werkzeug==3.0.1
 xxhash==3.4.1
@@ -347,8 +393,9 @@ EOF
             ;;
         4)
             # Basic
+            sudo apt-get update
+            sudo apt-get -y install snapd build-essential libgtk-3-dev
             sudo snap install node --classic
-            sudo apt-get -y install build-essential libgtk-3-dev
             mkdir -p $installation_path
             cd $installation_path
             rm -Rf SillyTavern

@@ -59,6 +59,8 @@ Supported:
 * llamaccp
 * exllamav2
 
+exllama is no longer supported
+
 https://github.com/oobabooga/text-generation-webui
 
 https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
@@ -70,10 +72,15 @@ https://github.com/turboderp/exllamav2.git
 > [!TIP]
 > If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
 
+> [!TIP]
+> Superboogav2 requirements are installed, but the extension is disabled by default.
+
 > [!Caution]
 > If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
 
 ### SillyTavern (1.11.0) with Smart Context
+(Node + Python 3.11 with venv for SillyTavern-Extras)
+
 https://github.com/SillyTavern/SillyTavern
 
 https://github.com/SillyTavern/SillyTavern-Extras
