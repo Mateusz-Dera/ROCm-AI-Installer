@@ -97,6 +97,8 @@ https://github.com/SillyTavern/SillyTavern-Extras
 > [!WARNING]
 > Smart Context extension must be manually enabled in SillyTavern settings and connect to SillyTavern-Extras.
 
-<!-- ### DreamCraft3D -->
-<!-- (Python 3.11 with venv) -->
-<!-- https://github.com/deepseek-ai/DreamCraft3D -->
+### threestudio with Zero123XL
+TODO
+
+(Python 3.11 with venv)
+https://github.com/threestudio-project/threestudio

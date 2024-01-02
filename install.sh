@@ -35,12 +35,13 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 5 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 6 \
     0 "Set installation path ($installation_path)" \
     1 "Install ROCm" \
     2 "stable-diffusion-webui" \
     3 "text-generation-webui" \
     4 "SillyTavern" \
+    5 "threestudio" \
     2>&1 > /dev/tty
 }
 
@@ -392,6 +393,11 @@ EOF
             chmod u+x run.sh
             ;;
         4)
+            if ! command -v python3.11 &> /dev/null; then
+                echo "Install Python 3.11 first"
+                exit 1
+            fi
+
             # Basic
             sudo apt-get update
             sudo apt-get -y install snapd build-essential libgtk-3-dev
@@ -540,6 +546,33 @@ python $installation_path/SillyTavern-extras/server.py --cuda --listen --enable-
 EOF
             chmod +x run.sh
             ;;
+        5)
+            # Action for Option 5
+            if ! command -v python3.11 &> /dev/null; then
+                echo "Install Python 3.11 first"
+                exit 1
+            fi
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -Rf threestudio
+            git clone https://github.com/threestudio-project/threestudio.git
+            cd threestudio
+            git checkout 9c5383bcebc1ee702a6a4c82cf6b7778094252b9
+            python3.11 -m venv .venv --prompt threestudio
+            source .venv/bin/activate
+
+            sudo apt update
+            sudo apt install -y nvidia-cuda-toolkit
+            sudo apt-get install aptitude
+
+            
+            pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install ninja
+            pip install -r requirements.txt
+
+            pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+
+        ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
