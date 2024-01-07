@@ -394,14 +394,14 @@ EOF
         4)
             # Basic
             sudo apt-get update
-            sudo apt-get -y install snapd build-essential libgtk-3-dev
+            sudo apt-get -y install snapd build-essential libgtk-3-dev portaudio19-dev
             sudo snap install node --classic
             mkdir -p $installation_path
             cd $installation_path
             rm -Rf SillyTavern
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
-            git checkout 6508a2d92474017aa21f5ac363effd5566995523
+            git checkout 37d6f13b14bd944d4baa1048d03eb993724ea7f6
             mv ./start.sh ./run.sh
 
             # Default config
@@ -414,61 +414,127 @@ EOF
             cd $installation_path
 
             rm -Rf SillyTavern-extras
-            git clone https://github.com/SillyTavern/SillyTavern-extras
+            git clone https://github.com/SillyTavern/SillyTavern-extras.git
             cd SillyTavern-extras
-            git checkout 08a18dc506d8d73685de5c4d28980fa544e258e0
+            git checkout a399907b4e60af3e4f9fc8004c684817321ef6f5
             
             python3.11 -m venv .venv --prompt SillyTavern-extras
             source .venv/bin/activate
 
             tee --append custom_requirements.txt <<EOF
+absl-py==2.0.0
+accelerate==0.25.0
+aiohttp==3.9.1
+aiosignal==1.3.1
 annotated-types==0.6.0
+anyascii==0.3.2
 anyio==4.2.0
 asgiref==3.7.2
+attrs==23.2.0
+audioread==3.0.1
+Babel==2.14.0
 backoff==2.2.1
+bangla==0.0.2
 bcrypt==4.1.2
 blinker==1.7.0
+blis==0.7.11
+bnnumerizer==0.0.2
+bnunicodenormalizer==0.1.6
 Brotli==1.1.0
+build==1.0.3
 cachetools==5.3.2
-certifi==2023.11.17
+catalogue==2.0.10
+certifi==2023.7.22
+cffi==1.16.0
 charset-normalizer==3.3.2
 chroma-hnswlib==0.7.3
-chromadb==0.4.21
+chromadb==0.4.22
 click==8.1.7
+cloudpathlib==0.16.0
+cmake==3.28.1
 colorama==0.4.6
 coloredlogs==15.0.1
+confection==0.1.4
+contourpy==1.2.0
+coqpit==0.0.17
+cutlet==0.3.0
+cycler==0.12.1
+cymem==2.0.8
+Cython==3.0.7
+dateparser==1.1.8
+decorator==5.1.1
 Deprecated==1.2.14
+diffusers==0.25.0
+docopt==0.6.2
+edge-tts==6.1.9
+einops==0.7.0
+emoji==2.8.0
+encodec==0.1.1
 fastapi==0.108.0
 filelock==3.13.1
 Flask==3.0.0
+flask-cloudflared==0.0.14
 Flask-Compress==1.14
 Flask-Cors==4.0.0
 flatbuffers==23.5.26
+fonttools==4.47.0
+frozenlist==1.4.1
 fsspec==2023.12.2
-google-auth==2.25.2
+fugashi==1.3.0
+g2pkk==0.1.2
+google-auth==2.26.1
+google-auth-oauthlib==1.2.0
 googleapis-common-protos==1.62.0
 grpcio==1.60.0
+gruut==2.2.3
+gruut-ipa==0.13.0
+gruut-lang-de==2.0.0
+gruut-lang-en==2.0.0
+gruut-lang-es==2.0.0
+gruut-lang-fr==2.0.2
 h11==0.14.0
+hangul-romanize==0.1.0
 httptools==0.6.1
-huggingface-hub==0.20.1
+huggingface-hub==0.20.2
 humanfriendly==10.0
 idna==3.6
 importlib-metadata==6.11.0
 importlib-resources==6.1.1
+inflect==7.0.0
 itsdangerous==2.1.2
+jaconv==0.3.4
+jamo==0.4.1
+jieba==0.42.1
 Jinja2==3.1.2
 joblib==1.3.2
+jsonlines==1.2.0
+kiwisolver==1.4.5
 kubernetes==28.1.0
+langcodes==3.3.0
+lazy_loader==0.3
+librosa==0.10.1
+lit==17.0.6
+llvmlite==0.41.1
+loguru==0.7.2
 Markdown==3.5.1
 MarkupSafe==2.1.3
+matplotlib==3.8.2
 mmh3==4.0.1
+mojimoji==0.0.12
 monotonic==1.6
-mpmath==1.2.1
-networkx==3.0rc1
+more-itertools==10.1.0
+mpmath==1.3.0
+msgpack==1.0.7
+multidict==6.0.4
+murmurhash==1.0.10
+networkx==2.8.8
 nltk==3.8.1
-numpy==1.26.2
+num2words==0.5.13
+numba==0.58.1
+numpy==1.26.3
 oauthlib==3.2.2
 onnxruntime==1.16.3
+openai-whisper==20231117
 opentelemetry-api==1.22.0
 opentelemetry-exporter-otlp-proto-common==1.22.0
 opentelemetry-exporter-otlp-proto-grpc==1.22.0
@@ -479,20 +545,38 @@ opentelemetry-proto==1.22.0
 opentelemetry-sdk==1.22.0
 opentelemetry-semantic-conventions==0.43b0
 opentelemetry-util-http==0.43b0
+outcome==1.3.0.post0
 overrides==7.4.0
 packaging==23.2
-Pillow==9.3.0
+pandas==1.5.3
+Pillow==9.5.0
+platformdirs==4.1.0
+pooch==1.8.0
 posthog==3.1.0
-protobuf==4.25.1
-pulsar-client==3.3.0
+preshed==3.0.9
+protobuf==4.23.4
+psutil==5.9.7
+pulsar-client==3.4.0
 pyasn1==0.5.1
 pyasn1-modules==0.3.0
+PyAudio==0.2.14
+pycparser==2.21
 pydantic==2.5.3
 pydantic_core==2.14.6
+pydub==0.25.1
+pynndescent==0.5.11
+pyparsing==3.1.1
 PyPika==0.48.9
+pypinyin==0.50.0
+pyproject_hooks==1.0.0
+pysbd==0.3.4
+PySocks==1.7.1
+python-crfsuite==0.9.10
 python-dateutil==2.8.2
 python-dotenv==1.0.0
 pytorch-triton-rocm==2.2.0+dafe145982
+pyttsx3==2.90
+pytz==2023.3.post1
 PyYAML==6.0.1
 regex==2023.12.25
 requests==2.31.0
@@ -501,30 +585,67 @@ rsa==4.9
 safetensors==0.4.1
 scikit-learn==1.3.2
 scipy==1.11.4
+selenium==4.16.0
 sentence-transformers==2.2.2
 sentencepiece==0.1.99
+silero-api-server==0.3.1
 six==1.16.0
+smart-open==6.4.0
 sniffio==1.3.0
+sortedcontainers==2.4.0
+sounddevice==0.4.6
+soundfile==0.12.1
+soxr==0.3.7
+spacy==3.7.2
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+srsly==2.4.8
+srt==3.5.3
+stanza==1.6.1
 starlette==0.32.0.post1
-sympy==1.11.1
+stream2sentence==0.2.2
+SudachiDict-core==20230927
+SudachiPy==0.6.8
+sympy==1.12
 tenacity==8.2.3
+tensorboard==2.15.1
+tensorboard-data-server==0.7.2
+thinc==8.2.2
 threadpoolctl==3.2.0
+tiktoken==0.5.2
 tokenizers==0.15.0
-torch==2.3.0.dev20231223+rocm5.7
-torchvision==0.18.0.dev20231223+rocm5.7
+torch==2.3.0.dev20240106+rocm5.7
+torchaudio==2.2.0.dev20240106+rocm5.7
+torchvision==0.18.0.dev20240106+rocm5.7
 tqdm==4.66.1
+trainer==0.0.36
 transformers==4.36.2
+trio==0.23.2
+trio-websocket==0.11.1
+triton==2.1.0
+TTS==0.21.3
 typer==0.9.0
 typing_extensions==4.9.0
+tzlocal==5.2
+umap-learn==0.5.5
+Unidecode==1.3.7
+unidic-lite==1.0.8
 urllib3==1.26.18
 uvicorn==0.25.0
 uvloop==0.19.0
+vosk==0.3.45
+wasabi==1.1.2
 watchfiles==0.21.0
+weasel==0.3.4
 websocket-client==1.7.0
 websockets==12.0
-webuiapi==0.9.6
+webuiapi==0.9.7
 Werkzeug==3.0.1
 wrapt==1.16.0
+wsproto==1.2.0
+wxPython==4.2.1
+xtts-api-server==0.8.3
+yarl==1.9.4
 zipp==3.17.0
 EOF
 
