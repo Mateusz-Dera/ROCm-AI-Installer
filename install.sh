@@ -386,7 +386,7 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/text-generation-webui/.venv/bin/activate
-python server.py --api --listen --loader=exllama  \
+python server.py --api --listen --loader=exllamav2  \
   --auto-devices --extensions sd_api_pictures send_pictures gallery 
 EOF
             chmod u+x run.sh
