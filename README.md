@@ -14,7 +14,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 1.30.AS02 [Beta])|
 |OS|Ubuntu 22.04|
-|Kernel|6.2.0-39-generic|
+|Kernel|6.5.0-14-generic|
 |ROCm|5.7.3|
 
 ## Instalation:
@@ -84,7 +84,7 @@ https://github.com/turboderp/exllamav2.git
 > [!Caution]
 > If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
 
-### SillyTavern (1.11.1) with Smart Context and XTTSv2
+### SillyTavern (1.11.1) with Smart Context and Silero TTS
 (Node + Python 3.11 with venv)
 
 https://github.com/SillyTavern/SillyTavern
@@ -92,11 +92,11 @@ https://github.com/SillyTavern/SillyTavern
 https://github.com/SillyTavern/SillyTavern-Extras
 
 > [!WARNING]
-> SillyTavern and SillyTavern-Extras are launched separately.
+> SillyTavern, SillyTavern-Extras are launched separately.
 
 > [!WARNING]
-> Smart Context extension must be manually enabled in SillyTavern settings and connect to SillyTavern-Extras.
+> Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings. SillyTavern must be connected to SillyTavern-Extras.
 
-<!-- ### DreamCraft3D -->
-<!-- (Python 3.11 with venv) -->
-<!-- https://github.com/deepseek-ai/DreamCraft3D -->
+![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/img/smart.png)
+
+![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/img/tts.png)
