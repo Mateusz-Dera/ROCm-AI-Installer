@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Default installation path
-default_installation_path="$HOME/AI_TEST"
+default_installation_path="$HOME/AI"
 # Global variable for installation path
 installation_path="$default_installation_path"
 
