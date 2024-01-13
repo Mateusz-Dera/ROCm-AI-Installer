@@ -97,6 +97,8 @@ https://github.com/SillyTavern/SillyTavern-Extras
 > [!WARNING]
 > Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings. SillyTavern must be connected to SillyTavern-Extras.
 
+![Connect](https://github.com/Mateusz-Dera/ROCm-AI-Installer/images/connect.png)
+
 ![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/images/smart.png)
 
 ![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/images/tts.png)
