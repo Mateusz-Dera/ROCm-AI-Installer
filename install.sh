@@ -35,12 +35,13 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 5 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 6 \
     0 "Set installation path ($installation_path)" \
-    1 "Install ROCm" \
+    1 "Install ROCm + basic packages" \
     2 "stable-diffusion-webui" \
     3 "text-generation-webui" \
     4 "SillyTavern + Extras + Silero TTS" \
+    5 "AudioCraft" \
     2>&1 > /dev/tty
 }
 
@@ -95,7 +96,7 @@ while true; do
             sudo apt install -y "linux-headers-$(uname -r)" \
                 "linux-modules-extra-$(uname -r)"
 
-            sudo apt-get install -y python3.11 python3.11-venv python3.11-dev wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+            sudo apt-get install -y python3.10 python3.10-venv python3.10-dev python3.11 python3.11-venv python3.11-dev wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
 
             sudo rm /etc/ld.so.conf.d/rocm.conf
             sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
@@ -508,15 +509,7 @@ opentelemetry-semantic-conventions==0.43b0
 opentelemetry-util-http==0.43b0
 outcome==1.3.0.post0
 overrides==7.4.0
-packaging==23.2
-pathspec==0.12.1
-Pillow==9.5.0
-platformdirs==4.1.0
-posthog==3.3.1
-protobuf==4.25.2
-psutil==5.9.7
-pulsar-client==3.4.0
-pyasn1==0.5.1
+packaging==23.2 --lsiten --username user --password password
 pyasn1-modules==0.3.0
 pycparser==2.21
 pydantic==2.5.3
@@ -591,6 +584,36 @@ python $installation_path/SillyTavern-extras/server.py --cuda --listen --enable-
 EOF
             chmod +x run.sh
             ;;
+
+        5)
+            #Action for Option 5
+            if ! command -v python3.10 &> /dev/null; then
+                echo "Install Python 3.10 first"
+                exit 1
+            fi
+
+            sudo apt-get update
+            sudo apt-get -y install ffmpeg
+
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -rf audiocraft
+            git clone https://github.com/facebookresearch/audiocraft.git
+            cd audiocraft
+            git checkout 69fea8b290ad1b4b40d28f92d1dfc0ab01dbab85
+            python3.10 -m venv .venv --prompt AudioCraft
+            source .venv/bin/activate
+            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
+
+tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
+source $installation_path/audiocraft/.venv/bin/activate
+python -m demos.musicgen_app
+EOF
+            chmod +x run.sh
+        ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30

@@ -102,3 +102,8 @@ https://github.com/SillyTavern/SillyTavern-Extras
 ![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/smart.png)
 
 ![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/tts.png)
+
+### AudioCraft
+(Python 3.10 with venv)
+
+https://github.com/facebookresearch/audiocraft
