@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/1.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/2.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm-5.7.md
 
@@ -50,7 +50,7 @@ wget -O - https://example.com/script.sh | bash
 
 ## Supported
 
-### stable-diffusion-webui
+### Stable Diffusion web UI
 (Python 3.11 with venv)
 
 https://github.com/AUTOMATIC1111/stable-diffusion-webui
@@ -58,7 +58,7 @@ https://github.com/AUTOMATIC1111/stable-diffusion-webui
 > [!TIP]
 > If you want to modify the parameters at startup, modify the webui-user.sh file in the stable-diffusion-webui directory after installation.
 
-### text-generation-webui
+### Text generation web UI
 (Python 3.11 with venv)
 
 Supported:
@@ -88,7 +88,7 @@ https://github.com/turboderp/exllamav2.git
 (Node + Python 3.11 with venv)
 
 https://github.com/SillyTavern/SillyTavern
-
+audiocraft-infinity-webui
 https://github.com/SillyTavern/SillyTavern-Extras
 
 > [!WARNING]
@@ -102,3 +102,8 @@ https://github.com/SillyTavern/SillyTavern-Extras
 ![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/smart.png)
 
 ![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/tts.png)
+
+### AudioCraft
+(Python 3.10 with venv)
+
+https://github.com/facebookresearch/audiocraft
