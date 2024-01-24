@@ -35,14 +35,13 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 7 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 6 \
     0 "Set installation path ($installation_path)" \
     1 "Install ROCm + basic packages" \
     2 "Stable Diffusion web UI" \
     3 "Text generation web UI" \
     4 "SillyTavern + Extras + Silero TTS" \
     5 "AudioCraft" \
-    6 "UnlimitedMusicGen" \
     2>&1 > /dev/tty
 }
 
@@ -75,13 +74,17 @@ while true; do
             sudo apt-get update
             sudo apt-get -y upgrade
             sudo apt purge -y rocm*
+            sudo apt purge -y nvidia*
+
+            sudo apt-get install -y wget
+
             sudo mkdir --parents --mode=0755 /etc/apt/keyrings
             sudo rm /etc/apt/keyrings/rocm.gpg
 
             sudo rm /etc/apt/sources.list.d/rocm.list
             wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
                 gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-            echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/5.7.3 jammy main" \
+            echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.0 jammy main" \
                 | sudo tee --append /etc/apt/sources.list.d/rocm.list
 
             sudo rm /etc/apt/preferences.d/rocm-pin-600
@@ -97,7 +100,7 @@ while true; do
             sudo apt install -y "linux-headers-$(uname -r)" \
                 "linux-modules-extra-$(uname -r)"
 
-            sudo apt-get install -y python3.10 python3.10-venv python3.10-dev python3.11 python3.11-venv python3.11-dev wget git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+            sudo apt-get install -y python3.10 python3.10-venv python3.10-dev python3.11 python3.11-venv python3.11-dev git git-lfs ffmpeg libstdc++-12-dev libtcmalloc-minimal4 python3 python3-venv python3-dev imagemagick libgl1 libglib2.0-0 amdgpu-dkms rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs libeigen3-dev
 
             sudo rm /etc/ld.so.conf.d/rocm.conf
             sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
@@ -123,7 +126,7 @@ EOF
             
             tee --append webui-user.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install --pre torch==2.3.0.dev20231223 torchvision==0.18.0.dev20231223+rocm5.7 --index-url https://download.pytorch.org/whl/nightly/rocm5.7"
+export TORCH_COMMAND="pip install --pre torch==2.3.0.dev20240118+rocm6.0  torchvision==0.18.0.dev20240118+rocm5.7 --index-url https://download.pytorch.org/whl/nightly"
 export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
@@ -749,33 +752,6 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/audiocraft/.venv/bin/activate
 python -m demos.musicgen_app
-EOF
-            chmod +x run.sh
-        ;;
-        6)
-        #Action for Option 5
-            if ! command -v python3.10 &> /dev/null; then
-                echo "Install Python 3.10 first"
-                exit 1
-            fi
-
-            mkdir -p $installation_path
-            cd $installation_path
-            rm -rf UnlimitedMusicGen
-            git clone https://github.com/Oncorporation/audiocraft.git UnlimitedMusicGen
-            cd UnlimitedMusicGen
-            git checkout c39d98965cda19603cafe215fa7b68fd69f41009
-            python3.10 -m venv .venv --prompt UnlimitedMusicGen
-            source .venv/bin/activate
-
-            pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
-
-tee --append run.sh <<EOF
-#!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export CUDA_VISIBLE_DEVICES=0
-source $installation_path/UnlimitedMusicGen/.venv/bin/activate
-python app.py
 EOF
             chmod +x run.sh
         ;;

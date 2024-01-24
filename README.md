@@ -107,8 +107,3 @@ https://github.com/SillyTavern/SillyTavern-Extras
 (Python 3.10 with venv)
 
 https://github.com/facebookresearch/audiocraft
-
-### UnlimitedMusicGen
-(Python 3.10 with venv)
-
-https://github.com/Oncorporation/audiocraft
