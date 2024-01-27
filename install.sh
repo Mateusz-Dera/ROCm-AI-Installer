@@ -74,6 +74,7 @@ while true; do
             sudo apt-get update
             sudo apt-get -y upgrade
             sudo apt purge -y rocm*
+            sudo apt purge -y hip*
             sudo apt purge -y nvidia*
 
             sudo apt-get install -y wget
@@ -359,7 +360,7 @@ EOF
             rm -Rf SillyTavern
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
-            git checkout cd88702e33c6cb58e844a47e2fc916f5237adc3a
+            git checkout e3ccaf70a10b862113f9bad8ae039fc7ce6570df
             mv ./start.sh ./run.sh
 
             # Default config
@@ -374,7 +375,7 @@ EOF
             rm -Rf SillyTavern-extras
             git clone https://github.com/SillyTavern/SillyTavern-extras.git
             cd SillyTavern-extras
-            git checkout 5fdf62e771e3b471cba8e4e4c115e250b87feee9
+            git checkout 9fae328a3908bfa871573e4aa41f668e2c441460
             
             python3.11 -m venv .venv --prompt SillyTavern-extras
             source .venv/bin/activate
@@ -462,7 +463,7 @@ opentelemetry-semantic-conventions==0.43b0
 opentelemetry-util-http==0.43b0
 outcome==1.3.0.post0
 overrides==7.4.0
-packaging==23.2 --lsiten --username user --password password
+packaging==23.2
 pyasn1-modules==0.3.0
 pycparser==2.21
 pydantic==2.5.3
