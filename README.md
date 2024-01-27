@@ -5,6 +5,14 @@ A script that automatically installs all the required stuff to run selected AI i
 [![Version](https://img.shields.io/badge/2.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
+
+### Supported interfaces
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|Stable Diffusion web UI|Python 3.11 with venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|Startup parameters are in the webui-user.sh file|
+|Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2.git|Startup parameters are in the run.sh file<br> Tested: ExLlamav2, Transformers, llama.ccp|
+|SillyTavern (1.11.2)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|SillyTavern and SillyTavern-Extras are launched separately<br> Startup parameters are in the run.sh files<br>SillyTavern must be connected to SillyTavern-Extras in settings<br>Smart Context requires an additional extension download in settings<br>![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/smart.png)|
+
 ### Test platform:
 |Name|Info|
 |:---|:---|
@@ -47,58 +55,16 @@ wget -O - https://example.com/script.sh | bash
 ./run.sh
 ```
 
-## Supported
-
-### Stable Diffusion web UI
-(Python 3.11 with venv)
-
-https://github.com/AUTOMATIC1111/stable-diffusion-webui
-
-> [!TIP]
-> If you want to modify the parameters at startup, modify the webui-user.sh file in the stable-diffusion-webui directory after installation.
-
-### Text generation web UI
-(Python 3.11 with venv)
-
-Supported:
-* llamaccp
-* exllamav2
-
-exllama is no longer supported
-
-https://github.com/oobabooga/text-generation-webui
-
-https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
-
-https://github.com/ROCmSoftwarePlatform/flash-attention
-
-https://github.com/turboderp/exllamav2.git
-
-> [!TIP]
-> If you want to modify the parameters at startup, modify the run.sh file in the text-generation-webui directory after installation.
-
-> [!TIP]
-> Superboogav2 requirements are installed, but the extension is disabled by default.
-
-> [!Caution]
-> If you have more than one ROCm device and are having trouble getting it to work, replace the 0 in CUDA_VISIBLE_DEVICES with the number of the correct device.
-
 ### SillyTavern (1.11.2) with Smart Context and Silero TTS
 (Node + Python 3.11 with venv)
-
-https://github.com/SillyTavern/SillyTavern
-audiocraft-infinity-webui
-https://github.com/SillyTavern/SillyTavern-Extras
 
 > [!WARNING]
 > SillyTavern, SillyTavern-Extras are launched separately.
 
 > [!WARNING]
-> Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings. SillyTavern must be connected to SillyTavern-Extras.
+> Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings and SillyTavern must be connected to SillyTavern-Extras.
 
 ![Connect](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/connect.png)
-
-![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/smart.png)
 
 ![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/tts.png)
 
