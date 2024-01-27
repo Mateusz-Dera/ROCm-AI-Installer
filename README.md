@@ -9,9 +9,10 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ### Supported interfaces
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|Stable Diffusion web UI|Python 3.11 with venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|Startup parameters are in the webui-user.sh file|
-|Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2.git|Startup parameters are in the run.sh file<br> Tested: ExLlamav2, Transformers, llama.ccp|
-|SillyTavern (1.11.2)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|SillyTavern and SillyTavern-Extras are launched separately<br> Startup parameters are in the run.sh files<br>SillyTavern must be connected to SillyTavern-Extras in settings<br>Smart Context requires an additional extension download in settings<br>![Smart Context](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/smart.png)|
+|Stable Diffusion web UI|Python 3.11 with venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
+|Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2.git|1. Startup parameters are in the run.sh file<br> 2. Tested: ExLlamav2, Transformers, llama.ccp|
+|SillyTavern (1.11.2)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. Startup parameters are in the run.sh files<br> 3. SillyTavern must be connected to SillyTavern-Extras in settings<br> 4. Smart Context requires an additional extension download in settings<br> 5. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
+|AudioCraft|Python 3.10 with venv|https://github.com/facebookresearch/audiocraft||
 
 ### Test platform:
 |Name|Info|
@@ -32,7 +33,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 > This script does not download any models. If the interface does not have defaults, download your own.
 
 > [!WARNING]
-> If you update, back up your settings and models, as reinstalling deletes the selected interface directory
+> If you update, back up your settings and models. Reinstallation deletes the previous directories.
 
 1. Add the user to the required groups.
 ```bash
@@ -54,21 +55,3 @@ wget -O - https://example.com/script.sh | bash
 ```bash
 ./run.sh
 ```
-
-### SillyTavern (1.11.2) with Smart Context and Silero TTS
-(Node + Python 3.11 with venv)
-
-> [!WARNING]
-> SillyTavern, SillyTavern-Extras are launched separately.
-
-> [!WARNING]
-> Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings and SillyTavern must be connected to SillyTavern-Extras.
-
-![Connect](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/connect.png)
-
-![Silero TTS](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/images/tts.png)
-
-### AudioCraft
-(Python 3.10 with venv)
-
-https://github.com/facebookresearch/audiocraft
