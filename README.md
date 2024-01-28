@@ -26,7 +26,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |ROCm|6.0|
 
 ## Instalation:
-> [!WARNING]
+> [!INFO]
 > First startup after installation of the selected interface may take longer.
 
 > [!WARNING]
