@@ -26,13 +26,13 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |ROCm|6.0|
 
 ## Instalation:
-> [!INFO]
+> [!Note]
 > First startup after installation of the selected interface may take longer.
 
-> [!WARNING]
+> [!Important]
 > This script does not download any models. If the interface does not have defaults, download your own.
 
-> [!WARNING]
+> [!Caution]
 > If you update, back up your settings and models. Reinstallation deletes the previous directories.
 
 1. Add the user to the required groups.
