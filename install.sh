@@ -41,7 +41,7 @@ show_menu() {
     2 "Stable Diffusion web UI" \
     3 "Text generation web UI" \
     4 "SillyTavern + Extras + Silero TTS" \
-    5 "AudioCraft" \
+    5 "TTS Generation WebUI" \
     2>&1 > /dev/tty
 }
 
@@ -548,23 +548,35 @@ EOF
 
             mkdir -p $installation_path
             cd $installation_path
-            rm -rf audiocraft
-            git clone https://github.com/facebookresearch/audiocraft.git
-            cd audiocraft
-            git checkout 69fea8b290ad1b4b40d28f92d1dfc0ab01dbab85
-            python3.10 -m venv .venv --prompt AudioCraft
+            rm -rf tts-generation-webui
+            git clone https://github.com/rsxdalv/tts-generation-webui.git
+            cd tts-generation-webui
+            git checkout d1aec3f7d2a5bf4a1c990abc7a5c16fcc266483b
+            
+            python3.10 -m venv .venv --prompt TTS
             source .venv/bin/activate
-
+            
             tee --append custom_requirements.txt <<EOF
+accelerate==0.26.1
 aiofiles==23.2.1
 altair==5.2.0
 annotated-types==0.6.0
-antlr4-python3-runtime==4.9.3
+antlr4-python3-runtime==4.8
 anyio==4.2.0
+appdirs==1.4.4
+atlastk==0.13.3
 attrs==23.2.0
+audiolm-pytorch==1.1.4
 audioread==3.0.1
 av==11.0.0
+bark==0.1.5
+bark-hubert-quantizer==0.0.4
+beartype==0.17.0
+bitarray==2.9.2
+bleach==6.1.0
 blis==0.7.11
+boto3==1.34.30
+botocore==1.34.30
 catalogue==2.0.10
 certifi==2023.11.17
 cffi==1.16.0
@@ -579,70 +591,98 @@ confection==0.1.4
 contourpy==1.2.0
 cycler==0.12.1
 cymem==2.0.8
+Cython==3.0.8
 decorator==5.1.1
+deepspeed==0.8.3
 demucs==4.0.1
 docopt==0.6.2
 dora_search==0.1.12
 einops==0.7.0
+einx==0.1.3
+ema-pytorch==0.3.3
 encodec==0.1.1
+entrypoints==0.4
 exceptiongroup==1.2.0
 fastapi==0.109.0
+fastjsonschema==2.19.1
+ffmpeg==1.4
+ffmpeg-python==0.2.0
 ffmpy==0.3.1
 filelock==3.13.1
 flashy==0.0.2
 fonttools==4.47.2
+frozendict==2.4.0
 fsspec==2023.12.2
-gradio==4.15.0
-gradio_client==0.8.1
+funcy==2.0
+future==0.18.3
+gradio==3.48.0
+gradio_client==0.6.1
 h11==0.14.0
+hjson==3.1.0
 httpcore==1.0.2
 httpx==0.26.0
 huggingface-hub==0.20.3
 hydra-colorlog==1.2.0
-hydra-core==1.3.2
+hydra-core==1.1.0
 idna==3.6
 importlib-resources==6.1.1
+inflect==7.0.0
 Jinja2==3.1.3
+jmespath==1.0.1
 joblib==1.3.2
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
 julius==0.2.7
+jupyter_core==5.7.1
 kiwisolver==1.4.5
 lameenc==1.7.0
 langcodes==3.3.0
 lazy_loader==0.3
-librosa==0.10.1
+librosa==0.9.1
 lightning-utilities==0.10.1
+lion-pytorch==0.1.2
 lit==17.0.6
 llvmlite==0.41.1
+local-attention==1.9.0
+lxml==5.1.0
 markdown-it-py==3.0.0
 MarkupSafe==2.1.4
 matplotlib==3.8.2
 mdurl==0.1.2
+mistune==3.0.2
 mpmath==1.3.0
 msgpack==1.0.7
 murmurhash==1.0.10
+nbconvert==5.3.1
+nbformat==5.9.2
 networkx==3.2.1
+ninja==1.11.1.1
 num2words==0.5.13
 numba==0.58.1
 numpy==1.26.3
-omegaconf==2.3.0
+omegaconf==2.1.2
 openunmix==1.2.1
 orjson==3.9.12
 packaging==23.2
 pandas==2.2.0
+pandocfilters==1.5.1
 pillow==10.2.0
 platformdirs==4.1.0
 pooch==1.8.0
+portalocker==2.8.2
 preshed==3.0.9
+progressbar==2.5
 protobuf==4.25.2
+psutil==5.9.8
+py-cpuinfo==9.0.0
 pycparser==2.21
-pydantic==2.5.3
+pydantic==1.9.1
 pydantic_core==2.14.6
 pydub==0.25.1
 Pygments==2.17.2
 pyparsing==3.1.1
 python-dateutil==2.8.2
+python-dotenv==1.0.0
 python-multipart==0.0.6
 pytorch-triton-rocm==2.1.0
 pytz==2023.3.post1
@@ -650,11 +690,15 @@ PyYAML==6.0.1
 referencing==0.32.1
 regex==2023.12.25
 requests==2.31.0
+resampy==0.4.2
 retrying==1.3.4
 rich==13.7.0
+rotary-embedding-torch==0.3.6
 rpds-py==0.17.1
 ruff==0.1.14
-safetensors==0.4.1
+s3transfer==0.10.0
+sacrebleu==2.4.0
+safetensors==0.3.1
 scikit-learn==1.4.0
 scipy==1.12.0
 semantic-version==2.10.0
@@ -663,7 +707,9 @@ shellingham==1.5.4
 six==1.16.0
 smart-open==6.4.0
 sniffio==1.3.0
+sounddevice==0.4.6
 soundfile==0.12.1
+sox==1.4.1
 soxr==0.3.7
 spacy==3.7.2
 spacy-legacy==3.0.12
@@ -671,7 +717,10 @@ spacy-loggers==1.0.5
 srsly==2.4.8
 starlette==0.35.1
 submitit==1.5.1
+suno-bark @ git+https://github.com/rsxdalv/bark@0d91823ead3d87c317f12d01d325fca9408c669e
 sympy==1.12
+tabulate==0.9.0
+testpath==0.6.0
 thinc==8.2.2
 threadpoolctl==3.2.0
 tokenizers==0.15.1
@@ -680,28 +729,83 @@ toolz==0.12.0
 torch==2.1.0+rocm5.6
 torchaudio==2.1.0+rocm5.6
 torchmetrics==1.3.0.post0
+tornado==4.2
+tortoise-tts @ git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
 tqdm==4.66.1
-transformers==4.37.0
+traitlets==5.14.1
+transformers==4.36.1
 treetable==0.2.5
 typer==0.9.0
 typing_extensions==4.9.0
 tzdata==2023.4
-urllib3==2.1.0
+Unidecode==1.3.8
+urllib3==2.0.7
 uvicorn==0.26.0
+vector_quantize_pytorch==1.12.17
+vocos==0.0.2
 wasabi==1.1.2
 weasel==0.3.4
+webencodings==0.5.1
 websockets==11.0.3
 xformers==0.0.22.post7
 EOF
 
+#tortoise-tts @ git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
+
+
             pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
+            
+            git clone https://github.com/neonbjb/tortoise-tts.git
+            cd tortoise-tts
+            git checkout 3eee92a4c859ab69c9fc3595ad16dc1a8c756d2b
+            rm requirements.txt
+            tee --append requirements.txt <<EOF
+            tqdm
+rotary_embedding_torch
+transformers
+tokenizers
+inflect
+progressbar
+einops==0.4.1
+unidecode
+scipy
+librosa==0.9.1
+ffmpeg
+numpy
+numba
+torchaudio
+threadpoolctl
+llvmlite
+appdirs
+nbconvert==5.3.1
+tornado==4.2
+pydantic==1.9.1
+deepspeed==0.8.3
+py-cpuinfo
+hjson
+psutil
+sounddevice
+EOF
+            pip install -r requirements.txt
+            cd $installation_path/tts-generation-webui
+
+            git clone https://github.com/Sharrnah/fairseq.git
+            cd fairseq 
+            git checkout bc8e52fb23fc31de7a37cda54f38d8be68f957ce
+            sed -i 's/"hydra-core>=1.0.7,<1.1",/"hydra-core==1.1",/' setup.py
+            sed -i 's/"omegaconf<2.1",/"omegaconf",/' setup.py
+            pip install -e .
+
+            cd $installation_path/tts-generation-webui
+
+            pip install git+https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer@816467b243748e003b6905a84c07e7f16ac2803c
 
 tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
-source $installation_path/audiocraft/.venv/bin/activate
-python -m demos.musicgen_app
+source $installation_path/tts-generation-webui/.venv/bin/activate
+python3 server.py
 EOF
             chmod +x run.sh
         ;;

@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/2.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/2.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -12,7 +12,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Stable Diffusion web UI|Python 3.11 with venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
 |Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2.git|1. Startup parameters are in the run.sh file<br> 2. Tested: ExLlamav2, Transformers, llama.ccp|
 |SillyTavern (1.11.2)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. Startup parameters are in the run.sh files<br> 3. SillyTavern must be connected to SillyTavern-Extras in settings<br> 4. Smart Context requires an additional extension download in settings<br> 5. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
-|AudioCraft|Python 3.10 with venv|https://github.com/facebookresearch/audiocraft||
+|TTS Generation WebUI|Python 3.10 with venv|https://github.com/rsxdalv/tts-generation-webui<br> https://github.com/facebookresearch/audiocraft<br> https://github.com/rsxdalv/tortoise-tts<br> https://github.com/rsxdalv/bark<br> https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer|1. Startup parameters are in the run.sh file<br> 2. Magnet, Bark Voice Clone doesn't work<br> 3. Vocos is untested|
 
 ### Test platform:
 |Name|Info|
@@ -22,7 +22,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (2.06.AS03 [Beta])|
 |OS|Ubuntu 22.04|
-|Kernel|6.5.0-14-generic|
+|Kernel|6.5.0-15-generic|
 |ROCm|6.0|
 
 ## Instalation:
