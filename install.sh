@@ -265,7 +265,7 @@ requests-oauthlib==1.3.1
 rich==13.7.0
 rouge==1.0.1
 rouge-score==0.1.2
-rpds-py==0.17.1
+rpds-py
 rsa==4.9
 sacrebleu==1.5.0
 safetensors==0.4.1
@@ -566,11 +566,9 @@ anyio==4.2.0
 appdirs==1.4.4
 atlastk==0.13.3
 attrs==23.2.0
-audiolm-pytorch==1.1.4
 audioread==3.0.1
 av==11.0.0
 bark==0.1.5
-bark-hubert-quantizer==0.0.4
 beartype==0.17.0
 bitarray==2.9.2
 bleach==6.1.0
@@ -730,7 +728,6 @@ torch==2.1.0+rocm5.6
 torchaudio==2.1.0+rocm5.6
 torchmetrics==1.3.0.post0
 tornado==4.2
-tortoise-tts @ git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
 tqdm==4.66.1
 traitlets==5.14.1
 transformers==4.36.1
@@ -752,7 +749,7 @@ EOF
 
 #tortoise-tts @ git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
 
-
+            pip3 install --upgrade pip
             pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
             
             git clone https://github.com/neonbjb/tortoise-tts.git
@@ -760,13 +757,13 @@ EOF
             git checkout 3eee92a4c859ab69c9fc3595ad16dc1a8c756d2b
             rm requirements.txt
             tee --append requirements.txt <<EOF
-            tqdm
+tqdm
 rotary_embedding_torch
 transformers
 tokenizers
 inflect
 progressbar
-einops==0.4.1
+einops
 unidecode
 scipy
 librosa==0.9.1
@@ -787,18 +784,20 @@ psutil
 sounddevice
 EOF
             pip install -r requirements.txt
-            cd $installation_path/tts-generation-webui
 
-            git clone https://github.com/Sharrnah/fairseq.git
+            cd $installation_path/tts-generation-webui
+            git clone https://github.com/facebookresearch/fairseq.git
             cd fairseq 
-            git checkout bc8e52fb23fc31de7a37cda54f38d8be68f957ce
+            git checkout 3f0f20f2d12403629224347664b3e75c13b2c8e0
             sed -i 's/"hydra-core>=1.0.7,<1.1",/"hydra-core==1.1",/' setup.py
             sed -i 's/"omegaconf<2.1",/"omegaconf",/' setup.py
-            pip install -e .
+            pip install .
 
             cd $installation_path/tts-generation-webui
 
             pip install git+https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer@816467b243748e003b6905a84c07e7f16ac2803c
+
+            pip install audiolm-pytorch==1.1.4
 
 tee --append run.sh <<EOF
 #!/bin/bash
