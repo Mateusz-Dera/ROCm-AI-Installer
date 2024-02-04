@@ -146,7 +146,7 @@ EOF
             rm -rf text-generation-webui
             git clone https://github.com/oobabooga/text-generation-webui.git
             cd text-generation-webui
-            git checkout 837bd888e4cf239094d9b1cabcc342266fee11c0
+            git checkout 4f3fdf1b5ff6884b9899a3630b3ed9aae27decbf
             python3.11 -m venv .venv --prompt TextGen
             source .venv/bin/activate
 
@@ -197,7 +197,7 @@ gradio==3.50.2
 gradio_client==0.6.1
 grpcio==1.60.0
 h11==0.14.0
-hqq==0.1.2
+hqq==0.1.2.post1
 httpcore==1.0.2
 httpx==0.26.0
 huggingface-hub==0.20.3
@@ -211,8 +211,8 @@ jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
 lit==15.0.7
-llama_cpp_python @ https://github.com/oobabooga/llama-cpp-wheels/releases/download/cpu/llama_cpp_python-0.2.31+cpuavx2-cp311-cp311-manylinux_2_31_x86_64.whl
-llama_cpp_python_cuda @ https://github.com/oobabooga/llama-cpp-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.31+rocm5.6.1-cp311-cp311-manylinux_2_31_x86_64.whl
+llama_cpp_python @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.36+cpuavx2-cp311-cp311-manylinux_2_31_x86_64.whl
+llama_cpp_python_cuda @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.36+rocm5.6.1-cp311-cp311-manylinux_2_31_x86_64.whl
 lm-eval==0.3.0
 Markdown==3.5.2
 markdown-it-py==3.0.0
@@ -265,7 +265,7 @@ requests-oauthlib==1.3.1
 rich==13.7.0
 rouge==1.0.1
 rouge-score==0.1.2
-rpds-py
+rpds-py==0.17.1
 rsa==4.9
 sacrebleu==1.5.0
 safetensors==0.4.1
@@ -320,20 +320,20 @@ EOF
             # cd $installation_path/text-generation-webui
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
             cd bitsandbytes-rocm-5.6
-            git checkout 62353b0200b8557026c176e74ac48b84b953a854            
+            git checkout 62353b0200b8557026c176e74ac48b84b953a854
             make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.0/
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly
 
             cd $installation_path/text-generation-webui
             git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
             cd flash-attention
-            git checkout 68aac13d3b3296d13062ab3ff40fe58d5e7b3023
+            git checkout ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
             pip install .
 
             cd $installation_path/text-generation-webui
             git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
             cd repositories/exllamav2
-            git checkout 8be8867548d3dc88e4e6f489cc31d3177c94bd8b
+            git checkout 312f400723c0375d0f391524d6af4a98dd3f150d
             pip install . --index-url https://download.pytorch.org/whl/nightly
 
             cd $installation_path/text-generation-webui
@@ -360,7 +360,7 @@ EOF
             rm -Rf SillyTavern
             git clone https://github.com/SillyTavern/SillyTavern.git
             cd SillyTavern
-            git checkout e3ccaf70a10b862113f9bad8ae039fc7ce6570df
+            git checkout 08e3fc60c445989f1910e7e9dfc5f62ef99c884e
             mv ./start.sh ./run.sh
 
             # Default config
@@ -375,7 +375,7 @@ EOF
             rm -Rf SillyTavern-extras
             git clone https://github.com/SillyTavern/SillyTavern-extras.git
             cd SillyTavern-extras
-            git checkout 9fae328a3908bfa871573e4aa41f668e2c441460
+            git checkout fe9bff41370427f14fa5ae951ee24f0fb1887642
             
             python3.11 -m venv .venv --prompt SillyTavern-extras
             source .venv/bin/activate
@@ -526,7 +526,7 @@ yarl==1.9.4
 zipp==3.17.0
 EOF
 
-            pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+            pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.7
 
             cd $installation_path/SillyTavern-extras
             tee --append run.sh <<EOF
@@ -746,10 +746,6 @@ webencodings==0.5.1
 websockets==11.0.3
 xformers==0.0.22.post7
 EOF
-
-#tortoise-tts @ git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
-
-            pip3 install --upgrade pip
             pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
             
             git clone https://github.com/neonbjb/tortoise-tts.git
@@ -797,6 +793,7 @@ EOF
 
             pip install audiolm-pytorch==1.1.4
             pip install git+https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer@816467b243748e003b6905a84c07e7f16ac2803c
+            pip install git+https://github.com/rsxdalv/tortoise-tts@e4711433b12bcd1086840649e1830ad5c3fa1a76
 
 tee --append run.sh <<EOF
 #!/bin/bash
