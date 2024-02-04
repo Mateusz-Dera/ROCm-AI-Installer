@@ -526,7 +526,7 @@ yarl==1.9.4
 zipp==3.17.0
 EOF
 
-            pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.7
+            pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly
 
             cd $installation_path/SillyTavern-extras
             tee --append run.sh <<EOF
