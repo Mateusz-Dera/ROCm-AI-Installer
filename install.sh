@@ -795,9 +795,8 @@ EOF
 
             cd $installation_path/tts-generation-webui
 
-            pip install git+https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer@816467b243748e003b6905a84c07e7f16ac2803c
-
             pip install audiolm-pytorch==1.1.4
+            pip install git+https://github.com/rsxdalv/bark-voice-cloning-HuBERT-quantizer@816467b243748e003b6905a84c07e7f16ac2803c
 
 tee --append run.sh <<EOF
 #!/bin/bash
