@@ -35,13 +35,14 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 6 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 7 \
     0 "Set installation path ($installation_path)" \
     1 "Install ROCm + basic packages" \
     2 "Stable Diffusion web UI" \
     3 "Text generation web UI" \
     4 "SillyTavern + Extras + Silero TTS" \
     5 "AudioCraft" \
+    6 "koboldcpp" \
     2>&1 > /dev/tty
 }
 
@@ -704,6 +705,30 @@ source $installation_path/audiocraft/.venv/bin/activate
 python -m demos.musicgen_app
 EOF
         chmod +x run.sh       
+        ;;
+
+        6)
+            #Action for Option 6
+            if ! command -v python3.11 &> /dev/null; then
+                echo "Install Python 3.11 first"
+                exit 1
+            fi
+            mkdir -p $installation_path
+            cd $installation_path
+            rm -rf koboldcpp-rocm
+            git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
+            cd koboldcpp-rocm
+            git checkout d0d4c80fe9b107f04dc6ab4454f6508f053c060d
+            python3.11 -m venv .venv --prompt koboldcpp
+            source .venv/bin/activate
+            make LLAMA_HIPBLAS=1 -j4
+            tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
+source $installation_path/koboldcpp-rocm/.venv/bin/activate
+python koboldcpp.py
+EOF            
         ;;
         *)
             # Cancel or Exit
