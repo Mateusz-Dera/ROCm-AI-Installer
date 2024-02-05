@@ -13,7 +13,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Startup parameters are in the run.sh file<br> 2. Tested: ExLlamav2, Transformers, llama.ccp|
 |SillyTavern (1.11.3)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. Startup parameters are in the run.sh files<br> 3. SillyTavern must be connected to SillyTavern-Extras in settings<br> 4. Smart Context requires an additional extension download in settings<br> 5. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
 |AudioCraft|Python 3.10 with venv|https://github.com/facebookresearch/audiocraft||
-|koboldcpp-rocm||https://github.com/YellowRoseCx/koboldcpp-rocm||
+|koboldcpp-rocm|Python 3.11 with venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
 
 ### Test platform:
 |Name|Info|

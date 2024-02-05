@@ -697,7 +697,7 @@ EOF
 
         pip install -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
         
-tee --append run.sh <<EOF
+        tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
@@ -708,28 +708,60 @@ EOF
         ;;
 
         6)
-            #Action for Option 6
-            if ! command -v python3.11 &> /dev/null; then
-                echo "Install Python 3.11 first"
-                exit 1
-            fi
-            mkdir -p $installation_path
-            cd $installation_path
-            rm -rf koboldcpp-rocm
-            git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
-            cd koboldcpp-rocm
-            git checkout d0d4c80fe9b107f04dc6ab4454f6508f053c060d
-            python3.11 -m venv .venv --prompt koboldcpp
-            source .venv/bin/activate
-            make LLAMA_HIPBLAS=1 -j4
-            tee --append run.sh <<EOF
+        #Action for Option 6
+        if ! command -v python3.11 &> /dev/null; then
+            echo "Install Python 3.11 first"
+            exit 1
+        fi
+
+        sudo apt-get update
+        sudo apt-get -y install python3-tk
+
+        mkdir -p $installation_path
+        cd $installation_path
+        rm -rf koboldcpp-rocm
+        git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
+        cd koboldcpp-rocm
+        git checkout d0d4c80fe9b107f04dc6ab4454f6508f053c060d
+        python3.11 -m venv .venv --prompt koboldcpp
+        source .venv/bin/activate
+        make LLAMA_HIPBLAS=1 -j4
+        tee --append custom_requirements.txt <<EOF
+certifi==2024.2.2
+charset-normalizer==3.3.2
+customtkinter==5.2.2
+darkdetect==0.8.0
+filelock==3.13.1
+fsspec==2024.2.0
+gguf==0.6.0
+huggingface-hub==0.20.3
+idna==3.6
+numpy==1.24.4
+packaging==23.2
+protobuf==4.25.2
+PyYAML==6.0.1
+regex==2023.12.25
+requests==2.31.0
+safetensors==0.4.2
+sentencepiece==0.1.98
+tokenizers==0.15.1
+tqdm==4.66.1
+transformers==4.37.2
+typing_extensions==4.9.0
+urllib3==2.2.0
+EOF
+        pip install -r custom_requirements.txt
+        
+        tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/koboldcpp-rocm/.venv/bin/activate
 python koboldcpp.py
-EOF            
+EOF
+        chmod +x run.sh
         ;;
+
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
