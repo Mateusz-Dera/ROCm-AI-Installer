@@ -42,7 +42,7 @@ show_menu() {
     3 "Text generation web UI" \
     4 "SillyTavern + Extras + Silero TTS" \
     5 "AudioCraft" \
-    6 "koboldcpp" \
+    6 "KoboldCPP" \
     2>&1 > /dev/tty
 }
 
@@ -723,7 +723,7 @@ EOF
         git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
         cd koboldcpp-rocm
         git checkout d0d4c80fe9b107f04dc6ab4454f6508f053c060d
-        python3.11 -m venv .venv --prompt koboldcpp
+        python3.11 -m venv .venv --prompt Kobold
         source .venv/bin/activate
         make LLAMA_HIPBLAS=1 -j4
         tee --append custom_requirements.txt <<EOF
