@@ -35,7 +35,7 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 7 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 8 \
     0 "Set installation path ($installation_path)" \
     1 "Install ROCm + basic packages" \
     2 "Stable Diffusion web UI" \
@@ -43,6 +43,7 @@ show_menu() {
     4 "SillyTavern + Extras + Silero TTS" \
     5 "AudioCraft" \
     6 "KoboldCPP" \
+    7 "WhisperSpeech web UI" \
     2>&1 > /dev/tty
 }
 
@@ -761,7 +762,62 @@ python koboldcpp.py
 EOF
         chmod +x run.sh
         ;;
+        7)
+        # Action for Option 3
+        if ! command -v python3.11 &> /dev/null; then
+            echo "Install Python 3.11 first"
+            exit 1
+        fi
 
+        mkdir -p $installation_path
+        cd $installation_path
+        rm -rf whisperspeech-webui
+        git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
+        cd whisperspeech-webui
+        # git checkout 4f3fdf1b5ff6884b9899a3630b3ed9aae27decbf
+        python3.11 -m venv .venv --prompt WhisperSpeech
+        source .venv/bin/activate
+
+        pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
+        mpmath fsspec MarkupSafe certifi filelock networkx \
+        sympy packaging requests \
+        --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
+        pip install --pre torch==2.3.0.dev20231218 torchvision==0.18.0.dev20231218+rocm5.7 \
+        torchtext==0.17.0.dev20231218+cpu torchaudio triton pytorch-triton pytorch-triton-rocm \
+        --index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
+        tee --append custom_requirements.txt <<EOF
+EOF
+            cd $installation_path/whisperspeech-webui
+            pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
+            cd $installation_path/text-generation-webui
+            git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
+            cd bitsandbytes-rocm-5.6
+            git checkout 62353b0200b8557026c176e74ac48b84b953a854
+            BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
+            make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.0/
+            pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm5.7
+
+
+            cd $installation_path/whisperspeech-webui
+            git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
+            cd flash-attention
+            git checkout ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
+            pip install .
+
+            cd $installation_path/whisperspeech-webui
+            tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
+source $installation_path/whisperspeech-webui/.venv/bin/activate
+python3 webui.py
+EOF
+            chmod u+x run.sh
+            ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
