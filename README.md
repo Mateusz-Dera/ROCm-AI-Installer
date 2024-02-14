@@ -47,7 +47,7 @@ sudo reboot
 ```
 3. Run installer 
 ```bash
-wget -O - https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/install.sh | bash
+bash ./install.sh
 ```
 4. Select installation path.
 5. Select ROCm installation if you are upgrading or running the script for the first time.
