@@ -14,7 +14,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |SillyTavern (1.11.4)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. SillyTavern must be connected to SillyTavern-Extras in settings<br> 3. Smart Context requires an additional extension download in settings<br> 4. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
 |AudioCraft|Python 3.10 with venv|https://github.com/facebookresearch/audiocraft||
 |KoboldCPP|Python 3.11 with venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|WhisperSpeech web UI|Python 3.11 with venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br>https://github.com/collabora/WhisperSpeech||
+|WhisperSpeech web UI|Python 3.11 with venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 
 ### Test platform:
 |Name|Info|
