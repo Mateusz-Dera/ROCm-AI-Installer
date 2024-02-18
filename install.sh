@@ -35,7 +35,7 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 7 \
+    whiptail --title "Menu Example" --menu "Choose an option:" 15 100 8 \
     0 "Set installation path ($installation_path)" \
     1 "Install ROCm + basic packages" \
     2 "Stable Diffusion web UI" \
@@ -43,6 +43,7 @@ show_menu() {
     4 "SillyTavern + Extras + Silero TTS" \
     5 "AudioCraft" \
     6 "KoboldCPP" \
+    7 "WhisperSpeech web UI" \
     2>&1 > /dev/tty
 }
 
@@ -147,7 +148,7 @@ EOF
             rm -rf text-generation-webui
             git clone https://github.com/oobabooga/text-generation-webui.git
             cd text-generation-webui
-            git checkout 4f3fdf1b5ff6884b9899a3630b3ed9aae27decbf
+            git checkout 78380759904eb294e57fa2f287122c8e3866f236
             python3.11 -m venv .venv --prompt TextGen
             source .venv/bin/activate
 
@@ -315,27 +316,19 @@ xxhash==3.4.1
 yarl==1.9.4
 zstandard==0.22.0
 EOF
+
+pip install --pre torch torchvision torchtext torchaudio triton pytorch-triton pytorch-triton-rocm --index-url https://download.pytorch.org/whl/nightly
             cd $installation_path/text-generation-webui
             pip install --pre -r custom_requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly
 
-            # cd $installation_path/text-generation-webui
             git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
             cd bitsandbytes-rocm-5.6
             git checkout 62353b0200b8557026c176e74ac48b84b953a854
             make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.0/
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly
 
-            cd $installation_path/text-generation-webui
-            git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
-            cd flash-attention
-            git checkout ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
-            pip install .
-
-            cd $installation_path/text-generation-webui
-            git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
-            cd repositories/exllamav2
-            git checkout 312f400723c0375d0f391524d6af4a98dd3f150d
-            pip install . --index-url https://download.pytorch.org/whl/nightly
+            pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
+            pip install git+https://github.com/turboderp/exllamav2@8c3b30dc4ba32ab227c6d1888e8e6a3d0a73749d --index-url https://download.pytorch.org/whl/nightly
 
             cd $installation_path/text-generation-webui
             tee --append run.sh <<EOF
@@ -722,7 +715,7 @@ EOF
         rm -rf koboldcpp-rocm
         git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
         cd koboldcpp-rocm
-        git checkout d0d4c80fe9b107f04dc6ab4454f6508f053c060d
+        git checkout b9860f7e1b3589459a4f15f3d3a4759631dcb3e1
         python3.11 -m venv .venv --prompt Kobold
         source .venv/bin/activate
         make LLAMA_HIPBLAS=1 -j4
@@ -761,7 +754,34 @@ python koboldcpp.py
 EOF
         chmod +x run.sh
         ;;
+        7)
+        # Action for Option 3
+        if ! command -v python3.11 &> /dev/null; then
+            echo "Install Python 3.11 first"
+            exit 1
+        fi
 
+        mkdir -p $installation_path
+        cd $installation_path
+        rm -rf whisperspeech-webui
+        git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
+        cd whisperspeech-webui
+        git checkout d7c1f0542a49b8bfa1b2a2aeb5303e39bfe4b2ac
+        python3.11 -m venv .venv --prompt WhisperSpeech
+        source .venv/bin/activate
+
+        pip install -r requirements_rocm.txt
+        pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
+
+        tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
+source $installation_path/whisperspeech-webui/.venv/bin/activate
+python3 webui.py
+EOF
+            chmod u+x run.sh
+            ;;
         *)
             # Cancel or Exit
             whiptail --yesno "Do you really want to exit?" 10 30
