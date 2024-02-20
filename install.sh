@@ -328,7 +328,7 @@ pip install --pre torch torchvision torchtext torchaudio triton pytorch-triton p
             pip install . --extra-index-url https://download.pytorch.org/whl/nightly
 
             pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
-            pip install git+https://github.com/turboderp/exllamav2@8c3b30dc4ba32ab227c6d1888e8e6a3d0a73749d --index-url https://download.pytorch.org/whl/nightly
+            pip install git+https://github.com/turboderp/exllamav2.git@c8e2bf45947812ae846343aa2b1808db13ff3c1e --index-url https://download.pytorch.org/whl/nightly
 
             cd $installation_path/text-generation-webui
             tee --append run.sh <<EOF
