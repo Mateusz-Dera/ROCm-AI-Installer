@@ -129,7 +129,7 @@ EOF
             
             tee --append webui-user.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install --pre torch==2.3.0.dev20240118+rocm6.0  torchvision==0.18.0.dev20240118+rocm5.7 --index-url https://download.pytorch.org/whl/nightly"
+export TORCH_COMMAND="pip install --pre torch==2.3.0.dev20240306+rocm6.0  torchvision==0.18.0.dev20240306+rocm6.0 --index-url https://download.pytorch.org/whl/nightly"
 export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
