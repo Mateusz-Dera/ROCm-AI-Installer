@@ -2,19 +2,36 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/2.3.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/3.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
-### Supported interfaces
+### Text generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|Stable Diffusion web UI|Python 3.11 with venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
-|Text generation web UI|Python 3.11 with venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp|
-|SillyTavern (1.11.4)<br> Smart Context<br> Silero TTS|Node + Python 3.11 with venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. SillyTavern must be connected to SillyTavern-Extras in settings<br> 3. Smart Context requires an additional extension download in settings<br> 4. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
-|AudioCraft|Python 3.10 with venv|https://github.com/facebookresearch/audiocraft||
-|KoboldCPP|Python 3.11 with venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|WhisperSpeech web UI|Python 3.11 with venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
+|KoboldCPP|Python 3.11 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
+|Text generation web UI|Python 3.11 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp<br> 2. Smart Context and Silero TTS  Requrements for Superbooga and Superbooga V2 are installed, but the extensions are not enabled by default |
+|SillyTavern (1.11.6)<br> SillyTavern-Extras|Node<br>Python 3.11 venv|https://github.com/SillyTavern/SillyTavern<br> https://github.com/SillyTavern/SillyTavern-Extras|1. SillyTavern and SillyTavern-Extras are launched separately<br> 2. SillyTavern must be connected to SillyTavern-Extras in settings<br> 3. Smart Context and Silero TTS are installed and enabled by default <br> 4. Smart Context requires an additional extension download in settings<br> 5. Smart Context and Silero TTS extensions must be manually configured in SillyTavern settings|
+
+### Image generation
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
+
+### Music generation
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|AudioCraft|Python 3.10 venv|https://github.com/facebookresearch/audiocraft||
+
+### Voice generation
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|WhisperSpeech web UI|Python 3.11 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
+
+### 3D generation
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|TripoSR|Python3.11 venv|https://github.com/VAST-AI-Research/TripoSR<br> https://github.com/ROCmSoftwarePlatform/flash-attention.git|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
 
 ### Test platform:
 |Name|Info|
@@ -24,8 +41,8 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (2.08.AS01 [Beta])|
 |OS|Ubuntu 22.04|
-|Kernel|6.5.0-18-generic|
-|ROCm|6.0|
+|Kernel|6.5.0-26-generic|
+|ROCm|6.0.2|
 
 ## Instalation:
 > [!Note]
