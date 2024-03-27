@@ -534,7 +534,7 @@ EOF
 
     git clone https://github.com/turboderp/exllamav2 $installation_path/text-generation-webui/repositories/exllamav2
     cd $installation_path/text-generation-webui/repositories/exllamav2
-    git checkout 2a2984567ee85ed41e676ca0ef1954653c5b48b5
+    git checkout b92cc4f35782db3394e9d7eb3d4d38a44fefa376
     pip install .  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.0
 
     cd $installation_path/text-generation-webui
