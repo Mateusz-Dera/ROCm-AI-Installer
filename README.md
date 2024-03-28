@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/3.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/3.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -17,6 +17,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
+|ANIMAGINE XL 3.1|Python 3.11 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1<br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
 
 ### Music generation
 |Name|Enviroment|Links|Additional information|
