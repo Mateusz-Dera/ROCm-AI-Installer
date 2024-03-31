@@ -2,7 +2,7 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/3.2.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/3.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 

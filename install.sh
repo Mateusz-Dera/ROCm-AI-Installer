@@ -332,249 +332,28 @@ install_text_generation_web_ui() {
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
 
-    tee --append requirements_amd.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm5.7
-absl-py==2.1.0
-accelerate==0.27.2
-aiofiles==23.2.1
-aiohttp==3.9.3
-aiosignal==1.3.1
-alembic==1.13.1
-altair==5.3.0
-annotated-types==0.6.0
-anyio==4.3.0
-appdirs==1.4.4
-asttokens==2.4.1
-attributedict==0.3.0
-attrs==23.2.0
-autoawq==0.1.8
-backoff==2.2.1
-beautifulsoup4==4.12.2
-blessings==1.7
-blinker==1.7.0
-blis==0.7.11
-cachetools==5.3.3
-catalogue==2.0.10
-certifi==2022.12.7
-chardet==5.2.0
-charset-normalizer==2.1.1
-chromadb==0.3.18
-click==8.1.7
-clickhouse-connect==0.7.5
-cloudpathlib==0.16.0
-cmake==3.29.0.1
-codecov==2.1.13
-colorama==0.4.6
-coloredlogs==15.0.1
-colorlog==6.8.2
-colour-runner==0.1.1
-confection==0.1.4
-contourpy==1.2.0
-coverage==7.4.4
-cramjam==2.8.3
-cycler==0.12.1
-cymem==2.0.8
-DataProperty==1.0.1
-datasets==2.18.0
-deepdiff==6.7.1
-dill==0.3.8
-diskcache==5.6.3
-distlib==0.3.8
-distro==1.9.0
-docker-pycreds==0.4.0
-docopt==0.6.2
-duckdb==0.10.1
-einops==0.7.0
-executing==2.0.1
-fastapi==0.110.0
-fastparquet==2024.2.0
-ffmpy==0.3.2
-filelock==3.13.3
-Flask==3.0.2
-flask-cloudflared==0.0.14
-fonttools==4.50.0
-frozenlist==1.4.1
-fsspec==2024.2.0
-gekko==1.1.0
-gitdb==4.0.11
-GitPython==3.1.43
-gptq-for-llama @ https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+rocm5.6-cp311-cp311-linux_x86_64.whl
-gradio==3.50.2
-gradio_client==0.6.1
-graphviz==0.20.3
-greenlet==3.0.3
-grpcio==1.62.1
-h11==0.14.0
-hnswlib==0.8.0
-hqq==0.1.5
-httpcore==1.0.5
-httptools==0.6.1
-httpx==0.27.0
-huggingface-hub==0.22.2
-humanfriendly==10.0
-icecream==2.1.3
-idna==3.4
-importlib_resources==6.4.0
-inspecta==0.1.3
-itsdangerous==2.1.2
-Jinja2==3.1.2
-joblib==1.3.2
-jsonlines==4.0.0
-jsonschema==4.21.1
-jsonschema-specifications==2023.12.1
-kiwisolver==1.4.5
-langcodes==3.3.0
-lit==15.0.7
-# -e git+https://github.com/abetlen/llama-cpp-python@1e60dba082464b8828dca0a6d05a2fe46fcc4f7c#egg=llama_cpp_python
-# llama_cpp_python_cuda @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.55+rocm5.6.1-cp311-cp311-manylinux_2_31_x86_64.whl
-# llama_cpp_python_cuda_tensorcores @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda_tensorcores-0.2.55+cu121-cp311-cp311-manylinux_2_31_x86_64.whl
-lm-eval==0.3.0
-lxml==5.2.0
-lz4==4.3.3
-Mako==1.3.2
-Markdown==3.6
-markdown-it-py==3.0.0
-MarkupSafe==2.1.3
-matplotlib==3.8.3
-mbstrdecoder==1.1.3
-mdurl==0.1.2
-monotonic==1.6
-mpmath==1.3.0
-multidict==6.0.5
-multiprocess==0.70.16
-murmurhash==1.0.10
-networkx==3.2.1
-ninja==1.11.1.1
-nltk==3.8.1
-num2words==0.5.13
-numexpr==2.9.0
-numpy==1.26.3
-openai==1.14.3
-optimum==1.17.1
-optuna==3.6.0
-ordered-set==4.1.0
-orjson==3.10.0
-packaging==24.0
-pandas==2.0.3
-pathvalidate==3.2.0
-peft==0.8.2
-pillow==10.2.0
-platformdirs==4.2.0
-pluggy==1.4.0
-portalocker==2.8.2
-posthog==2.4.2
-preshed==3.0.9
-protobuf==4.25.3
-psutil==5.9.8
-py-cpuinfo==9.0.0
-pyarrow==15.0.2
-pyarrow-hotfix==0.6
-pybind11==2.12.0
-pycountry==23.12.11
-pydantic==1.10.12
-pydantic_core==2.16.3
-pydub==0.25.1
-Pygments==2.17.2
-pyparsing==3.1.2
-pyproject-api==1.6.1
-pytablewriter==1.2.0
-pytextrank==3.3.0
-python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
-python-multipart==0.0.9
-pytorch-triton-rocm==2.2.0
-pytz==2024.1
-PyYAML==6.0.1
-referencing==0.34.0
-regex==2023.12.25
-requests==2.28.1
-rich==13.7.1
-rootpath==0.1.1
-rouge==1.0.1
-rouge-score==0.1.2
-rpds-py==0.18.0
-sacrebleu==1.5.0
-safetensors==0.4.2
-scikit-learn==1.4.1.post1
-scipy==1.12.0
-semantic-version==2.10.0
-sentence-transformers==2.2.2
-sentencepiece==0.2.0
-sentry-sdk==1.44.0
-setproctitle==1.3.3
-six==1.16.0
-smart-open==6.4.0
-smmap==5.0.1
-sniffio==1.3.1
-soupsieve==2.5
-spacy==3.7.4
-spacy-legacy==3.0.12
-spacy-loggers==1.0.5
-SpeechRecognition==3.10.0
-SQLAlchemy==2.0.29
-sqlitedict==2.1.0
-srsly==2.4.8
-sse-starlette==1.6.5
-starlette==0.36.3
-sympy==1.12
-tabledata==1.3.3
-tabulate==0.9.0
-tcolorpy==0.1.4
-tensorboard==2.16.2
-tensorboard-data-server==0.7.2
-termcolor==2.4.0
-texttable==1.7.0
-thinc==8.2.3
-threadpoolctl==3.4.0
-tiktoken==0.6.0
-timm==0.9.16
-tokenizers==0.15.2
-toml==0.10.2
-toolz==0.12.1
-torch==2.2.0+rocm5.7
-torchaudio==2.2.0+rocm5.7
-torchdata==0.7.1
-torchtext==0.17.0+cpu
-torchvision==0.17.0+rocm5.7
-tox==4.14.2
-tqdm==4.64.1
-tqdm-multiprocess==0.0.11
-typepy==1.3.2
-typer==0.9.4
-typing_extensions==4.8.0
-tzdata==2024.1
-urllib3==1.26.13
-uvicorn==0.29.0
-uvloop==0.19.0
-virtualenv==20.25.1
-wandb==0.16.5
-wasabi==1.1.2
-watchfiles==0.21.0
-weasel==0.3.4
-websockets==11.0.3
-Werkzeug==3.0.1
-xxhash==3.4.1
-yarl==1.9.4
-zstandard==0.22.0
-EOF
+    pip install cmake ninja
 
-    pip install -r requirements_amd.txt
-    
-    cd $installation_path/text-generation-webui
+    pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
+        mpmath fsspec MarkupSafe certifi filelock networkx sympy packaging requests --index-url https://download.pytorch.org/whl/rocm5.7
+
+    pip install torch torchvision torchtext torchaudio torchdata --index-url https://download.pytorch.org/whl/rocm5.7
+
     git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
-    cd bitsandbytes-rocm-5.6
+    cd bitsandbytes-rocm-5.7/
     git checkout 62353b0200b8557026c176e74ac48b84b953a854
-    #BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.7
+    BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
     make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.2/
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm5.7
 
-    cd $installation_path/text-generation-webui
     git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
     cd flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
     pip install . 
 
-    pip install transformers==4.38.2 ctransformers --extra-index-url https://download.pytorch.org/whl/rocm5.7
+    cd $installation_path/text-generation-webui
+    sed -i "s@bitsandbytes==@bitsandbytes>=@g" requirements_amd.txt 
+    pip install -r requirements_amd.txt
 
     mkdir $installation_path/text-generation-webui/repositories
 
@@ -599,7 +378,7 @@ EOF
     python -m pip install -e .
 
     pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/rocm571/
-
+    
     cd $installation_path/text-generation-webui
 
     tee --append run.sh <<EOF
