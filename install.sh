@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="3.2"
+version="3.2.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -372,7 +372,6 @@ confection==0.1.4
 contourpy==1.2.0
 coverage==7.4.4
 cramjam==2.8.3
-ctransformers @ https://github.com/jllllll/ctransformers-cuBLAS-wheels/releases/download/AVX2/ctransformers-0.2.27+cu121-py3-none-any.whl
 cycler==0.12.1
 cymem==2.0.8
 DataProperty==1.0.1
@@ -540,7 +539,6 @@ torchvision==0.17.0+rocm5.7
 tox==4.14.2
 tqdm==4.64.1
 tqdm-multiprocess==0.0.11
-transformers==4.38.2
 typepy==1.3.2
 typer==0.9.4
 typing_extensions==4.8.0
@@ -563,8 +561,8 @@ EOF
     pip install -r requirements_amd.txt
     
     cd $installation_path/text-generation-webui
-    git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.7.git
-    cd bitsandbytes-rocm-5.7/
+    git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
+    cd bitsandbytes-rocm-5.6
     git checkout 62353b0200b8557026c176e74ac48b84b953a854
     #BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.7
     make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.2/
@@ -575,6 +573,8 @@ EOF
     cd flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
     pip install . 
+
+    pip install transformers==4.38.2 ctransformers --extra-index-url https://download.pytorch.org/whl/rocm5.7
 
     mkdir $installation_path/text-generation-webui/repositories
 
