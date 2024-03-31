@@ -335,16 +335,16 @@ install_text_generation_web_ui() {
     pip install cmake ninja
 
     pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
-        mpmath fsspec MarkupSafe certifi filelock networkx sympy packaging requests --index-url https://download.pytorch.org/whl/rocm5.6
+        mpmath fsspec MarkupSafe certifi filelock networkx sympy packaging requests --index-url https://download.pytorch.org/whl/rocm5.7
 
-    pip install torch torchvision torchtext torchaudio torchdata --index-url https://download.pytorch.org/whl/rocm5.6   
+    pip install torch torchvision torchtext torchaudio torchdata --index-url https://download.pytorch.org/whl/rocm5.7
 
-    git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
-    cd bitsandbytes-rocm-5.6/
+    git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.7.git
+    cd bitsandbytes-rocm-5.7/
     git checkout 62353b0200b8557026c176e74ac48b84b953a854
-    BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.6
+    BUILD_CUDA_EXT=0 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm5.7
     make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.2/
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm5.6
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm5.7
 
     git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
     cd flash-attention
@@ -360,22 +360,25 @@ install_text_generation_web_ui() {
     git clone https://github.com/turboderp/exllamav2 $installation_path/text-generation-webui/repositories/exllamav2
     cd $installation_path/text-generation-webui/repositories/exllamav2
     git checkout d3184ec26d6bf1c9e320c29a7c67cdd7addbcf12
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm5.6
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm5.7
 
     cd $installation_path/text-generation-webui/repositories
     git clone https://github.com/abetlen/llama-cpp-python
-    cd llama-cpp-python
+    cd $installation_path/text-generation-webui/repositories/llama-cpp-python
     git checkout 1e60dba082464b8828dca0a6d05a2fe46fcc4f7c
-    cd vendor
+    cd $installation_path/text-generation-webui/repositories/llama-cpp-python/vendor
     mv llama.cpp llama.cpp.1
-    
-    # git clone https://github.com/ggerganov/llama.cpp.git
-    # cd llama.cpp
-    # git checkout ba0c7c70ab5b15f1f2be7fb0dfbe0366dda30d6c
-    # make LLAMA_HIPBLAS=1 LLAMA_HIP_UMA=1 AMDGPU_TARGETS=gxf1100
-    # cd ../..
-    # python -m pip install -e .
 
+    cd $installation_path/text-generation-webui/repositories/llama-cpp-python/vendor
+    git clone https://github.com/ggerganov/llama.cpp.git
+    cd $installation_path/text-generation-webui/repositories/llama-cpp-python/vendor/llama.cpp
+    git checkout ba0c7c70ab5b15f1f2be7fb0dfbe0366dda30d6c
+    make LLAMA_HIPBLAS=1 LLAMA_HIP_UMA=1 AMDGPU_TARGETS=gxf1100
+    cd $installation_path/text-generation-webui/repositories/llama-cpp-python
+    python -m pip install -e .
+
+    pip install auto-gptq --extra-index-url https://huggingface.github.io/autogptq-index/whl/rocm571/
+    
     cd $installation_path/text-generation-webui
 
     tee --append run.sh <<EOF
