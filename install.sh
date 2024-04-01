@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="3.2"
+version="3.2.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -461,7 +461,7 @@ pyarrow==15.0.1
 pyarrow-hotfix==0.6
 pybind11==2.11.1
 pycountry==23.12.11
-pydantic==2.6.3
+pydantic==1.10.1
 pydantic_core==2.16.3
 pydub==0.25.1
 Pygments==2.17.2
