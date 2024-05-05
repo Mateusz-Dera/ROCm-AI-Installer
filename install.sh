@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="3.2.1"
+version="3.3"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -230,7 +230,7 @@ install_rocm() {
     sudo rm /etc/apt/sources.list.d/rocm.list
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.0.2 jammy main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.1/ jammy main" \
         | sudo tee --append /etc/apt/sources.list.d/rocm.list
 
     sudo rm /etc/apt/preferences.d/rocm-pin-600
