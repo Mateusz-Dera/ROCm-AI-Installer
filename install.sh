@@ -375,7 +375,6 @@ dnspython==2.6.1
 docker-pycreds==0.4.0
 einops==0.8.0
 email_validator==2.1.1
-exllamav2==0.0.20
 fastapi==0.111.0
 fastapi-cli==0.0.2
 fastparquet==2024.2.0
@@ -550,6 +549,13 @@ EOF
 
     pip install -r custom_requirements.txt
 
+    cd $installation_path/text-generation-webui
+    git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
+    cd flash-attention
+    git checkout 2554f490101742ccdc56620a938f847f61754be6
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+
+    cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 8e4c18794a754d1095d454e6f240713a9685fec2
