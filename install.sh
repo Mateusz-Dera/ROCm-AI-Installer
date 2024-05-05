@@ -328,235 +328,235 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout aa0da07af012e251b4b70a1391b0acd360f796bd
+    git checkout 8f12fb028dff4e133460fe10ef49d3f90167b313
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/nightly/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
 absl-py==2.1.0
 accelerate==0.27.2
 aiofiles==23.2.1
-aiohttp==3.9.3
+aiohttp==3.9.5
 aiosignal==1.3.1
-alembic==1.13.1
-altair==5.2.0
+altair==5.3.0
 annotated-types==0.6.0
 anyio==4.3.0
 appdirs==1.4.4
-asttokens==2.4.1
+asgiref==3.8.1
 attrs==23.2.0
 auto-gptq @ https://github.com/jllllll/AutoGPTQ/releases/download/v0.6.0/auto_gptq-0.6.0+rocm5.6-cp311-cp311-linux_x86_64.whl
+autoawq @ https://github.com/casper-hansen/AutoAWQ/releases/download/v0.2.3/autoawq-0.2.3+rocm561-cp311-cp311-linux_x86_64.whl
+autoawq_kernels @ https://github.com/casper-hansen/AutoAWQ_kernels/releases/download/v0.0.6/autoawq_kernels-0.0.6+rocm561-cp311-cp311-linux_x86_64.whl
 backoff==2.2.1
+bcrypt==4.1.3
 beautifulsoup4==4.12.2
-blinker==1.7.0
-blis==0.7.11
-catalogue==2.0.10
-certifi==2022.12.7
+blinker==1.8.1
+build==1.2.1
+cachetools==5.3.3
+certifi==2024.2.2
 chardet==5.2.0
-charset-normalizer==2.1.1
-chromadb==0.3.18
+charset-normalizer==3.3.2
+chroma-hnswlib==0.7.3
+chromadb==0.4.24
 click==8.1.7
-clickhouse-connect==0.7.2
-cloudpathlib==0.16.0
-cmake==3.25.0
 colorama==0.4.6
 coloredlogs==15.0.1
-colorlog==6.8.2
-confection==0.1.4
-contourpy==1.2.0
-cramjam==2.8.2
+contourpy==1.2.1
+cramjam==2.8.3
 cycler==0.12.1
-cymem==2.0.8
 DataProperty==1.0.1
-datasets==2.18.0
+datasets==2.19.0
+Deprecated==1.2.14
 dill==0.3.8
 diskcache==5.6.3
 distro==1.9.0
+dnspython==2.6.1
 docker-pycreds==0.4.0
-docopt==0.6.2
-duckdb==0.10.0
-einops==0.7.0
-executing==2.0.1
-exllamav2 @ https://github.com/oobabooga/exllamav2/releases/download/v0.0.15/exllamav2-0.0.15+rocm5.6-cp311-cp311-linux_x86_64.whl
-fastapi==0.110.0
+einops==0.8.0
+email_validator==2.1.1
+exllamav2==0.0.20
+fastapi==0.111.0
+fastapi-cli==0.0.2
 fastparquet==2024.2.0
 ffmpy==0.3.2
-filelock==3.13.1
-Flask==3.0.2
+filelock==3.14.0
+Flask==3.0.3
 flask-cloudflared==0.0.14
-fonttools==4.49.0
+flatbuffers==24.3.25
+fonttools==4.51.0
 frozenlist==1.4.1
-fsspec==2024.2.0
-gekko==1.0.7
+fsspec==2024.3.1
+gekko==1.1.1
 gitdb==4.0.11
-GitPython==3.1.42
+GitPython==3.1.43
+google-auth==2.29.0
+googleapis-common-protos==1.63.0
 gptq-for-llama @ https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+rocm5.6-cp311-cp311-linux_x86_64.whl
-gradio==3.50.2
-gradio_client==0.6.1
-graphviz==0.20.1
-greenlet==3.0.3
-grpcio==1.62.1
+gradio==4.26.0
+gradio_client==0.15.1
+grpcio==1.63.0
 h11==0.14.0
-hnswlib==0.8.0
 hqq==0.1.5
-httpcore==1.0.4
+httpcore==1.0.5
 httptools==0.6.1
 httpx==0.27.0
-huggingface-hub==0.21.4
+huggingface-hub==0.23.0
 humanfriendly==10.0
-icecream==2.1.3
-idna==3.4
-importlib_resources==6.1.3
-iniconfig==2.0.0
-itsdangerous==2.1.2
+idna==3.7
+importlib-metadata==7.0.0
+importlib_resources==6.4.0
+itsdangerous==2.2.0
 Jinja2==3.1.2
-joblib==1.3.2
+joblib==1.4.2
 jsonlines==4.0.0
-jsonschema==4.21.1
+jsonschema==4.22.0
 jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
-langcodes==3.3.0
-lion-pytorch==0.1.2
-lit==15.0.7
-llama_cpp_python @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.55+cpuavx2-cp311-cp311-manylinux_2_31_x86_64.whl
-llama_cpp_python_cuda @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.55+rocm5.6.1-cp311-cp311-manylinux_2_31_x86_64.whl
+kubernetes==29.0.0
+llama_cpp_python @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.65+cpuavx2-cp311-cp311-linux_x86_64.whl
+llama_cpp_python_cuda @ https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/rocm/llama_cpp_python_cuda-0.2.65+rocm5.6.1-cp311-cp311-linux_x86_64.whl
+llvmlite==0.42.0
 lm-eval==0.3.0
-lxml==5.1.0
-lz4==4.3.3
-Mako==1.3.2
-Markdown==3.5.2
+lxml==5.2.1
+Markdown==3.6
 markdown-it-py==3.0.0
-MarkupSafe==2.1.3
-matplotlib==3.8.3
+MarkupSafe==2.1.5
+matplotlib==3.8.4
 mbstrdecoder==1.1.3
 mdurl==0.1.2
+mmh3==4.1.0
 monotonic==1.6
-mpmath==1.2.1
+mpmath==1.3.0
 multidict==6.0.5
 multiprocess==0.70.16
-murmurhash==1.0.10
-networkx==3.2.1
+networkx==3.3
 ninja==1.11.1.1
 nltk==3.8.1
-num2words==0.5.13
-numexpr==2.9.0
+numba==0.59.1
+numexpr==2.10.0
 numpy==1.26.4
-openai==1.13.3
+oauthlib==3.2.2
+onnxruntime==1.17.3
+openai==1.25.1
+opentelemetry-api==1.24.0
+opentelemetry-exporter-otlp-proto-common==1.24.0
+opentelemetry-exporter-otlp-proto-grpc==1.24.0
+opentelemetry-instrumentation==0.45b0
+opentelemetry-instrumentation-asgi==0.45b0
+opentelemetry-instrumentation-fastapi==0.45b0
+opentelemetry-proto==1.24.0
+opentelemetry-sdk==1.24.0
+opentelemetry-semantic-conventions==0.45b0
+opentelemetry-util-http==0.45b0
 optimum==1.17.1
-optuna==3.5.0
-orjson==3.9.15
-packaging==22.0
+orjson==3.10.3
+overrides==7.7.0
+packaging==24.0
 pandas==2.0.3
 pathvalidate==3.2.0
 peft==0.8.2
-pillow==10.2.0
-pluggy==1.4.0
+pillow==10.3.0
 portalocker==2.8.2
 posthog==2.4.2
-preshed==3.0.9
 protobuf==4.25.3
 psutil==5.9.8
-pyarrow==15.0.1
+pulsar-client==3.5.0
+pyarrow==16.0.0
 pyarrow-hotfix==0.6
-pybind11==2.11.1
+pyasn1==0.6.0
+pyasn1_modules==0.4.0
+pybind11==2.12.0
 pycountry==23.12.11
-pydantic==1.10.1
-pydantic_core==2.16.3
+pydantic==2.7.1
+pydantic_core==2.18.2
 pydub==0.25.1
-Pygments==2.17.2
+Pygments==2.18.0
 pyparsing==3.1.2
+PyPika==0.48.9
+pyproject_hooks==1.1.0
 pytablewriter==1.2.0
-pytest==8.1.1
-pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.9
-pytorch-triton==3.0.0+a9bc1a3647
-pytorch-triton-rocm==3.0.0+0a22a91d04
+pytorch-triton-rocm==2.3.0
 pytz==2024.1
 PyYAML==6.0.1
-referencing==0.33.0
-regex==2023.12.25
-requests==2.28.1
+referencing==0.35.1
+regex==2024.4.28
+requests==2.31.0
+requests-oauthlib==2.0.0
 rich==13.7.1
 rouge==1.0.1
 rouge-score==0.1.2
 rpds-py==0.18.0
+rsa==4.9
+ruff==0.4.3
 sacrebleu==1.5.0
-safetensors==0.4.2
-scikit-learn==1.4.1.post1
-scipy==1.12.0
+safetensors==0.4.3
+scikit-learn==1.4.2
+scipy==1.13.0
 semantic-version==2.10.0
 sentence-transformers==2.2.2
 sentencepiece==0.2.0
-sentry-sdk==1.41.0
+sentry-sdk==2.0.1
 setproctitle==1.3.3
+shellingham==1.5.4
 six==1.16.0
-smart-open==6.4.0
 smmap==5.0.1
 sniffio==1.3.1
 soupsieve==2.5
-spacy==3.7.4
-spacy-legacy==3.0.12
-spacy-loggers==1.0.5
 SpeechRecognition==3.10.0
-SQLAlchemy==2.0.28
 sqlitedict==2.1.0
-srsly==2.4.8
 sse-starlette==1.6.5
-starlette==0.36.3
+starlette==0.37.2
 sympy==1.12
 tabledata==1.3.3
-tcolorpy==0.1.4
+tcolorpy==0.1.6
+tenacity==8.2.3
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 termcolor==2.4.0
-thinc==8.2.3
-threadpoolctl==3.3.0
+threadpoolctl==3.5.0
 tiktoken==0.6.0
 timm==0.9.16
-tokenizers==0.15.2
+tokenizers==0.19.1
+tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.0.dev20240311+rocm6.0
-torchaudio==2.2.0.dev20240311+rocm6.0
-torchtext==0.6.0
-torchvision==0.18.0.dev20240311+rocm6.0
-tqdm==4.66.2
+torch==2.3.0+rocm6.0
+torchvision==0.18.0+rocm6.0
+tqdm==4.66.4
 tqdm-multiprocess==0.0.11
-transformers==4.38.2
-triton==2.2.0
+transformers==4.40.1
 typepy==1.3.2
-typer==0.9.0
-typing_extensions==4.10.0
+typer==0.12.3
+typing_extensions==4.11.0
 tzdata==2024.1
-urllib3==1.26.13
-uvicorn==0.28.0
+ujson==5.9.0
+urllib3==2.2.1
+uvicorn==0.29.0
 uvloop==0.19.0
-wandb==0.16.4
-wasabi==1.1.2
+wandb==0.16.6
 watchfiles==0.21.0
-weasel==0.3.4
+websocket-client==1.8.0
 websockets==11.0.3
-Werkzeug==3.0.1
+Werkzeug==3.0.2
+wrapt==1.16.0
 xxhash==3.4.1
 yarl==1.9.4
+zipp==3.18.1
 zstandard==0.22.0
 EOF
+
     pip install -r custom_requirements.txt
 
-    git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6.git
-    cd bitsandbytes-rocm-5.6
-    git checkout 62353b0200b8557026c176e74ac48b84b953a854
-    make hip ROCM_TARGET=gfx1100 ROCM_HOME=/opt/rocm-6.0.2/
-    pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.0
+    git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
+    cd repositories/exllamav2
+    git checkout 8e4c18794a754d1095d454e6f240713a9685fec2
+    pip install . --index-url https://download.pytorch.org/whl/rocm6.0
 
-    pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6
-
-    git clone https://github.com/turboderp/exllamav2 $installation_path/text-generation-webui/repositories/exllamav2
-    cd $installation_path/text-generation-webui/repositories/exllamav2
-    git checkout b92cc4f35782db3394e9d7eb3d4d38a44fefa376
-    pip install .  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.0
+    pip uninstall -y llama-cpp-python
+    CMAKE_ARGS="-DLLAMA_HIPBLAS=on -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.69
 
     cd $installation_path/text-generation-webui
 
