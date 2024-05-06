@@ -589,16 +589,16 @@ install_animagine_xl() {
     cd $installation_path
     rm -rf animagine-xl-3.1
     git clone https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1
-    git checkout ab4e48864356682afe0b2b6f32bf7de8a0d6c79e
+    git checkout f240016348c54945299cfb4163fbc514fba1c2ed
     cd animagine-xl-3.1
     python3.11 -m venv .venv --prompt ANIMAGINE
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm5.7
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
 accelerate==0.27.2
 aiofiles==23.2.1
-altair==5.2.0
+altair==5.3.0
 annotated-types==0.6.0
 antlr4-python3-runtime==4.9.3
 anyio==4.3.0
@@ -606,86 +606,89 @@ attrs==23.2.0
 certifi==2024.2.2
 charset-normalizer==3.3.2
 click==8.1.7
-colorama==0.4.6
-contourpy==1.2.0
+contourpy==1.2.1
 cycler==0.12.1
 diffusers==0.26.3
-fastapi==0.110.0
+dnspython==2.6.1
+email_validator==2.1.1
+exceptiongroup==1.2.1
+fastapi==0.111.0
+fastapi-cli==0.0.2
 ffmpy==0.3.2
-filelock==3.13.3
-fonttools==4.50.0
+filelock==3.14.0
+fonttools==4.51.0
 fsspec==2024.3.1
 gradio==4.20.0
 gradio_client==0.11.0
 h11==0.14.0
-httpcore==1.0.4
+httpcore==1.0.5
+httptools==0.6.1
 httpx==0.27.0
-huggingface-hub==0.22.1
-idna==3.6
+huggingface-hub==0.23.0
+idna==3.7
 importlib_metadata==7.1.0
 importlib_resources==6.4.0
 invisible-watermark==0.2.0
-Jinja2==3.1.3
-jsonschema==4.21.1
+Jinja2==3.1.4
+jsonschema==4.22.0
 jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.8.3
+matplotlib==3.8.4
 mdurl==0.1.2
 mpmath==1.3.0
-networkx==3.2.1
+networkx==3.3
 numpy==1.26.4
 omegaconf==2.3.0
 opencv-python==4.9.0.80
-orjson==3.9.15
+orjson==3.10.3
 packaging==24.0
-pandas==2.2.1
+pandas==2.2.2
 pillow==10.2.0
 psutil==5.9.8
-pydantic==2.6.4
-pydantic_core==2.16.3
+pydantic==2.7.1
+pydantic_core==2.18.2
 pydub==0.25.1
-Pygments==2.17.2
+Pygments==2.18.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 python-multipart==0.0.9
-pytorch-triton==0.0.1
-pytorch-triton-rocm==2.2.0
+pytorch-triton-rocm==2.3.0
 pytz==2024.1
-PyWavelets==1.5.0
+PyWavelets==1.6.0
 PyYAML==6.0.1
-referencing==0.34.0
-regex==2023.12.25
+referencing==0.35.1
+regex==2024.4.28
 requests==2.31.0
 rich==13.7.1
-rpds-py==0.18.0
-ruff==0.3.4
-safetensors==0.4.2
+rpds-py==0.18.1
+ruff==0.4.3
+safetensors==0.4.3
 semantic-version==2.10.0
 shellingham==1.5.4
 six==1.16.0
 sniffio==1.3.1
 spaces==0.24.0
-starlette==0.36.3
+starlette==0.37.2
 sympy==1.12
 timm==0.9.10
 tokenizers==0.15.2
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.2.0+rocm5.7
-torchaudio==2.2.0+rocm5.7
-torchdata==0.7.1
-torchtext==0.17.0+cpu
-torchvision==0.17.0+rocm5.7
-tqdm==4.66.2
+torch==2.3.0+rocm6.0
+torchvision==0.18.0+rocm6.0
+tqdm==4.66.4
 transformers==4.38.1
-triton==2.2.0
-typer==0.10.0
-typing_extensions==4.10.0
+typer==0.12.3
+typing_extensions==4.11.0
 tzdata==2024.1
+ujson==5.9.0
 urllib3==2.2.1
 uvicorn==0.29.0
+uvloop==0.19.0
+watchfiles==0.21.0
 websockets==11.0.3
 zipp==3.18.1
 EOF
@@ -710,7 +713,8 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout f121d1da564c6402750683d36b02365631cf04ac
+    git switch staging
+    git checkout 694cf6f762efea19f6e84ec45bdec1ce17743d97
 
     mv ./start.sh ./run.sh
 

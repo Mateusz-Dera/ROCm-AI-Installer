@@ -2,3 +2,5 @@
 -Updated Text generation web UI ExLlamaV2
 -Fixed Text generation web UI GPU offloading llama.cpp
 -Drop of support SuperboogaV2 (Compatibility issues)
+-Updated KoboldCPP
+-Updated ANIMAGINE XL 3.1
