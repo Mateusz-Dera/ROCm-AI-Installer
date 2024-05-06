@@ -736,161 +736,13 @@ install_sillytavern_extras(){
     rm -Rf SillyTavern-extras
     git clone https://github.com/SillyTavern/SillyTavern-extras.git
     cd SillyTavern-extras
-    git checkout 5b35e91e01f3d29c0147829f702fa79210948cd1
+    git checkout 1d82f3a8607319d1e09a2f4749a09c564c18c320
 
     python3.11 -m venv .venv --prompt SillyTavern-extras
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm5.6
-accelerate==0.28.0
-aiohttp==3.9.3
-aiosignal==1.3.1
-annotated-types==0.6.0
-anyio==4.3.0
-asgiref==3.7.2
-attrs==23.2.0
-backoff==2.2.1
-bcrypt==4.1.2
-blinker==1.7.0
-Brotli==1.1.0
-build==1.1.1
-cachetools==5.3.3
-certifi==2024.2.2
-cffi==1.16.0
-charset-normalizer==3.3.2
-chroma-hnswlib==0.7.3
-chromadb==0.4.24
-click==8.1.7
-cmake==3.28.3
-colorama==0.4.6
-coloredlogs==15.0.1
-contourpy==1.2.0
-cycler==0.12.1
-Deprecated==1.2.14
-diffusers==0.27.0
-edge-tts==6.1.10
-fastapi==0.110.0
-filelock==3.13.1
-Flask==3.0.2
-flask-cloudflared==0.0.14
-Flask-Compress==1.14
-Flask-Cors==4.0.0
-flatbuffers==24.3.7
-fonttools==4.50.0
-frozenlist==1.4.1
-fsspec==2024.3.0
-google-auth==2.28.2
-googleapis-common-protos==1.63.0
-grpcio==1.62.1
-h11==0.14.0
-httptools==0.6.1
-huggingface-hub==0.21.4
-humanfriendly==10.0
-idna==3.6
-importlib-metadata==6.11.0
-importlib_resources==6.3.1
-itsdangerous==2.1.2
-Jinja2==3.1.3
-joblib==1.3.2
-kiwisolver==1.4.5
-kubernetes==29.0.0
-lit==18.1.1
-llvmlite==0.42.0
-loguru==0.7.2
-Markdown==3.6
-MarkupSafe==2.1.5
-matplotlib==3.8.3
-mmh3==4.1.0
-monotonic==1.6
-more-itertools==10.2.0
-mpmath==1.3.0
-multidict==6.0.5
-networkx==3.2.1
-numba==0.59.0
-numpy==1.26.4
-oauthlib==3.2.2
-onnxruntime==1.17.1
-openai-whisper==20231117
-opentelemetry-api==1.23.0
-opentelemetry-exporter-otlp-proto-common==1.23.0
-opentelemetry-exporter-otlp-proto-grpc==1.23.0
-opentelemetry-instrumentation==0.44b0
-opentelemetry-instrumentation-asgi==0.44b0
-opentelemetry-instrumentation-fastapi==0.44b0
-opentelemetry-proto==1.23.0
-opentelemetry-sdk==1.23.0
-opentelemetry-semantic-conventions==0.44b0
-opentelemetry-util-http==0.44b0
-orjson==3.9.15
-outcome==1.3.0.post0
-overrides==7.7.0
-packaging==24.0
-Pillow==9.5.0
-posthog==3.5.0
-protobuf==4.25.3
-psutil==5.9.8
-pulsar-client==3.4.0
-pyasn1==0.5.1
-pyasn1-modules==0.3.0
-pycparser==2.21
-pydantic==2.6.4
-pydantic_core==2.16.3
-pydub==0.25.1
-pyparsing==3.1.2
-PyPika==0.48.9
-pyproject_hooks==1.0.0
-PySocks==1.7.1
-python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
-pytorch-triton-rocm==2.1.0
-PyYAML==6.0.1
-regex==2023.12.25
-requests==2.31.0
-requests-oauthlib==1.4.0
-rsa==4.9
-safetensors==0.4.2
-scikit-learn==1.4.1.post1
-scipy==1.12.0
-selenium==4.18.1
-sentence-transformers==2.5.1
-silero-api-server==0.3.1
-six==1.16.0
-sniffio==1.3.1
-sortedcontainers==2.4.0
-sounddevice==0.4.6
-soundfile==0.12.1
-srt==3.5.3
-starlette==0.36.3
-sympy==1.12
-tenacity==8.2.3
-threadpoolctl==3.3.0
-tiktoken==0.6.0
-tokenizers==0.15.2
-torch==2.1.0+rocm5.6
-torchaudio==2.1.0+rocm5.6
-torchvision==0.16.0+rocm5.6
-tqdm==4.66.2
-transformers==4.38.2
-trio==0.25.0
-trio-websocket==0.11.1
-triton==2.2.0
-typer==0.9.0
-typing_extensions==4.10.0
-urllib3==2.2.1
-uvicorn==0.28.0
-uvloop==0.19.0
-vosk==0.3.45
-watchfiles==0.21.0
-websocket-client==1.7.0
-websockets==12.0
-webuiapi==0.9.9
-Werkzeug==3.0.1
-wrapt==1.16.0
-wsproto==1.2.0
-wxPython==4.2.1
-yarl==1.9.4
-zipp==3.18.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
 EOF
 
     pip install --pre -r custom_requirements.txt
@@ -1405,51 +1257,51 @@ while true; do
                                                 ;;
                                             1)
                                                 # Backup settings
-                                                backup_and_restore_file $installation_path/SillyTavern/public $installation_path/Backups/SillyTavern/public settings.json
+                                                backup_and_restore_file $installation_path/SillyTavern/data/default-user $installation_path/Backups/SillyTavern/data/default-user settings.json
                                                 ;;
                                             2)
                                                 # Backup characters
-                                                backup_and_restore $installation_path/SillyTavern/public/characters $installation_path/Backups/SillyTavern/public/characters
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/characters $installation_path/Backups/SillyTavern/data/default-user/characters
                                                 ;;
                                             3)
                                                 # Backup groups
-                                                backup_and_restore $installation_path/SillyTavern/public/groups $installation_path/Backups/SillyTavern/public/groups
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/groups $installation_path/Backups/SillyTavern/data/default-user/groups
                                                 ;;
                                             4)
                                                 # Backup worlds
-                                                backup_and_restore $installation_path/SillyTavern/public/worlds $installation_path/Backups/SillyTavern/public/worlds
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/worlds $installation_path/Backups/SillyTavern/data/default-user/worlds
                                                 ;;
                                             5)
                                                 # Backup chats
-                                                backup_and_restore $installation_path/SillyTavern/public/chats $installation_path/Backups/SillyTavern/public/chats
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/chats $installation_path/Backups/SillyTavern/data/default-user/chats
                                                 ;;
                                             6)
                                                 # Backup group chats
-                                                backup_and_restore $installation_path/SillyTavern/public/group\ chats $installation_path/Backups/SillyTavern/public/group\ chats
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/group\ chats $installation_path/Backups/SillyTavern/data/default-user/group\ chats
                                                 ;;
                                             7)
                                                 # Backup user avatars images
-                                                backup_and_restore $installation_path/SillyTavern/public/User\ Avatars $installation_path/Backups/SillyTavern/public/User\ Avatars
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/User\ Avatars $installation_path/Backups/SillyTavern/data/default-user/User\ Avatars
                                                 ;;
                                             8)
                                                 # Backup backgrounds images
-                                                backup_and_restore $installation_path/SillyTavern/public/backgrounds $installation_path/Backups/SillyTavern/public/backgrounds
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/backgrounds $installation_path/Backups/SillyTavern/data/default-user/backgrounds
                                                 ;;
                                             9)
                                                 # Backup themes
-                                                backup_and_restore $installation_path/SillyTavern/public/themes $installation_path/Backups/SillyTavern/public/themes
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/themes $installation_path/Backups/SillyTavern/data/default-user/themes
                                                 ;;
                                             10)
                                                 # Backup presets
-                                                backup_and_restore $installation_path/SillyTavern/public/TextGen\ Settings $installation_path/Backups/SillyTavern/public/TextGen\ Settings
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/TextGen\ Settings $installation_path/Backups/SillyTavern/data/default-user/TextGen\ Settings
                                                 ;;
                                             11)
                                                 # Backup context
-                                                backup_and_restore $installation_path/SillyTavern/public/context $installation_path/Backups/SillyTavern/public/context
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/context $installation_path/Backups/SillyTavern/data/default-user/context
                                                 ;;
                                             12)
                                                 # Backup instruct
-                                                backup_and_restore $installation_path/SillyTavern/public/instruct $installation_path/Backups/SillyTavern/public/instruct
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/instruct $installation_path/Backups/SillyTavern/data/default-user/instruct
                                                 ;;
                                             *)
                                                 next=false
@@ -1477,51 +1329,51 @@ while true; do
                                                 ;;
                                             1)
                                                 # Restore settings
-                                                backup_and_restore_file $installation_path/Backups/SillyTavern/public $installation_path/SillyTavern/public settings.json
+                                                backup_and_restore_file $installation_path/Backups/SillyTavern/data/default-user $installation_path/SillyTavern/data/default-user settings.json
                                                 ;;
                                             2)
                                                 # Restore characters
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/characters $installation_path/SillyTavern/public/characters
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/characters $installation_path/SillyTavern/data/default-user/characters
                                                 ;;
                                             3)
                                                 # Restore groups
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/groups $installation_path/SillyTavern/public/groups
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/groups $installation_path/SillyTavern/data/default-user/groups
                                                 ;;
                                             4)
                                                 # Restore worlds
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/worlds $installation_path/SillyTavern/public/worlds
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/worlds $installation_path/SillyTavern/data/default-user/worlds
                                                 ;;
                                             5)
                                                 # Restore chats
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/chats $installation_path/SillyTavern/public/chats
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/chats $installation_path/SillyTavern/data/default-user/chats
                                                 ;;
                                             6)
                                                 # Restore group chats
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/group\ chats $installation_path/SillyTavern/public/group\ chats
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/group\ chats $installation_path/SillyTavern/data/default-user/group\ chats
                                                 ;;
                                             7)
                                                 # Restore user avatars images
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/User\ Avatars $installation_path/SillyTavern/public/User\ Avatars
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/User\ Avatars $installation_path/SillyTavern/data/default-user/User\ Avatars
                                                 ;;
                                             8)
                                                 # Restore backgrounds images
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/backgrounds $installation_path/SillyTavern/public/backgrounds
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/backgrounds $installation_path/SillyTavern/data/default-user/backgrounds
                                                 ;;
                                             9)
                                                 # Restore themes
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/themes $installation_path/SillyTavern/public/themes
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/themes $installation_path/SillyTavern/data/default-user/themes
                                                 ;;
                                             10)
                                                 # Restore presets
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/TextGen\ Settings $installation_path/SillyTavern/public/TextGen\ Settings
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/TextGen\ Settings $installation_path/SillyTavern/data/default-user/TextGen\ Settings
                                                 ;;
                                             11)
                                                 # Restore context
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/context $installation_path/SillyTavern/public/context
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/context $installation_path/SillyTavern/data/default-user/context
                                                 ;;
                                             12)
                                                 # Restore instruct
-                                                backup_and_restore $installation_path/Backups/SillyTavern/public/instruct $installation_path/SillyTavern/public/instruct
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/instruct $installation_path/SillyTavern/data/default-user/instruct
                                                 ;;
                                             *)
                                                 next=false
