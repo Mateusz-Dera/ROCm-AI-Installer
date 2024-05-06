@@ -4,3 +4,4 @@
 -Drop of support SuperboogaV2 (Compatibility issues)
 -Updated KoboldCPP
 -Updated ANIMAGINE XL 3.1
+-Updated SillyTavern
