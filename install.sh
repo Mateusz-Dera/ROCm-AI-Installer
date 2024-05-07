@@ -151,7 +151,7 @@ sillytavern_restore() {
 image_generation() {
     whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 \
     0 "Stable Diffusion web UI" \
-    1 "Install ANIMAGINE XL 3.1" \
+    1 "ANIMAGINE XL 3.1" \
     2>&1 > /dev/tty
 }
 
