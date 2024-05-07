@@ -933,15 +933,15 @@ install_stable_diffusion_web_ui() {
     git checkout cf2772fab0af5573da775e7437e6acdca424f26e
             
     tee --append webui-user.sh <<EOF
+python_cmd="python3.10"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install --pre torch==2.3.0.dev20240306+rocm6.0  torchvision==0.18.0.dev20240306+rocm6.0 --index-url https://download.pytorch.org/whl/nightly"
+export TORCH_COMMAND="pip install --pre torch==2.3.0+rocm6.0  torchvision==0.18.0+rocm6.0 --extra-index-url https://download.pytorch.org/whl/rocm6.0"
 export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
     mv ./webui.sh ./run.sh
     chmod +x run.sh
 }
-
 # AudioCraft
 install_audiocraft() {
     if ! command -v python3.10 &> /dev/null; then
