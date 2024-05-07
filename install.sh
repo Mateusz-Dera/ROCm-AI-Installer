@@ -1155,7 +1155,7 @@ install_triposr(){
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/nightly/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
 aiofiles==23.2.1
 altair==5.2.0
 annotated-types==0.6.0
@@ -1221,7 +1221,7 @@ PyMatting==1.1.12
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==3.0.0+0a22a91d04
+pytorch-triton-rocm==2.3.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.33.0
@@ -1243,9 +1243,9 @@ tifffile==2024.2.12
 tokenizers==0.14.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.0.dev20240311+rocm6.0
-torchaudio==2.2.0.dev20240311+rocm6.0
-torchvision==0.18.0.dev20240311+rocm6.0
+torch==2.3.0+rocm6.0
+torchaudio==2.3.0+rocm6.0
+torchvision==0.18.0+rocm6.0
 tqdm==4.66.2
 transformers==4.35.0
 trimesh==4.0.5
