@@ -1122,11 +1122,11 @@ install_whisperspeech_web_ui(){
     rm -rf whisperspeech-webui
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
     cd whisperspeech-webui
-    git checkout d7c1f0542a49b8bfa1b2a2aeb5303e39bfe4b2ac
+    git checkout 7e63b110dcda4d318da4cc55f1b3aeacb7575a6e
     python3.11 -m venv .venv --prompt WhisperSpeech
     source .venv/bin/activate
 
-    pip install -r requirements_rocm.txt
+    pip install -r requirements_rocm_6.0.txt
     pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@ae7928c5aed53cf6e75cc792baa9126b2abfcf1a
 
     tee --append run.sh <<EOF

@@ -7,4 +7,4 @@
 -Updated ANIMAGINE XL 3.1
 -Updated SillyTavern
 -Updated SillyTavern-extras
--Updated Stable Diffusion web UI
+-Updated WhisperSpeech web UI
