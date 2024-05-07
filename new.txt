@@ -1,3 +1,4 @@
+-ROCm change to stable version 6.0 for all AIs
 -Updated Text generation web UI
 -Updated Text generation web UI ExLlamaV2
 -Fixed Text generation web UI GPU offloading llama.cpp
