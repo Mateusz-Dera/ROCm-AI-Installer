@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="3.3"
+version="3.3.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -217,7 +217,7 @@ d3_generation() {
 # Function to install ROCm and basic packages
 install_rocm() {
     sudo apt-get update
-    sudo apt-get -y upgrade
+    #sudo apt-get -y upgrade
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
     sudo apt purge -y nvidia*
