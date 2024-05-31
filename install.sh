@@ -292,7 +292,7 @@ EOF
     sudo apt install -y libtcmalloc-minimal4
     sudo apt-get install -y git git-lfs
     sudo apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
-    sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
+    sudo apt-get install -y python3.11 python3.11-venv python3.11-dev python3.11-tk
     sudo apt-get install -y libgl1
     sudo apt-get install -y ffmpeg
     
