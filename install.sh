@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.0"
+version="4.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -201,8 +201,9 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 1 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 2 \
     0 "Install WhisperSpeech web UI" \
+    1 "MeloTTS" \
     2>&1 > /dev/tty
 }
 
@@ -256,10 +257,10 @@ repo(){
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.1.1/ubuntu jammy main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu//6.1.3/ubuntu jammy main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
 
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.1.1/ jammy main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.1.3/ jammy main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
@@ -295,7 +296,9 @@ EOF
     sudo apt-get install -y python3.11 python3.11-venv python3.11-dev python3.11-tk
     sudo apt-get install -y libgl1
     sudo apt-get install -y ffmpeg
-    
+    sudo apt-get install -y libmecab-dev
+    sudo apt-get install -y rustc
+
     sudo snap install node --classic
 }
 
@@ -774,6 +777,203 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/whisperspeech-webui/.venv/bin/activate
 python3 webui.py
+EOF
+    chmod u+x run.sh
+}
+
+install_melotts(){
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf MeloTTS
+    git clone https://github.com/myshell-ai/MeloTTS
+    cd MeloTTS
+    git checkout abf885acf7c8322af07e6584099748cba09e3909
+    python3.12 -m venv .venv --prompt MeloTTS
+    source .venv/bin/activate
+
+    # pip install setuptools_rust
+
+    rm requirements.txt
+
+    tee --append requirements.txt <<EOF
+absl-py==2.1.0
+aiofiles==23.2.1
+altair==5.3.0
+annotated-types==0.7.0
+anyascii==0.3.2
+anyio==4.4.0
+attrs==23.2.0
+audioread==3.0.1
+Babel==2.15.0
+boto3==1.34.131
+botocore==1.34.131
+cached_path==1.6.3
+cachetools==5.3.3
+certifi==2024.6.2
+cffi==1.16.0
+charset-normalizer==3.3.2
+click==8.1.7
+cn2an==0.5.22
+contourpy==1.2.1
+cycler==0.12.1
+dateparser==1.1.8
+decorator==5.1.1
+Deprecated==1.2.14
+Distance==0.1.3
+dnspython==2.6.1
+docopt==0.6.2
+email_validator==2.2.0
+eng_to_ipa==0.0.2
+fastapi==0.111.0
+fastapi-cli==0.0.4
+ffmpy==0.3.2
+filelock==3.13.4
+fonttools==4.53.0
+fsspec==2024.6.0
+fugashi==1.3.0
+g2p-en==2.1.0
+g2pkk==0.1.2
+google-api-core==2.19.0
+google-auth==2.30.0
+google-cloud-core==2.4.1
+google-cloud-storage==2.17.0
+google-crc32c==1.5.0
+google-resumable-media==2.7.1
+googleapis-common-protos==1.63.1
+gradio==4.36.1
+gradio_client==1.0.1
+grpcio==1.64.1
+gruut==2.2.3
+gruut-ipa==0.13.0
+gruut_lang_de==2.0.0
+gruut_lang_en==2.0.0
+gruut_lang_es==2.0.0
+gruut_lang_fr==2.0.2
+h11==0.14.0
+httpcore==1.0.5
+httptools==0.6.1
+httpx==0.27.0
+huggingface-hub==0.23.4
+idna==3.7
+importlib_resources==6.4.0
+inflect==7.0.0
+jaconv==0.3.4
+jamo==0.4.1
+jieba==0.42.1
+Jinja2==3.1.4
+jmespath==1.0.1
+joblib==1.4.2
+jsonlines==1.2.0
+jsonschema==4.22.0
+jsonschema-specifications==2023.12.1
+kiwisolver==1.4.5
+langid==1.1.6
+librosa==0.9.1
+llvmlite==0.43.0
+loguru==0.7.2
+Markdown==3.6
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.9.0
+mdurl==0.1.2
+mecab-python3==1.0.5
+mpmath==1.3.0
+networkx==2.8.8
+nltk==3.8.1
+num2words==0.5.12
+numba==0.60.0
+numpy==1.26.4
+orjson==3.10.5
+packaging==24.1
+pandas==2.2.2
+pillow==10.3.0
+plac==1.4.3
+platformdirs==4.2.2
+pooch==1.8.2
+proces==0.1.7
+proto-plus==1.24.0
+protobuf==4.25.3
+pyasn1==0.6.0
+pyasn1_modules==0.4.0
+pycparser==2.22
+pydantic==2.7.4
+pydantic_core==2.18.4
+pydub==0.25.1
+Pygments==2.18.0
+pykakasi==2.2.1
+pyparsing==3.1.2
+pypinyin==0.50.0
+python-crfsuite==0.9.10
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+python-multipart==0.0.9
+pytz==2024.1
+PyYAML==6.0.1
+referencing==0.35.1
+regex==2024.5.15
+requests==2.32.3
+resampy==0.4.3
+rich==13.7.1
+rpds-py==0.18.1
+rsa==4.9
+ruff==0.4.10
+s3transfer==0.10.1
+safetensors==0.4.3
+scikit-learn==1.5.0
+scipy==1.13.1
+semantic-version==2.10.0
+setuptools==70.1.0
+shellingham==1.5.4
+six==1.16.0
+sniffio==1.3.1
+soundfile==0.12.1
+starlette==0.37.2
+sympy==1.12.1
+tensorboard==2.16.2
+tensorboard-data-server==0.7.2
+threadpoolctl==3.5.0
+tokenizers==0.19.1
+tomlkit==0.12.0
+toolz==0.12.1
+torch==2.3.1+rocm6.0
+torchaudio==2.3.1+rocm6.0
+tqdm==4.66.4
+transformers==4.41.2
+txtsplit==1.0.0
+typer==0.12.3
+typing_extensions==4.12.2
+tzdata==2024.1
+tzlocal==5.2
+ujson==5.10.0
+Unidecode==1.3.7
+unidic==1.1.0
+unidic-lite==1.0.8
+urllib3==2.2.2
+uvicorn==0.30.1
+uvloop==0.19.0
+wasabi==0.10.1
+watchfiles==0.22.0
+websockets==11.0.3
+Werkzeug==3.0.3
+wrapt==1.16.0
+EOF
+
+    pip install --upgrade pip
+    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    python -m unidic download
+
+    tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export CUDA_VISIBLE_DEVICES=0
+source $installation_path/MeloTTS/.venv/bin/activate
+python melo/app.py
 EOF
     chmod u+x run.sh
 }
@@ -1330,6 +1530,10 @@ while true; do
                     0)
                         # WhisperSpeech web UI
                         install_whisperspeech_web_ui
+                        ;;
+                    1)
+                        # MeloTTS
+                        install_melotts
                         ;;
                     *)
                         first=false
