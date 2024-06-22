@@ -371,7 +371,7 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout abe5ddc8833206381c43b002e95788d4cca0893a
+    git checkout 4820ae9aef3b7716cb00a6519955db435b6dcb56
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
 
@@ -391,7 +391,15 @@ install_text_generation_web_ui() {
     pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
 
     pip uninstall -y llama-cpp-python
-    CMAKE_ARGS="-DLLAMA_HIPBLAS=on -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.74
+    pip uninstall -y llama_cpp_python_cuda
+
+    # CMAKE_ARGS="-DLLAMA_HIPBLAS=on -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.74
+    git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    cd repositories/llama-cpp-python
+    git checkout 04959f1884c8ef93bd5a4aa40ff0accb8438c0c1
+    pip install .
+
+    cd $installation_path/text-generation-webui/
 
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
