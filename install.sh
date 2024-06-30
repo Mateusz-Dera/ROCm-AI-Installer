@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.1"
+version="4.2"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -40,7 +40,7 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 15 100 8 \
+    whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 15 100 9 \
     0 "Installation path ($installation_path)" \
     1 "Install ROCm and required packages" \
     2 "Text generation" \
@@ -48,6 +48,7 @@ show_menu() {
     4 "Music generation" \
     5 "Voice generation" \
     6 "3D models generation" \
+    7 Tools \
     2>&1 > /dev/tty
 }
 
@@ -210,6 +211,12 @@ voice_generation() {
 d3_generation() {
     whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 \
     0 "Install TripoSR" \
+    2>&1 > /dev/tty
+}
+
+tools() {
+    whiptail --title "Tools" --menu "Choose an option:" 15 100 1 \
+    0 "Install ExLlamaV2" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -556,7 +563,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 1d32749ed26a6d2916f5b1b98380019c50215d0b
+    git checkout 00b44071a611a7e684eb56e12950d4969b5261b3
 
     mv ./start.sh ./run.sh
 
@@ -590,6 +597,7 @@ EOF
     mv ./webui.sh ./run.sh
     chmod +x run.sh
 }
+
 # AudioCraft
 install_audiocraft() {
     if ! command -v python3.11 &> /dev/null; then
@@ -1118,6 +1126,68 @@ python3 gradio_app.py
 EOF
     chmod u+x run.sh
 }
+
+install_exllamav2(){
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf exllamav2
+    git clone https://github.com/turboderp/exllamav2
+    cd exllamav2
+    git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
+    python3.12 -m venv .venv --prompt ExLlamaV2
+    source .venv/bin/activate
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
+certifi==2024.6.2
+charset-normalizer==3.3.2
+cramjam==2.8.3
+fastparquet==2024.5.0
+filelock==3.15.4
+fsspec==2024.6.1
+huggingface-hub==0.23.4
+idna==3.7
+Jinja2==3.1.4
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.3
+ninja==1.11.1.1
+numpy==1.26.4
+packaging==24.1
+pandas==2.2.2
+Pygments==2.18.0
+python-dateutil==2.9.0.post0
+pytz==2024.1
+PyYAML==6.0.1
+regex==2024.5.15
+requests==2.32.3
+rich==13.7.1
+safetensors==0.4.3
+sentencepiece==0.2.0
+setuptools==70.1.1
+six==1.16.0
+sympy==1.12.1
+tokenizers==0.19.1
+torch==2.3.1+rocm6.0
+tqdm==4.66.4
+typing_extensions==4.12.2
+tzdata==2024.1
+urllib3==2.2.2
+websockets==12.0
+wheel==0.43.0
+EOF
+
+pip install -r custom_requirements.txt
+pip install .
+
+}
 ## MAIN
 
 backup_and_restore() {
@@ -1560,6 +1630,24 @@ while true; do
                     0)
                         # TripoSR
                         install_triposr
+                        ;;
+                    *)
+                        first=false
+                        ;;
+                esac
+            done
+            ;;
+        7)
+            # Tools
+            first=true
+            while $first; do
+            
+                choice=$(tools)
+
+                case $choice in
+                    0)
+                        # ExLlamaV2
+                        install_exllamav2
                         ;;
                     *)
                         first=false
