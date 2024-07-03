@@ -2,10 +2,10 @@
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 
 ## Info
-[![Version](https://img.shields.io/badge/4.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/4.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 4.2 is not tested on older versions.
+> Ubuntu 24.04 is recommended. Version 4.3 is not tested on older versions.
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -17,7 +17,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (2.10)|
 |OS|Ubuntu 24.04|
-|Kernel|6.8.0-35-generic|
+|Kernel|6.8.0-36-generic|
 |ROCm|6.1.3|
 
 
@@ -26,7 +26,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.11 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |Text generation web UI|Python 3.11 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default |
-|SillyTavern (1.12.1)|Node|https://github.com/SillyTavern/SillyTavern|1. Extras project is discontinued and removed from the script.<br> https://github.com/SillyTavern/SillyTavern-Extras|
+|SillyTavern (1.12.2)|Node|https://github.com/SillyTavern/SillyTavern|1. Extras project is discontinued and removed from the script.<br> https://github.com/SillyTavern/SillyTavern-Extras|
 
 ### Image generation
 |Name|Enviroment|Links|Additional information|
@@ -42,7 +42,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ### Voice generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|WhisperSpeech web UI|Python 3.11 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
+|WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
 
 

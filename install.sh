@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.2"
+version="4.3"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -563,7 +563,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 00b44071a611a7e684eb56e12950d4969b5261b3
+    git checkout 6e86ab07dde6fb663b50616ff84f7a54d1a3c186
 
     mv ./start.sh ./run.sh
 
@@ -768,8 +768,8 @@ EOF
 }
 
 install_whisperspeech_web_ui(){
-    if ! command -v python3.11 &> /dev/null; then
-        echo "Install Python 3.11 first"
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
         exit 1
     fi
 
@@ -778,14 +778,13 @@ install_whisperspeech_web_ui(){
     rm -rf whisperspeech-webui
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
     cd whisperspeech-webui
-    git checkout 7e63b110dcda4d318da4cc55f1b3aeacb7575a6e
-    python3.11 -m venv .venv --prompt WhisperSpeech
+    git checkout fa37d92620fff87ad9391ee6b1908bdfc11e3367
+    python3.12 -m venv .venv --prompt WhisperSpeech
     source .venv/bin/activate
 
-    pip install -r requirements_rocm_6.0.txt
+    pip install -r requirements_rocm.txt
     pip install -U wheel
-    pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6 --no-build-isolation
-
+    pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6
 
     tee --append run.sh <<EOF
 #!/bin/bash
