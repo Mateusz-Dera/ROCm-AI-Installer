@@ -1,11 +1,13 @@
 # ROCm-AI-Installer
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
+It should also work on 7900XT cards.
+For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/4.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/4.4-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 4.3 is not tested on older versions.
+> Ubuntu 24.04 is recommended. Version 4.4 is not tested on older versions.
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -25,7 +27,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.11 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|Text generation web UI|Python 3.11 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default |
+|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default |
 |SillyTavern (1.12.2)|Node|https://github.com/SillyTavern/SillyTavern|1. Extras project is discontinued and removed from the script.<br> https://github.com/SillyTavern/SillyTavern-Extras|
 
 ### Image generation
