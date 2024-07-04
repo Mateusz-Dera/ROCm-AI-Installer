@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 GFX=gfx1100
 
 # Version
-version="4.4"
+version="4.4.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -386,40 +386,37 @@ install_text_generation_web_ui() {
     pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
 	mpmath fsspec MarkupSafe certifi filelock networkx \
 	sympy packaging requests \
-    --extra-index-url https://download.pytorch.org/whl/rocm6.0
+         --index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    pip install --pre torch torchvision torchaudio pytorch-triton pytorch-triton-rocm \
-    --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install --pre -U torch==2.4.0.dev20240606+rocm6.1 torchvision==0.19.0.dev20240606+rocm6.1 \
+    torchaudio pytorch-triton pytorch-triton-rocm \
+    --index-url https://download.pytorch.org/whl/nightly/rocm6.1
+
+    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
+
+    pip install git+https://github.com/ROCm/bitsandbytes.git@43d39760e5490239330631fd4e61f9d00cfc8479
 
     pip install -U wheel setuptools
 
-    pip install git+https://github.com/ROCm/bitsandbytes.git@43d39760e5490239330631fd4e61f9d00cfc8479
     pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6 --no-build-isolation
 
-    pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
-
-    pip uninstall -y llama-cpp-python
-    pip uninstall -y llama_cpp_python_cuda
-
-    # CMAKE_ARGS="-DLLAMA_HIPBLAS=on -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.74
-    git clone  --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
-    cd repositories/llama-cpp-python
-    git checkout 7e20e346bd49cc8f0031eb053fe879a38c777b6f
-    pip install --force-reinstall torch torchtext torchvision torchaudio torchrec --extra-index-url https://download.pytorch.org/whl/rocm6.0
-    pip install .  -C cmake.args="-DAMDGPU_TARGETS=$GFX -DLLAMA_HIPBLAS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release"
-
-    cd $installation_path/text-generation-webui/
+    pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    cd $installation_path/text-generation-webui/extensions/superbooga
-    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip uninstall llama_cpp_python
+    pip uninstall llama_cpp_python_cuda
 
     cd $installation_path/text-generation-webui
+    git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    cd repositories/llama-cpp-python
+    git checkout 7e20e346bd49cc8f0031eb053fe879a38c777b6f
+    pip install .
 
+    cd $installation_path/text-generation-webui
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
