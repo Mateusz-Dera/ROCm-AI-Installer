@@ -4,10 +4,10 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/4.4.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/4.5-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 4.4.1 is not tested on older versions.
+> Ubuntu 24.04 is recommended. Version 4.5 is not tested on older versions.
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
 
@@ -22,38 +22,42 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Kernel|6.8.0-36-generic|
 |ROCm|6.1.3|
 
-
-### Text generation
+###  <span style="color: orange;">Text generation</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.11 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, Transformers, llama.ccp<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default |
+|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2</br> https://github.com/abetlen/llama-cpp-python|1. Tested: ExLlamav2, llama.ccp, Transformers (without Flash Attention)<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default |
 |SillyTavern (1.12.2)|Node|https://github.com/SillyTavern/SillyTavern|1. Extras project is discontinued and removed from the script.<br> https://github.com/SillyTavern/SillyTavern-Extras|
 
-### Image generation
+###  <span style="color: orange;">Image generation</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1<br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
+|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI||
 
-### Music generation
+###  <span style="color: orange;">Video generation</font>
+|Name|Enviroment|Links|Additional information|
+|:---|:---|:---|:---|
+|ToonCrafter|Python 3.12 venv|https://github.com/ToonCrafter/ToonCrafter||
+
+###  <span style="color: orange;">Music generation</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |AudioCraft|Python 3.11 venv|https://github.com/facebookresearch/audiocraft||
 
-### Voice generation
+###  <span style="color: orange;">Voice generation</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
 
-
-### 3D generation
+###  <span style="color: orange;">3D generation</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |TripoSR|Python3.12 venv|https://github.com/VAST-AI-Research/TripoSR<br> https://github.com/ROCmSoftwarePlatform/flash-attention|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
 
-### Tools
+###  <span style="color: orange;">Tools</font>
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |ExLlamaV2|Python3.12 venv|https://github.com/turboderp/exllamav2|1. LLM conversion to exl2 format using convert.py<br>2.Run:<br>```export HSA_OVERRIDE_GFX_VERSION=11.0.0```<br>```export CUDA_VISIBLE_DEVICES=0```<br>```source .venv/bin/activate```|

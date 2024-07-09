@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 GFX=gfx1100
 
 # Version
-version="4.4.1"
+version="4.5"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -41,15 +41,16 @@ fi
 
 # Function to display the main menu
 show_menu() {
-    whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 15 100 9 \
+    whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 17 100 10 \
     0 "Installation path ($installation_path)" \
     1 "Install ROCm and required packages" \
     2 "Text generation" \
     3 "Image generation" \
-    4 "Music generation" \
-    5 "Voice generation" \
-    6 "3D models generation" \
-    7 Tools \
+    4 "Video generation" \
+    5 "Music generation" \
+    6 "Voice generation" \
+    7 "3D models generation" \
+    8 Tools \
     2>&1 > /dev/tty
 }
 
@@ -150,9 +151,16 @@ sillytavern_restore() {
 }
 
 image_generation() {
-    whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 \
+    whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
+    2 "ComfyUI" \
+    2>&1 > /dev/tty
+}
+
+video_generation() {
+    whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 \
+    0 "Install ToonCrafter" \
     2>&1 > /dev/tty
 }
 
@@ -386,37 +394,40 @@ install_text_generation_web_ui() {
     pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
 	mpmath fsspec MarkupSafe certifi filelock networkx \
 	sympy packaging requests \
-         --index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    --extra-index-url https://download.pytorch.org/whl/rocm6.0
 
-    pip install --pre -U torch==2.4.0.dev20240606+rocm6.1 torchvision==0.19.0.dev20240606+rocm6.1 \
-    torchaudio pytorch-triton pytorch-triton-rocm \
-    --index-url https://download.pytorch.org/whl/nightly/rocm6.1
-
-    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
-
-    pip install git+https://github.com/ROCm/bitsandbytes.git@43d39760e5490239330631fd4e61f9d00cfc8479
+    pip install --pre torch torchvision torchaudio pytorch-triton pytorch-triton-rocm \
+    --extra-index-url https://download.pytorch.org/whl/rocm6.0
 
     pip install -U wheel setuptools
 
+    pip install git+https://github.com/ROCm/bitsandbytes.git@43d39760e5490239330631fd4e61f9d00cfc8479
     pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6 --no-build-isolation
 
-    pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
+
+    pip uninstall -y llama-cpp-python
+    pip uninstall -y llama_cpp_python_cuda
+
+    # CMAKE_ARGS="-DLLAMA_HIPBLAS=on -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" FORCE_CMAKE=1 pip install llama-cpp-python==0.2.74
+    git clone  --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    cd repositories/llama-cpp-python
+    git checkout 7e20e346bd49cc8f0031eb053fe879a38c777b6f
+    pip install --force-reinstall torch torchtext torchvision torchaudio torchrec --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install .  -C cmake.args="-DAMDGPU_TARGETS=$GFX -DLLAMA_HIPBLAS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release"
+
+    cd $installation_path/text-generation-webui/
 
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.0
 
-    pip uninstall llama_cpp_python
-    pip uninstall llama_cpp_python_cuda
-
-    cd $installation_path/text-generation-webui
-    git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
-    cd repositories/llama-cpp-python
-    git checkout 7e20e346bd49cc8f0031eb053fe879a38c777b6f
-    pip install .
+    cd $installation_path/text-generation-webui/extensions/superbooga
+    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
 
     cd $installation_path/text-generation-webui
+
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
@@ -594,6 +605,110 @@ export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
     mv ./webui.sh ./run.sh
+    chmod +x run.sh
+}
+
+# ComfyUI
+install_comfyui() {
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf ComfyUI
+    git clone https://github.com/comfyanonymous/ComfyUI.git
+    cd ComfyUI
+    git checkout faa57430b0ff882275b1afcf6610e8e9f8a5929b
+    
+    python3.12 -m venv .venv --prompt ComfyUI
+    source .venv/bin/activate
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.0
+aiohttp==3.9.5
+aiosignal==1.3.1
+attrs==23.2.0
+certifi==2024.7.4
+cffi==1.16.0
+charset-normalizer==3.3.2
+einops==0.8.0
+filelock==3.13.1
+frozenlist==1.4.1
+fsspec==2024.2.0
+huggingface-hub==0.23.4
+idna==3.7
+Jinja2==3.1.3
+kornia==0.7.3
+kornia_rs==0.1.4
+MarkupSafe==2.1.5
+mpmath==1.3.0
+multidict==6.0.5
+networkx==3.2.1
+numpy==1.26.3
+packaging==24.1
+pillow==10.2.0
+psutil==6.0.0
+pycparser==2.22
+PyYAML==6.0.1
+regex==2024.5.15
+requests==2.32.3
+safetensors==0.4.3
+scipy==1.14.0
+soundfile==0.12.1
+spandrel==0.3.4
+sympy==1.12
+tokenizers==0.19.1
+torch==2.3.1+rocm6.0
+torchaudio==2.3.1+rocm6.0
+torchsde==0.2.6
+torchvision==0.18.1+rocm6.0
+tqdm==4.66.4
+trampoline==0.1.2
+transformers==4.42.3
+typing_extensions==4.9.0
+urllib3==2.2.2
+yarl==1.9.4
+EOF
+
+    pip install -r custom_requirements.txt
+
+    tee --append run.sh <<EOF
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/ComfyUI/.venv/bin/activate
+python3 ./main.py
+EOF
+    chmod +x run.sh
+}
+
+# TODO custom_requirements.txt & run.sh
+# Install ToonCrafter
+install_tooncrafter() {
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf ToonCrafter
+    git clone https://github.com/ToonCrafter/ToonCrafter.git
+    cd ToonCrafter
+    git checkout a2b50739508ff22a74a312df4ec9021415f7dac2
+
+    python3.12 -m venv .venv --prompt ToonCrafter
+    source .venv/bin/activate
+
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0
+
+    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
+
+    tee --append run.sh <<EOF
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/ToonCrafter/.venv/bin/activate
+python gradio_app.py 
+EOF
     chmod +x run.sh
 }
 
@@ -1571,6 +1686,10 @@ while true; do
                             esac
                         done
                         ;;
+                    2)
+                        # ComfyUI
+                        install_comfyui
+                        ;;
                     *)
                         first=false
                         ;;
@@ -1578,6 +1697,24 @@ while true; do
             done
             ;;
         4)
+            # Video generation
+            first=true
+            while $first; do
+            
+                choice=$(video_generation)
+
+                case $choice in
+                    0)
+                        # ToonCrafter
+                        install_tooncrafter
+                        ;;
+                    *)
+                        first=false
+                        ;;
+                esac
+            done
+            ;;
+        5)
             # Music generation
             first=true
             while $first; do
@@ -1595,7 +1732,7 @@ while true; do
                 esac
             done
             ;;
-        5)
+        6)
             # Voice generation
             first=true
             while $first; do
@@ -1617,7 +1754,7 @@ while true; do
                 esac
             done
             ;;
-        6)
+        7)
             # 3D generation
             first=true
             while $first; do
@@ -1635,7 +1772,7 @@ while true; do
                 esac
             done
             ;;
-        7)
+        8)
             # Tools
             first=true
             while $first; do
