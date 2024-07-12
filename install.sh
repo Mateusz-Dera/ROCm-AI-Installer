@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 GFX=gfx1100
 
 # Version
-version="4.5"
+version="4.5.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -679,6 +679,7 @@ requests==2.32.3
 safetensors==0.4.3
 scipy==1.14.0
 six==1.16.0
+sentencepiece==0.2.0
 soundfile==0.12.1
 spandrel==0.3.4
 sympy==1.12
