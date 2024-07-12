@@ -36,10 +36,9 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1<br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
 |ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI||
 
-###  <span style="color: orange;">Video generation</font>
+<!-- ###  <span style="color: orange;">Video generation</font>
 |Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|ToonCrafter|Python 3.12 venv|https://github.com/ToonCrafter/ToonCrafter||
+|:---|:---|:---|:---| -->
 
 ###  <span style="color: orange;">Music generation</font>
 |Name|Enviroment|Links|Additional information|

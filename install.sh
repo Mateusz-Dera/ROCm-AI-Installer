@@ -46,11 +46,10 @@ show_menu() {
     1 "Install ROCm and required packages" \
     2 "Text generation" \
     3 "Image generation" \
-    4 "Video generation" \
-    5 "Music generation" \
-    6 "Voice generation" \
-    7 "3D models generation" \
-    8 Tools \
+    4 "Music generation" \
+    5 "Voice generation" \
+    6 "3D models generation" \
+    7 Tools \
     2>&1 > /dev/tty
 }
 
@@ -155,12 +154,6 @@ image_generation() {
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
     2 "ComfyUI" \
-    2>&1 > /dev/tty
-}
-
-video_generation() {
-    whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 \
-    0 "Install ToonCrafter" \
     2>&1 > /dev/tty
 }
 
@@ -291,7 +284,6 @@ install_rocm() {
     sudo apt-get update -y
     remove_old
     sudo apt-get install -y wget
-    repo
 
     sudo apt install -y amdgpu-dkms
     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
@@ -678,36 +670,6 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 source $installation_path/ComfyUI/.venv/bin/activate
 python3 ./main.py
-EOF
-    chmod +x run.sh
-}
-
-# TODO custom_requirements.txt & run.sh
-# Install ToonCrafter
-install_tooncrafter() {
-    if ! command -v python3.12 &> /dev/null; then
-        echo "Install Python 3.12 first"
-        exit 1
-    fi
-
-    mkdir -p $installation_path
-    cd $installation_path
-    rm -rf ToonCrafter
-    git clone https://github.com/ToonCrafter/ToonCrafter.git
-    cd ToonCrafter
-    git checkout a2b50739508ff22a74a312df4ec9021415f7dac2
-
-    python3.12 -m venv .venv --prompt ToonCrafter
-    source .venv/bin/activate
-
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0
-
-    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
-
-    tee --append run.sh <<EOF
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-source $installation_path/ToonCrafter/.venv/bin/activate
-python gradio_app.py 
 EOF
     chmod +x run.sh
 }
@@ -1697,24 +1659,6 @@ while true; do
             done
             ;;
         4)
-            # Video generation
-            first=true
-            while $first; do
-            
-                choice=$(video_generation)
-
-                case $choice in
-                    0)
-                        # ToonCrafter
-                        install_tooncrafter
-                        ;;
-                    *)
-                        first=false
-                        ;;
-                esac
-            done
-            ;;
-        5)
             # Music generation
             first=true
             while $first; do
@@ -1732,7 +1676,7 @@ while true; do
                 esac
             done
             ;;
-        6)
+        5)
             # Voice generation
             first=true
             while $first; do
@@ -1754,7 +1698,7 @@ while true; do
                 esac
             done
             ;;
-        7)
+        6)
             # 3D generation
             first=true
             while $first; do
@@ -1772,7 +1716,7 @@ while true; do
                 esac
             done
             ;;
-        8)
+        7)
             # Tools
             first=true
             while $first; do
