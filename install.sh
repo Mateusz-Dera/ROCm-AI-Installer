@@ -197,6 +197,27 @@ animagine_xl_restore() {
     2>&1 > /dev/tty
 }
 
+comfyui() {
+    whiptail --title "ComfyUI + ComfyUI-CLIPSeg" --menu "Choose an option:" 15 100 3 \
+    0 "Backup" \
+    1 "Install" \
+    2 "Restore" \
+    2>&1 > /dev/tty
+}
+
+comfyui_backup() {
+    whiptail --title "ComfyUI" --menu "Choose an option:" 15 100 1 \
+    0 "Backup models" \
+    2>&1 > /dev/tty
+}
+
+comfyui_restore() {
+    whiptail --title "ComfyUI" --menu "Choose an option:" 15 100 1 \
+    0 "Restore models" \
+    2>&1 > /dev/tty
+}
+
+
 music_generation() {
     whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 \
     0 "Install AudioCraft" \
@@ -1667,7 +1688,51 @@ while true; do
                         ;;
                     2)
                         # ComfyUI
-                        install_comfyui
+                        second=true
+                        while $second; do
+                            choice=$(comfyui)
+                            case $choice in
+                                0)
+                                    # Backup
+                                    next=true
+                                    while $next; do
+                                        choice=$(comfyui_backup)
+                                        case $choice in
+                                            0)
+                                                # Backup models
+                                                backup_and_restore $installation_path/ComfyUI/models $installation_path/Backups/ComfyUI/models
+                                                ;;
+                                            *)
+                                                next=false
+                                                ;;
+                                        esac
+                                    done
+                                    ;;
+                                1)
+                                    # Install
+                                    install_comfyui
+                                    ;;
+                                2)
+                                    # Restore
+                                    next=true
+                                    while $next; do
+                                        choice=$(comfyui_restore)
+                                        case $choice in
+                                            0)
+                                                # Restore models
+                                                backup_and_restore $installation_path/Backups/ComfyUI/models $installation_path/ComfyUI/models
+                                                ;;
+                                            *)
+                                                next=false
+                                                ;;
+                                        esac
+                                    done
+                                    ;;
+                                *)
+                                    second=false
+                                    ;;
+                            esac
+                        done
                         ;;
                     *)
                         first=false
