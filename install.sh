@@ -153,7 +153,7 @@ image_generation() {
     whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
-    2 "ComfyUI" \
+    2 "ComfyUI + ComfyUI-CLIPSeg" \
     2>&1 > /dev/tty
 }
 
@@ -612,7 +612,7 @@ install_comfyui() {
     rm -rf ComfyUI
     git clone https://github.com/comfyanonymous/ComfyUI.git
     cd ComfyUI
-    git checkout faa57430b0ff882275b1afcf6610e8e9f8a5929b
+    git checkout ce2473bb016748a4d98e9bce02d675b4fc22f4ac
     
     python3.12 -m venv .venv --prompt ComfyUI
     source .venv/bin/activate
@@ -625,46 +625,63 @@ attrs==23.2.0
 certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
+contourpy==1.2.1
+cv==1.0.0
+cycler==0.12.1
 einops==0.8.0
 filelock==3.13.1
+fonttools==4.53.1
 frozenlist==1.4.1
 fsspec==2024.2.0
 huggingface-hub==0.23.4
 idna==3.7
 Jinja2==3.1.3
+kiwisolver==1.4.5
 kornia==0.7.3
 kornia_rs==0.1.4
 MarkupSafe==2.1.5
+matplotlib==3.9.1
 mpmath==1.3.0
 multidict==6.0.5
 networkx==3.2.1
 numpy==1.26.3
+opencv-python==4.10.0.84
 packaging==24.1
 pillow==10.2.0
 psutil==6.0.0
 pycparser==2.22
+pyparsing==3.1.2
+python-dateutil==2.9.0.post0
 PyYAML==6.0.1
 regex==2024.5.15
 requests==2.32.3
 safetensors==0.4.3
 scipy==1.14.0
+six==1.16.0
 soundfile==0.12.1
 spandrel==0.3.4
 sympy==1.12
-tokenizers==0.19.1
+tokenizers==0.15.2
 torch==2.3.1+rocm6.0
 torchaudio==2.3.1+rocm6.0
 torchsde==0.2.6
 torchvision==0.18.1+rocm6.0
 tqdm==4.66.4
 trampoline==0.1.2
-transformers==4.42.3
+transformers==4.36.0
 typing_extensions==4.9.0
 urllib3==2.2.2
 yarl==1.9.4
 EOF
 
     pip install -r custom_requirements.txt
+
+    git clone https://github.com/biegert/ComfyUI-CLIPSeg.git
+    cd ComfyUI-CLIPSeg
+    git checkout 7f38951269888407de45fb934958c30c27704fdb
+    mv ./custom_nodes/clipseg.py $installation_path/ComfyUI/custom_nodes
+    cd $installation_path/ComfyUI
+    rm -rf ComfyUI-CLIPSeg
 
     tee --append run.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
