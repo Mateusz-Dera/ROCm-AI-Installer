@@ -304,8 +304,8 @@ repo(){
 install_rocm() {
     sudo apt-get update -y
     remove_old
-    repo
     sudo apt-get install -y wget
+    repo
 
     sudo apt install -y amdgpu-dkms
     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
