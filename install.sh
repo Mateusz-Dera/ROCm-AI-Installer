@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 GFX=gfx1100
 
 # Version
-version="4.5.1"
+version="4.5.2"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -304,6 +304,7 @@ repo(){
 install_rocm() {
     sudo apt-get update -y
     remove_old
+    repo
     sudo apt-get install -y wget
 
     sudo apt install -y amdgpu-dkms
