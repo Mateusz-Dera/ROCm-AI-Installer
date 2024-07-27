@@ -19,7 +19,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (2.10)|
 |OS|Ubuntu 24.04|
-|Kernel|6.8.0-38-generic|
+|Kernel|6.8.0-39-generic|
 |ROCm|6.1.3|
 
 ###  <span style="color: orange;">Text generation</font>
