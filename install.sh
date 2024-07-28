@@ -401,62 +401,93 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout 6b4d76212060d618534e4ab976534eee75f5466d
+    git checkout 498fec2c7c7df376007f264261acfcfcb76168ea
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
 
     pip install --upgrade pip
 
-    pip install cmake ninja wheel setuptools packaging --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install cmake ninja --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+
+    pip install wheel setuptools --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
-        mpmath fsspec MarkupSafe certifi filelock networkx \
-        sympy packaging requests \
-            --index-url https://download.pytorch.org/whl/rocm6.0
+	mpmath fsspec MarkupSafe certifi filelock networkx \
+	sympy packaging requests \
+         --index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    pip install --pre -U torch==2.5.0.dev20240704+rocm6.1 torchvision==0.20.0.dev20240704+rocm6.1 \
-    torchaudio pytorch-triton pytorch-triton-rocm \
-    --index-url https://download.pytorch.org/whl/rocm6.0
+    pip install --pre -U torch==2.5.0.dev20240722+rocm6.1 torchvision==0.20.0.dev20240723+rocm6.1  \
+	torchaudio pytorch-triton pytorch-triton-rocm  \
+	 --index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d --extra-index-url https://download.pytorch.org/whl/rocm6.0
-    
+    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
+
     git clone https://github.com/ROCm/bitsandbytes.git
     cd bitsandbytes
     git checkout 43d39760e5490239330631fd4e61f9d00cfc8479
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install .
 
     cd $installation_path/text-generation-webui
-
     git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
     cd flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
-    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    # git clone https://github.com/Dao-AILab/flash-attention.git
+    # cd flash-attention
+    # git checkout c4b9015d74bd9f638c6fd574482accf4bbbd4197
+    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     cd $installation_path/text-generation-webui
 
-    pip install -r requirements_amd.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    tee --append requirements_amdai.txt <<EOF
+accelerate>=0.32
+colorama
+datasets
+einops
+gradio>=4.26
+hqq>=0.1.7.post3
+jinja2>=3.1.4
+lm_eval>=0.3.0
+markdown
+numba>=0.59
+numpy>=1.26
+optimum>=1.17
+pandas
+peft>=0.8
+Pillow>=9.5.0
+psutil
+pyyaml
+requests
+rich
+safetensors>=0.4
+scipy
+sentencepiece
+tensorboard
+transformers>=4.43
+tqdm
+wandb
+SpeechRecognition>=3.10.0
+flask_cloudflared>=0.0.14
+sse-starlette>=1.6.5
+tiktoken
+EOF
+pip install -r requirements_amdai.txt  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    # git checkout 3aabad216ba7492b0a5b1a3a429ce3c4a85b7cc3
+    pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    pip uninstall -y llama_cpp_python
-    pip uninstall -y llama_cpp_python_cuda
-
-    cd $installation_path/text-generation-webui
-
-    pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     cd $installation_path/text-generation-webui
-
-    git clone  --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    
+    pip uninstall llama_cpp_python
+    pip uninstall llama_cpp_python_cuda
+    ## install llama-cpp-python
+    git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
     cd repositories/llama-cpp-python
-    git checkout 7e20e346bd49cc8f0031eb053fe879a38c777b6f
-    pip install --force-reinstall torch torchtext torchvision torchaudio torchrec --extra-index-url https://download.pytorch.org/whl/rocm6.0
-    pip install .  -C cmake.args="-DAMDGPU_TARGETS=$GFX -DLLAMA_HIPBLAS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release"
-
-    pip install numba==0.60
+    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
 
     cd $installation_path/text-generation-webui
 
@@ -468,6 +499,8 @@ source $installation_path/text-generation-webui/.venv/bin/activate
 TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --loader=exllamav2 --extensions sd_api_pictures send_pictures gallery
 EOF
     chmod u+x run.sh
+
+
 }
 
 # ANIMAGINE XL 3.1
