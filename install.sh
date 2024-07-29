@@ -772,7 +772,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 6e86ab07dde6fb663b50616ff84f7a54d1a3c186
+    git checkout eac2e3d81e128c61299c94ef6c9dd1a8fd87a8c1
 
     mv ./start.sh ./run.sh
 
