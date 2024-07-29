@@ -1,7 +1,7 @@
 # ROCm-AI-Installer
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 It should also work on 7900XT cards.
-For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
+For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
 
 ## Info
 [![Version](https://img.shields.io/badge/4.6-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
