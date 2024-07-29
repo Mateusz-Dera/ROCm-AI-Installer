@@ -22,7 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-GFX=gfx1100
 
 # Version
 version="4.6"
@@ -404,19 +403,189 @@ install_text_generation_web_ui() {
     git checkout 498fec2c7c7df376007f264261acfcfcb76168ea
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
-
+    
     pip install --upgrade pip
-    pip install cmake ninja --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
-    pip install wheel setuptools --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
-    pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
-	mpmath fsspec MarkupSafe certifi filelock networkx \
-	sympy packaging requests \
-         --index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install wheel==0.43
+    pip install setuptools==65.5
 
-    pip install --pre -U torch==2.5.0.dev20240722+rocm6.1 torchvision==0.20.0.dev20240723+rocm6.1  \
-	torchaudio pytorch-triton pytorch-triton-rocm  \
-	 --index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    tee --append custom_requirements.txt <<EOF
+absl-py==2.1.0
+accelerate==0.33.0
+aiofiles==23.2.1
+aiohttp==3.9.5
+aiosignal==1.3.1
+annotated-types==0.7.0
+anyio==4.4.0
+attrs==23.2.0
+bitblas==0.0.1.dev13
+blinker==1.8.2
+certifi==2024.2.2
+cffi==1.16.0
+chardet==5.2.0
+charset-normalizer==3.3.2
+click==8.1.7
+cloudpickle==3.0.0
+cmake==3.30.1
+colorama==0.4.6
+coloredlogs==15.0.1
+contourpy==1.2.1
+cpplint==1.6.1
+cramjam==2.8.3
+cycler==0.12.1
+Cython==3.0.10
+DataProperty==1.0.1
+datasets==2.20.0
+decorator==5.1.1
+dill==0.3.8
+diskcache==5.6.3
+dnspython==2.6.1
+docker-pycreds==0.4.0
+docutils==0.21.2
+dtlib==0.0.0.dev2
+einops==0.8.0
+email_validator==2.2.0
+evaluate==0.4.2
+execnet==2.1.1
+fastapi==0.111.1
+fastapi-cli==0.0.4
+fastparquet==2024.5.0
+ffmpy==0.3.2
+filelock==3.13.1
+Flask==3.0.3
+flask-cloudflared==0.0.14
+fonttools==4.53.1
+frozenlist==1.4.1
+fsspec==2024.5.0
+gitdb==4.0.11
+GitPython==3.1.43
+gradio==4.39.0
+gradio_client==1.1.1
+grpcio==1.65.1
+h11==0.14.0
+hqq==0.1.8
+httpcore==1.0.5
+httptools==0.6.1
+httpx==0.27.0
+huggingface-hub==0.24.3
+humanfriendly==10.0
+idna==3.7
+importlib_resources==6.4.0
+iniconfig==2.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.4
+joblib==1.4.2
+jsonlines==4.0.0
+kiwisolver==1.4.5
+lit==15.0.7
+llvmlite==0.43.0
+lm_eval==0.4.3
+lxml==5.2.2
+Markdown==3.6
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.9.1
+mbstrdecoder==1.1.3
+mdurl==0.1.2
+ml-dtypes==0.4.0
+more-itertools==10.3.0
+mpmath==1.3.0
+multidict==6.0.5
+multiprocess==0.70.16
+networkx==3.3
+ninja==1.11.1.1
+nltk==3.8.1
+numba==0.60.0
+numexpr==2.10.1
+numpy==1.26.4
+optimum==1.17.1
+orjson==3.10.6
+packaging==22.0
+pandas==2.2.2
+pathvalidate==3.2.0
+peft==0.12.0
+pillow==10.4.0
+platformdirs==4.2.2
+pluggy==1.5.0
+portalocker==2.10.1
+protobuf==4.25.4
+psutil==6.0.0
+pyarrow==17.0.0
+pyarrow-hotfix==0.6
+pybind11==2.13.1
+pycparser==2.22
+pydantic==2.8.2
+pydantic_core==2.20.1
+pydub==0.25.1
+Pygments==2.18.0
+pyparsing==3.1.2
+pytablewriter==1.2.0
+pytest==8.3.2
+pytest-xdist==3.6.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+python-multipart==0.0.9
+pytorch-triton==3.0.0+dedb7bdf33
+pytorch-triton-rocm==3.0.0+21eae954ef
+pytz==2024.1
+PyYAML==6.0.1
+rapidfuzz==3.9.5
+regex==2024.7.24
+requests==2.32.3
+rich==13.7.1
+rouge-score==0.1.2
+ruff==0.5.5
+sacrebleu==2.4.2
+safetensors==0.4.3
+scikit-learn==1.5.1
+scipy==1.14.0
+semantic-version==2.10.0
+sentencepiece==0.2.0
+sentry-sdk==2.11.0
+setproctitle==1.3.3
+shellingham==1.5.4
+six==1.16.0
+smmap==5.0.1
+sniffio==1.3.1
+SpeechRecognition==3.10.4
+sqlitedict==2.1.0
+sse-starlette==2.1.2
+starlette==0.37.2
+sympy==1.13.1
+tabledata==1.3.3
+tabulate==0.9.0
+tcolorpy==0.1.6
+tensorboard==2.17.0
+tensorboard-data-server==0.7.2
+termcolor==2.4.0
+thefuzz==0.22.1
+threadpoolctl==3.5.0
+tiktoken==0.7.0
+tokenizers==0.19.1
+tomlkit==0.12.0
+torch==2.5.0.dev20240722+rocm6.1
+torchaudio==2.4.0.dev20240723+rocm6.1
+torchvision==0.20.0.dev20240723+rocm6.1
+tornado==6.4.1
+tqdm==4.66.4
+tqdm-multiprocess==0.0.11
+typepy==1.3.2
+typer==0.12.3
+typing_extensions==4.12.2
+tzdata==2024.1
+urllib3==2.2.1
+uvicorn==0.30.3
+uvloop==0.19.0
+wandb==0.17.5
+watchfiles==0.22.0
+websockets==11.0.3
+Werkzeug==3.0.3
+word2number==1.1
+xxhash==3.4.1
+yarl==1.9.4
+zstandard==0.23.0
+EOF
+    pip install -r custom_requirements.txt  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
 
@@ -432,41 +601,6 @@ install_text_generation_web_ui() {
     pip install -e . --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     cd $installation_path/text-generation-webui
-
-    tee --append requirements_amdai.txt <<EOF
-accelerate>=0.32
-colorama
-datasets
-einops
-gradio>=4.26
-hqq>=0.1.7.post3
-jinja2>=3.1.4
-lm_eval>=0.3.0
-markdown
-numba>=0.59
-numpy>=1.26
-optimum>=1.17
-pandas
-peft>=0.8
-Pillow>=9.5.0
-psutil
-pyyaml
-requests
-rich
-safetensors>=0.4
-scipy
-sentencepiece
-tensorboard
-transformers>=4.43
-tqdm
-wandb
-SpeechRecognition>=3.10.0
-flask_cloudflared>=0.0.14
-sse-starlette>=1.6.5
-tiktoken
-EOF
-pip install -r requirements_amdai.txt  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
-
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
