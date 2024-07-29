@@ -619,6 +619,12 @@ EOF
     cd $installation_path/text-generation-webui/modules
     sed -i '37d;39d' llama_cpp_python_hijack.py
 
+    cd $installation_path/text-generation-webui/extensions/superboogav2
+    pip install -r ./requirements.txt
+
+    cd $installation_path/text-generation-webui/extensions/superbooga
+    pip install -r ./requirements.txt
+
     cd $installation_path/text-generation-webui
 
     tee --append run.sh <<EOF
