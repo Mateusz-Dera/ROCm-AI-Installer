@@ -406,9 +406,7 @@ install_text_generation_web_ui() {
     source .venv/bin/activate
 
     pip install --upgrade pip
-
     pip install cmake ninja --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
-
     pip install wheel setuptools --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     pip install --pre cmake colorama filelock lit numpy Pillow Jinja2 \
@@ -431,10 +429,7 @@ install_text_generation_web_ui() {
     git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
     cd flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
-    # git clone https://github.com/Dao-AILab/flash-attention.git
-    # cd flash-attention
-    # git checkout c4b9015d74bd9f638c6fd574482accf4bbbd4197
-    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install -e . --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     cd $installation_path/text-generation-webui
 
@@ -475,7 +470,6 @@ pip install -r requirements_amdai.txt  --extra-index-url https://download.pytorc
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    # git checkout 3aabad216ba7492b0a5b1a3a429ce3c4a85b7cc3
     pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
 
     pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
@@ -484,10 +478,12 @@ pip install -r requirements_amdai.txt  --extra-index-url https://download.pytorc
     
     pip uninstall llama_cpp_python
     pip uninstall llama_cpp_python_cuda
-    ## install llama-cpp-python
     git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
     cd repositories/llama-cpp-python
     CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
+
+    cd $installation_path/text-generation-webui/modules
+    sed -i '37d;39d' llama_cpp_python_hijack.py
 
     cd $installation_path/text-generation-webui
 
@@ -499,8 +495,6 @@ source $installation_path/text-generation-webui/.venv/bin/activate
 TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --loader=exllamav2 --extensions sd_api_pictures send_pictures gallery
 EOF
     chmod u+x run.sh
-
-
 }
 
 # ANIMAGINE XL 3.1
