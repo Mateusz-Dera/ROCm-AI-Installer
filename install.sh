@@ -1447,7 +1447,7 @@ install_exllamav2(){
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 certifi==2024.6.2
 charset-normalizer==3.3.2
 cramjam==2.8.3
@@ -1466,8 +1466,10 @@ ninja==1.11.1.1
 numpy==1.26.4
 packaging==24.1
 pandas==2.2.2
+pillow==10.2.0
 Pygments==2.18.0
 python-dateutil==2.9.0.post0
+pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.1
 regex==2024.5.15
@@ -1479,7 +1481,9 @@ setuptools==70.1.1
 six==1.16.0
 sympy==1.12.1
 tokenizers==0.19.1
-torch==2.3.1+rocm6.0
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 typing_extensions==4.12.2
 tzdata==2024.1
@@ -1489,8 +1493,7 @@ wheel==0.43.0
 EOF
 
 pip install -r custom_requirements.txt
-pip install .
-
+pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 }
 ## MAIN
 
