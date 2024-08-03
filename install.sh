@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.6"
+version="4.7"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -410,6 +410,7 @@ install_text_generation_web_ui() {
     pip install setuptools==65.5
 
     tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
 accelerate==0.33.0
 aiofiles==23.2.1
@@ -525,8 +526,8 @@ pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.9
-pytorch-triton==3.0.0+dedb7bdf33
-pytorch-triton-rocm==3.0.0+21eae954ef
+pytorch-triton==3.0.0
+pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.1
 rapidfuzz==3.9.5
@@ -563,9 +564,9 @@ threadpoolctl==3.5.0
 tiktoken==0.7.0
 tokenizers==0.19.1
 tomlkit==0.12.0
-torch==2.5.0.dev20240722+rocm6.1
-torchaudio==2.4.0.dev20240723+rocm6.1
-torchvision==0.20.0.dev20240723+rocm6.1
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tornado==6.4.1
 tqdm==4.66.4
 tqdm-multiprocess==0.0.11
@@ -585,7 +586,7 @@ xxhash==3.4.1
 yarl==1.9.4
 zstandard==0.23.0
 EOF
-    pip install -r custom_requirements.txt  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install -r custom_requirements.txt
 
     pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
 
@@ -598,20 +599,18 @@ EOF
     git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
     cd flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
-    pip install -e . --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install -e . --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install . --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
-    pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.1
+    pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
-    
-    pip uninstall llama_cpp_python
-    pip uninstall llama_cpp_python_cuda
+
     git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
     cd repositories/llama-cpp-python
     CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
@@ -654,7 +653,7 @@ install_animagine_xl() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 accelerate==0.27.2
 aiofiles==23.2.1
 altair==5.3.0
@@ -714,7 +713,7 @@ pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.9
-pytorch-triton-rocm==2.3.0
+pytorch-triton-rocm
 pytz==2024.1
 PyWavelets==1.6.0
 PyYAML==6.0.1
@@ -736,8 +735,8 @@ timm==0.9.10
 tokenizers==0.15.2
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.0+rocm6.0
-torchvision==0.18.0+rocm6.0
+torch
+torchvision
 tqdm==4.66.4
 transformers==4.38.1
 typer==0.12.3
@@ -794,12 +793,13 @@ install_stable_diffusion_web_ui() {
     rm -Rf stable-diffusion-webui
     git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
     cd stable-diffusion-webui
-    git checkout cf2772fab0af5573da775e7437e6acdca424f26e
+    git checkout 82a973c04367123ae98bd9abdf80d9eda9b910e2
             
     tee --append webui-user.sh <<EOF
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python_cmd="python3.11"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install --pre torch==2.3.0+rocm6.0  torchvision==0.18.0+rocm6.0 --extra-index-url https://download.pytorch.org/whl/rocm6.0"
+export TORCH_COMMAND="pip install --pre torch==2.4.0+rocm6.1  torchvision==0.19.0+rocm6.1 --extra-index-url https://download.pytorch.org/whl/rocm6.1"
 export COMMANDLINE_ARGS="--api"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
@@ -911,12 +911,12 @@ install_audiocraft() {
     rm -rf audiocraft
     git clone https://github.com/facebookresearch/audiocraft.git
     cd audiocraft
-    git checkout 72cb16f9fb239e9cf03f7bd997198c7d7a67a01c
+    git checkout adf0b04a4452f171970028fcf80f101dd5e26e19
     python3.11 -m venv .venv --prompt AudioCraft
     source .venv/bin/activate
             
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 aiofiles==23.2.1
 altair==5.3.0
 annotated-types==0.6.0
@@ -1006,7 +1006,7 @@ Pygments==2.18.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==2.3.0
+pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.35.1
@@ -1039,9 +1039,10 @@ threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.0+rocm6.0
-torchaudio==2.3.0+rocm6.0
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
 torchmetrics==1.4.0
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 transformers==4.40.2
 treetable==0.2.5
@@ -1053,11 +1054,11 @@ uvicorn==0.29.0
 wasabi==1.1.2
 weasel==0.3.4
 websockets==11.0.3
-xformers==0.0.26.post1
+xformers==0.0.27.post2
 EOF
 
     pip install -r custom_requirements.txt
-        
+    
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
