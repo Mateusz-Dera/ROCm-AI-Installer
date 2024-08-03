@@ -1313,7 +1313,7 @@ install_triposr(){
     pip install -U wheel
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 aiofiles==23.2.1
 altair==5.2.0
 annotated-types==0.6.0
@@ -1379,7 +1379,7 @@ PyMatting==1.1.12
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==2.3.0
+pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.33.0
@@ -1392,6 +1392,7 @@ safetensors==0.4.2
 scikit-image==0.22.0
 scipy==1.12.0
 semantic-version==2.10.0
+setuptools==72.1.0
 shellingham==1.5.4
 six==1.16.0
 sniffio==1.3.1
@@ -1401,9 +1402,9 @@ tifffile==2024.2.12
 tokenizers==0.14.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.0+rocm6.0
-torchaudio==2.3.0+rocm6.0
-torchvision==0.18.0+rocm6.0
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.2
 transformers==4.35.0
 trimesh==4.0.5
@@ -1413,9 +1414,11 @@ tzdata==2024.1
 urllib3==2.2.1
 uvicorn==0.27.1
 websockets==11.0.3
+wheel==0.43.0
 EOF
 
     pip install -r custom_requirements.txt
+    
     pip install git+https://github.com/tatsy/torchmcubes.git@3aef8afa5f21b113afc4f4ea148baee850cbd472
 
     tee --append run.sh <<EOF
@@ -1439,7 +1442,7 @@ install_exllamav2(){
     rm -rf exllamav2
     git clone https://github.com/turboderp/exllamav2
     cd exllamav2
-    git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
+    git checkout 3aabad216ba7492b0a5b1a3a429ce3c4a85b7cc3
     python3.12 -m venv .venv --prompt ExLlamaV2
     source .venv/bin/activate
 
