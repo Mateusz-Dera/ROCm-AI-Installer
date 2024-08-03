@@ -901,8 +901,8 @@ EOF
 
 # AudioCraft
 install_audiocraft() {
-    if ! command -v python3.11 &> /dev/null; then
-        echo "Install Python 3.11 first"
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
         exit 1
     fi
 
@@ -912,7 +912,7 @@ install_audiocraft() {
     git clone https://github.com/facebookresearch/audiocraft.git
     cd audiocraft
     git checkout adf0b04a4452f171970028fcf80f101dd5e26e19
-    python3.11 -m venv .venv --prompt AudioCraft
+    python3.12 -m venv .venv --prompt AudioCraft
     source .venv/bin/activate
             
     tee --append custom_requirements.txt <<EOF
@@ -1058,7 +1058,6 @@ xformers==0.0.27.post2
 EOF
 
     pip install -r custom_requirements.txt
-    
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0

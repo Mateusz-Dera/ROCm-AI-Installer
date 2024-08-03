@@ -43,7 +43,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ###  Music generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|AudioCraft|Python 3.11 venv|https://github.com/facebookresearch/audiocraft||
+|AudioCraft|Python 3.12 venv|https://github.com/facebookresearch/audiocraft||
 
 ###  Voice generation
 |Name|Enviroment|Links|Additional information|
