@@ -346,12 +346,12 @@ install_koboldcpp() {
     fi
     git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
     cd koboldcpp-rocm
-    git checkout fa2cf0de24697688101925d9fa5e298ea315fabb
+    git checkout 32666598ad226a6fa9624af97761ce6e46a6feca
     python3.12 -m venv .venv --prompt Kobold
     source .venv/bin/activate
     make LLAMA_HIPBLAS=1 -j4
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 certifi==2024.7.4
 charset-normalizer==3.3.2
 customtkinter==5.2.2
@@ -361,16 +361,27 @@ fsspec==2024.6.1
 gguf==0.9.1
 huggingface-hub==0.23.4
 idna==3.7
+Jinja2==3.1.3
+MarkupSafe==2.1.5
+mpmath==1.3.0
+networkx==3.2.1
 numpy==1.26.4
 packaging==24.1
+pillow==10.2.0
 protobuf==5.27.2
 psutil==6.0.0
+pytorch-triton-rocm==3.0.0
 PyYAML==6.0.1
 regex==2024.5.15
 requests==2.32.3
 safetensors==0.4.3
 sentencepiece==0.2.0
+setuptools==70.0.0
+sympy==1.12
 tokenizers==0.19.1
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 transformers==4.42.4
 typing_extensions==4.12.2
