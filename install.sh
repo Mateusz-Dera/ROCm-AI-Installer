@@ -1079,12 +1079,11 @@ install_whisperspeech_web_ui(){
     rm -rf whisperspeech-webui
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
     cd whisperspeech-webui
-    git checkout fa37d92620fff87ad9391ee6b1908bdfc11e3367
+    git checkout c295d6b5503465067ea4fe24b2b20214fa827d94
     python3.12 -m venv .venv --prompt WhisperSpeech
     source .venv/bin/activate
 
-    pip install -r requirements_rocm.txt
-    pip install -U wheel
+    pip install -r requirements_rocm_6.1.txt
     pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6
 
     tee --append run.sh <<EOF
@@ -1108,7 +1107,7 @@ install_melotts(){
     rm -rf MeloTTS
     git clone https://github.com/myshell-ai/MeloTTS
     cd MeloTTS
-    git checkout abf885acf7c8322af07e6584099748cba09e3909
+    git checkout 2374f4674b8b2760761d3cc167799691f21efe29
     python3.12 -m venv .venv --prompt MeloTTS
     source .venv/bin/activate
 
@@ -1228,6 +1227,7 @@ python-crfsuite==0.9.10
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.9
+pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.35.1
@@ -1256,8 +1256,9 @@ threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.3.1+rocm6.0
-torchaudio==2.3.1+rocm6.0
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 transformers==4.41.2
 txtsplit==1.0.0
@@ -1280,8 +1281,8 @@ wrapt==1.16.0
 EOF
 
     pip install --upgrade pip
-    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.0
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.0
+    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.1
     python -m unidic download
 
     tee --append run.sh <<EOF
