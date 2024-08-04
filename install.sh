@@ -45,10 +45,11 @@ show_menu() {
     1 "Install ROCm and required packages" \
     2 "Text generation" \
     3 "Image generation" \
-    4 "Music generation" \
-    5 "Voice generation" \
-    6 "3D models generation" \
-    7 Tools \
+    4 "Video generation" \
+    5 "Music generation" \
+    6 "Voice generation" \
+    7 "3D models generation" \
+    8 Tools \
     2>&1 > /dev/tty
 }
 
@@ -152,7 +153,7 @@ image_generation() {
     whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
-    2 "ComfyUI + CLIPSeg + Aura" \
+    2 "ComfyUI + Addons" \
     2>&1 > /dev/tty
 }
 
@@ -197,7 +198,7 @@ animagine_xl_restore() {
 }
 
 comfyui() {
-    whiptail --title "ComfyUI + CLIPSeg + Aura" --menu "Choose an option:" 15 100 3 \
+    whiptail --title "ComfyUI + Addons" --menu "Choose an option:" 15 100 3 \
     0 "Backup" \
     1 "Install" \
     2 "Restore" \
@@ -216,6 +217,12 @@ comfyui_restore() {
     2>&1 > /dev/tty
 }
 
+
+video_generation() {
+    whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 \
+    0 "Install Cinemo" \
+    2>&1 > /dev/tty
+}
 
 music_generation() {
     whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 \
@@ -772,6 +779,138 @@ EOF
     chmod +x run.sh
 }
 
+# Cinemo
+install_cinemo() {
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf Cinemo
+    git clone https://huggingface.co/spaces/maxin-cn/Cinemo
+    git checkout 95a07ef9ea8a048ed45cb7f37ec2593e356e08c8
+    cd Cinemo
+    python3.12 -m venv .venv --prompt Cinemo
+    source .venv/bin/activate
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
+absl-py==2.1.0
+accelerate==0.33.0
+aiofiles==23.2.1
+annotated-types==0.7.0
+antlr4-python3-runtime==4.9.3
+anyio==4.4.0
+av==12.3.0
+beautifulsoup4==4.12.3
+certifi==2024.7.4
+charset-normalizer==3.3.2
+click==8.1.7
+contourpy==1.2.1
+cycler==0.12.1
+decord==0.6.0
+diffusers==0.24.0
+einops==0.8.0
+fastapi==0.112.0
+ffmpy==0.4.0
+filelock==3.13.1
+fonttools==4.53.1
+fsspec==2024.2.0
+ftfy==6.2.0
+gradio==4.40.0
+gradio_client==1.2.0
+grpcio==1.65.4
+h11==0.14.0
+httpcore==1.0.5
+httpx==0.27.0
+huggingface-hub==0.24.5
+idna==3.7
+imageio==2.34.2
+imageio-ffmpeg==0.5.1
+importlib_metadata==8.2.0
+importlib_resources==6.4.0
+Jinja2==3.1.3
+kiwisolver==1.4.5
+lazy_loader==0.4
+Markdown==3.6
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.9.1
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.2.1
+numpy==1.26.3
+omegaconf==2.3.0
+orjson==3.10.6
+packaging==24.1
+pandas==2.2.2
+pillow==10.2.0
+protobuf==4.25.4
+psutil==5.9.8
+pydantic==2.8.2
+pydantic_core==2.20.1
+pydub==0.25.1
+Pygments==2.18.0
+pyparsing==3.1.2
+python-dateutil==2.9.0.post0
+python-multipart==0.0.9
+pytorch-triton-rocm==3.0.0
+pytz==2024.1
+PyYAML==6.0.1
+regex==2024.7.24
+requests==2.32.3
+rich==13.7.1
+ruff==0.5.6
+safetensors==0.4.3
+scikit-image==0.24.0
+scipy==1.14.0
+semantic-version==2.10.0
+sentencepiece==0.2.0
+setuptools==70.0.0
+shellingham==1.5.4
+six==1.16.0
+sniffio==1.3.1
+soupsieve==2.5
+spaces==0.29.2
+starlette==0.37.2
+sympy==1.12
+tensorboard==2.17.0
+tensorboard-data-server==0.7.2
+tifffile==2024.7.24
+timm==1.0.8
+tokenizers==0.19.1
+tomlkit==0.12.0
+torch==2.4.0+rocm6.1
+torch-dct==0.1.6
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
+tqdm==4.66.5
+transformers==4.43.3
+typer==0.12.3
+typing_extensions==4.9.0
+tzdata==2024.1
+urllib3==2.2.2
+uvicorn==0.30.5
+wcwidth==0.2.13
+websockets==12.0
+Werkzeug==3.0.3
+zipp==3.19.2
+EOF
+
+    pip install -r custom_requirements.txt
+
+    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
+
+    tee --append run.sh <<EOF
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/Cinemo/.venv/bin/activate
+python3 ./demo.py
+EOF
+    chmod +x run.sh
+}
+
 # SillyTavern
 install_sillytavern() {
     mkdir -p $installation_path
@@ -905,15 +1044,19 @@ EOF
     cd $installation_path/ComfyUI
     rm -rf ComfyUI-CLIPSeg
 
-    git clone https://huggingface.co/fal/AuraFlow
+    git clone --no-checkout https://huggingface.co/fal/AuraFlow
     cd AuraFlow
+    git sparse-checkout init --cone
+    git sparse-checkout set aura_flow_0.1.safetensors
     git checkout f16d500f22e8689f10581936c6a453d7c6fe646a
     mv ./aura_flow_0.1.safetensors $installation_path/ComfyUI/models/checkpoints
     rm -rf $installation_path/ComfyUI/AuraFlow
 
     cd $installation_path/ComfyUI
-    git clone https://huggingface.co/fal/AuraFlow-v0.2
+    git clone --no-checkout https://huggingface.co/fal/AuraFlow-v0.2
     cd AuraFlow-v0.2
+    git sparse-checkout init --cone
+    git sparse-checkout set aura_flow_0.2.safetensors
     git checkout ea13150f559b7f85d2c5959297f7de10325584b4
     mv ./aura_flow_0.2.safetensors $installation_path/ComfyUI/models/checkpoints
     rm -rf $installation_path/ComfyUI/AuraFlow-v0.2
@@ -1968,7 +2111,25 @@ while true; do
                 esac
             done
             ;;
-        4)
+         4)
+            # Video generation
+            first=true
+            while $first; do
+            
+                choice=$(video_generation)
+
+                case $choice in
+                    0)
+                        # Cinemo
+                        install_cinemo
+                        ;;
+                    *)
+                        first=false
+                        ;;
+                esac
+            done
+            ;;
+        5)
             # Music generation
             first=true
             while $first; do
@@ -1986,7 +2147,7 @@ while true; do
                 esac
             done
             ;;
-        5)
+        6)
             # Voice generation
             first=true
             while $first; do
@@ -2008,7 +2169,7 @@ while true; do
                 esac
             done
             ;;
-        6)
+        7)
             # 3D generation
             first=true
             while $first; do
@@ -2026,7 +2187,7 @@ while true; do
                 esac
             done
             ;;
-        7)
+        8)
             # Tools
             first=true
             while $first; do
