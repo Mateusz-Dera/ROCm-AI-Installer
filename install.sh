@@ -152,7 +152,7 @@ image_generation() {
     whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
-    2 "ComfyUI + ComfyUI-CLIPSeg" \
+    2 "ComfyUI + CLIPSeg + Aura" \
     2>&1 > /dev/tty
 }
 
@@ -197,7 +197,7 @@ animagine_xl_restore() {
 }
 
 comfyui() {
-    whiptail --title "ComfyUI + ComfyUI-CLIPSeg" --menu "Choose an option:" 15 100 3 \
+    whiptail --title "ComfyUI + CLIPSeg + Aura" --menu "Choose an option:" 15 100 3 \
     0 "Backup" \
     1 "Install" \
     2 "Restore" \
@@ -830,16 +830,17 @@ install_comfyui() {
     rm -rf ComfyUI
     git clone https://github.com/comfyanonymous/ComfyUI.git
     cd ComfyUI
-    git checkout ce2473bb016748a4d98e9bce02d675b4fc22f4ac
+    git checkout 0a6b0081176c6233015ec00d004c534c088ddcb0
     
     python3.12 -m venv .venv --prompt ComfyUI
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 aiohttp==3.9.5
 aiosignal==1.3.1
 attrs==23.2.0
+aura-sr==0.0.4
 certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
@@ -870,21 +871,23 @@ psutil==6.0.0
 pycparser==2.22
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
+pytorch-triton-rocm==3.0.0
 PyYAML==6.0.1
 regex==2024.5.15
 requests==2.32.3
 safetensors==0.4.3
 scipy==1.14.0
-six==1.16.0
 sentencepiece==0.2.0
+setuptools==70.0.0
+six==1.16.0
 soundfile==0.12.1
 spandrel==0.3.4
 sympy==1.12
 tokenizers==0.15.2
-torch==2.3.1+rocm6.0
-torchaudio==2.3.1+rocm6.0
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
 torchsde==0.2.6
-torchvision==0.18.1+rocm6.0
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 trampoline==0.1.2
 transformers==4.36.0
@@ -901,6 +904,26 @@ EOF
     mv ./custom_nodes/clipseg.py $installation_path/ComfyUI/custom_nodes
     cd $installation_path/ComfyUI
     rm -rf ComfyUI-CLIPSeg
+
+    git clone https://huggingface.co/fal/AuraFlow
+    cd AuraFlow
+    git checkout f16d500f22e8689f10581936c6a453d7c6fe646a
+    mv ./aura_flow_0.1.safetensors $installation_path/ComfyUI/models/checkpoints
+    rm -rf $installation_path/ComfyUI/AuraFlow
+
+    cd $installation_path/ComfyUI
+    git clone https://huggingface.co/fal/AuraFlow-v0.2
+    cd AuraFlow-v0.2
+    git checkout ea13150f559b7f85d2c5959297f7de10325584b4
+    mv ./aura_flow_0.2.safetensors $installation_path/ComfyUI/models/checkpoints
+    rm -rf $installation_path/ComfyUI/AuraFlow-v0.2
+
+    cd $installation_path/ComfyUI/custom_nodes
+    git clone https://github.com/alexisrolland/ComfyUI-AuraSR
+    cd ComfyUI-AuraSR
+    git checkout f839d729c201d805ad0c1a8b0978d6da8105d1cd
+
+    cd $installation_path/ComfyUI
 
     tee --append run.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0

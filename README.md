@@ -34,7 +34,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |:---|:---|:---|:---|
 |Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1</br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
-|ComfyUI + ComfyUI-CLIPSeg|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI</br> https://github.com/biegert/ComfyUI-CLIPSeg||
+|ComfyUI + CLIPSeg + Aura|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI</br> https://github.com/biegert/ComfyUI-CLIPSeg</br> https://huggingface.co/fal/AuraFlow</br> https://huggingface.co/fal/AuraFlow-v0.2</br> https://huggingface.co/fal/AuraSR</br> https://huggingface.co/fal/AuraSR-v2</br> https://github.com/alexisrolland/ComfyUI-AuraSR||
 
 <!-- ###  Video generation
 |Name|Enviroment|Links|Additional information|
