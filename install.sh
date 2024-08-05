@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.7"
+version="4.8"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -37,6 +37,18 @@ if ! command -v whiptail &> /dev/null; then
 fi
 
 ## MENUS
+export NEWT_COLORS='
+root=,black
+textbox=white,black
+border=brightred,black
+window=white,black
+title=brightred,black
+button=black,white
+compactbutton=brightred,black
+listbox=white,black
+actlistbox=black,white
+actsellistbox=black,brightred
+'
 
 # Function to display the main menu
 show_menu() {
