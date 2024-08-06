@@ -4,12 +4,12 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/4.8-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/5.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 4.x is not tested on older versions.
+> Ubuntu 24.04 is recommended. Version 5.x is not compatible with older systems.
 
-Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/ROCm6.0.md
+Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/
 
 ### Test platform:
 |Name|Info|
@@ -20,7 +20,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Motherboard|ASRock B650E PG Riptide WiFi (2.10)|
 |OS|Ubuntu 24.04|
 |Kernel|6.8.0-39-generic|
-|ROCm|6.1.3|
+|ROCm|6.2|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|

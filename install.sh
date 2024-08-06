@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="4.8"
+version="5.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -32,8 +32,8 @@ default_installation_path="$HOME/AI"
 installation_path="$default_installation_path"
 
 if ! command -v whiptail &> /dev/null; then
-    sudo apt-get update
-    sudo apt-get -y install whiptail
+    sudo apt update
+    sudo apt -y install whiptail
 fi
 
 ## MENUS
@@ -283,12 +283,14 @@ remove_old() {
     if [ -f /etc/apt/preferences.d/rocm-pin-600 ]; then
         sudo rm /etc/apt/preferences.d/rocm-pin-600
     fi
+
+    sudo apt autoremove -y
 }
 
 # Repositories
-repo(){
+repo_old(){
     sudo apt-add-repository -y -s -s
-    sudo apt-get install -y "linux-headers-$(uname -r)" \
+    sudo apt install -y "linux-headers-$(uname -r)" \
         "linux-modules-extra-$(uname -r)"
 
     # jammy
@@ -297,7 +299,7 @@ repo(){
     # python
     sudo add-apt-repository ppa:deadsnakes/ppa -y
     
-    sudo apt-get update -y 
+    sudo apt update -y 
 
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
 
@@ -318,15 +320,58 @@ repo(){
     sudo apt update -y 
 }
 
+# Repositories
+repo(){
+    # Update
+    sudo apt update -y && sudo apt upgrade -y
+    
+    # Wget
+    sudo apt install -y wget
+
+    # AMDGPU
+    sudo apt-add-repository -y -s -s
+    sudo apt install -y "linux-headers-$(uname -r)" \
+	"linux-modules-extra-$(uname -r)"
+    sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
+    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2/ubuntu noble main' \
+    | sudo tee /etc/apt/sources.list.d/amdgpu.list
+    sudo apt update -y
+    sudo apt install -y amdgpu-dkms
+
+    # ROCm
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2 noble main" \
+    | sudo tee --append /etc/apt/sources.list.d/rocm.list
+    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
+    | sudo tee /etc/apt/preferences.d/rocm-pin-600
+    sudo apt update -y
+    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+}
+
+profile(){
+    # Check if there's a line starting with PATH=
+    if grep -q '^PATH=' ~/.profile; then
+        # If the line exists, add new paths at the beginning if they're not already there
+        if ! grep -q '/opt/rocm/bin' ~/.profile || ! grep -q '/opt/rocm/opencl/bin' ~/.profile; then
+            sed -i '/^PATH=/ s|PATH=|PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:|' ~/.profile
+            echo "Added new paths ~/.profile"
+        else
+            echo "Paths already exist in ~/.profile"
+        fi
+    else
+        # If the line doesn't exist, add a new line with these paths at the beginning
+        echo 'PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH' >> ~/.profile
+        echo "Added a new PATH line to ~/.profile"
+    fi
+}
+
 # Function to install ROCm and basic packages
 install_rocm() {
-    sudo apt-get update -y
+    sudo apt update -y
     remove_old
-    sudo apt-get install -y wget
-    repo
 
-    sudo apt install -y amdgpu-dkms
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-dkms rocm-libs
+    repo
 
     sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
 /opt/rocm/lib
@@ -334,18 +379,18 @@ install_rocm() {
 EOF
     sudo ldconfig
 
-    echo "PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH" >> ~/.profile
+    profile
 
     sudo apt install -y git git-lfs
     sudo apt install -y libstdc++-12-dev
     sudo apt install -y libtcmalloc-minimal4
-    sudo apt-get install -y git git-lfs
-    sudo apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
-    sudo apt-get install -y python3.11 python3.11-venv python3.11-dev python3.11-tk
-    sudo apt-get install -y libgl1
-    sudo apt-get install -y ffmpeg
-    sudo apt-get install -y libmecab-dev
-    sudo apt-get install -y rustc
+    sudo apt install -y git git-lfs
+    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
+    sudo apt install -y python3.11 python3.11-venv python3.11-dev python3.11-tk
+    sudo apt install -y libgl1
+    sudo apt install -y ffmpeg
+    sudo apt install -y libmecab-dev
+    sudo apt install -y rustc
 
     sudo snap install node --classic
 }
@@ -618,18 +663,26 @@ zstandard==0.23.0
 EOF
     pip install -r custom_requirements.txt
 
-    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
-
     git clone https://github.com/ROCm/bitsandbytes.git
     cd bitsandbytes
     git checkout 43d39760e5490239330631fd4e61f9d00cfc8479
     pip install .
 
     cd $installation_path/text-generation-webui
-    git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git
-    cd flash-attention
+    git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git /repositories/flash-attention
+    cd /repositories/flash-attention
     git checkout 2554f490101742ccdc56620a938f847f61754be6
-    pip install -e . --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    # git checkout c4b9015d74bd9f638c6fd574482accf4bbbd4197
+    pip install -e . 
+    # --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+
+    pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
+
+    cd $installation_path/text-generation-webui
+    git clone https://github.com/huggingface/transformers.git /repositories/transformers
+    cd repositories/transformers
+    git checkout 7e5d46ded433605a906fcab6be43ac85307cca9b
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
@@ -637,16 +690,16 @@ EOF
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
-    pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    # pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
 
-    git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
-    cd repositories/llama-cpp-python
-    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
+    # git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    # cd repositories/llama-cpp-python
+    # CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
 
-    cd $installation_path/text-generation-webui/modules
-    sed -i '37d;39d' llama_cpp_python_hijack.py
+    # cd $installation_path/text-generation-webui/modules
+    # sed -i '37d;39d' llama_cpp_python_hijack.py
 
     cd $installation_path/text-generation-webui/extensions/superboogav2
     pip install -r ./requirements.txt
