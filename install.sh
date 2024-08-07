@@ -347,6 +347,10 @@ repo(){
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
     sudo apt update -y
     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+
+    # Python
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt update -y 
 }
 
 profile(){
@@ -447,7 +451,6 @@ torch==2.4.0+rocm6.1
 torchaudio==2.4.0+rocm6.1
 torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
-transformers==4.42.4
 typing_extensions==4.12.2
 urllib3==2.2.2
 EOF
@@ -475,248 +478,291 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout 498fec2c7c7df376007f264261acfcfcb76168ea
+    git checkout 6915c5077a402b4cc6608f74981ecb6b08bdba7e
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
     
     pip install --upgrade pip
-
-    pip install wheel==0.43
-    pip install setuptools==65.5
-
+    
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
-accelerate==0.33.0
+accelerate==0.30.1
 aiofiles==23.2.1
-aiohttp==3.9.5
+aiohappyeyeballs==2.3.5
+aiohttp==3.10.1
 aiosignal==1.3.1
+alembic==1.13.2
+altair==5.3.0
 annotated-types==0.7.0
 anyio==4.4.0
-attrs==23.2.0
-bitblas==0.0.1.dev13
+asgiref==3.8.1
+asttokens==2.4.1
+attrs==24.2.0
+backoff==2.2.1
+bcrypt==4.2.0
+beautifulsoup4==4.12.2
 blinker==1.8.2
-certifi==2024.2.2
-cffi==1.16.0
+blis==0.7.11
+build==1.2.1
+cachetools==5.4.0
+catalogue==2.0.10
+certifi==2024.7.4
 chardet==5.2.0
 charset-normalizer==3.3.2
+chroma-hnswlib==0.7.3
+chromadb==0.4.24
 click==8.1.7
-cloudpickle==3.0.0
-cmake==3.30.1
+cloudpathlib==0.18.1
+cmake==3.30.2
 colorama==0.4.6
 coloredlogs==15.0.1
+colorlog==6.8.2
+confection==0.1.5
 contourpy==1.2.1
-cpplint==1.6.1
 cramjam==2.8.3
 cycler==0.12.1
-Cython==3.0.10
+cymem==2.0.8
 DataProperty==1.0.1
 datasets==2.20.0
-decorator==5.1.1
+Deprecated==1.2.14
 dill==0.3.8
 diskcache==5.6.3
-dnspython==2.6.1
+distro==1.9.0
 docker-pycreds==0.4.0
-docutils==0.21.2
-dtlib==0.0.0.dev2
+docopt==0.6.2
 einops==0.8.0
-email_validator==2.2.0
-evaluate==0.4.2
-execnet==2.1.1
-fastapi==0.111.1
-fastapi-cli==0.0.4
+executing==2.0.1
+fastapi==0.112.0
 fastparquet==2024.5.0
-ffmpy==0.3.2
-filelock==3.13.1
+ffmpy==0.4.0
+filelock==3.15.4
 Flask==3.0.3
 flask-cloudflared==0.0.14
+flatbuffers==24.3.25
 fonttools==4.53.1
 frozenlist==1.4.1
 fsspec==2024.5.0
 gitdb==4.0.11
 GitPython==3.1.43
-gradio==4.39.0
-gradio_client==1.1.1
-grpcio==1.65.1
+google-auth==2.33.0
+googleapis-common-protos==1.63.2
+gradio==4.26.0
+gradio_client==0.15.1
+graphviz==0.20.3
+greenlet==3.0.3
+grpcio==1.65.4
 h11==0.14.0
-hqq==0.1.8
 httpcore==1.0.5
 httptools==0.6.1
 httpx==0.27.0
-huggingface-hub==0.24.3
+huggingface-hub==0.24.5
 humanfriendly==10.0
+icecream==2.1.3
 idna==3.7
+importlib_metadata==8.0.0
 importlib_resources==6.4.0
-iniconfig==2.0.0
 itsdangerous==2.2.0
-Jinja2==3.1.4
+Jinja2==3.1.2
+jiter==0.5.0
 joblib==1.4.2
 jsonlines==4.0.0
+jsonschema==4.23.0
+jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
-lit==15.0.7
-llvmlite==0.43.0
-lm_eval==0.4.3
+kubernetes==30.1.0
+langcodes==3.4.0
+language_data==1.2.0
+lit==18.1.8
+llvmlite==0.42.0
+lm-eval==0.3.0
 lxml==5.2.2
+Mako==1.3.5
+marisa-trie==1.2.0
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.9.1
+matplotlib==3.9.1.post1
 mbstrdecoder==1.1.3
 mdurl==0.1.2
-ml-dtypes==0.4.0
-more-itertools==10.3.0
+mmh3==4.1.0
+monotonic==1.6
 mpmath==1.3.0
 multidict==6.0.5
 multiprocess==0.70.16
+murmurhash==1.0.10
 networkx==3.3
 ninja==1.11.1.1
 nltk==3.8.1
-numba==0.60.0
+num2words==0.5.13
+numba==0.59.1
 numexpr==2.10.1
 numpy==1.26.4
+oauthlib==3.2.2
+onnxruntime==1.18.1
+openai==1.40.1
+opentelemetry-api==1.26.0
+opentelemetry-exporter-otlp-proto-common==1.26.0
+opentelemetry-exporter-otlp-proto-grpc==1.26.0
+opentelemetry-instrumentation==0.47b0
+opentelemetry-instrumentation-asgi==0.47b0
+opentelemetry-instrumentation-fastapi==0.47b0
+opentelemetry-proto==1.26.0
+opentelemetry-sdk==1.26.0
+opentelemetry-semantic-conventions==0.47b0
+opentelemetry-util-http==0.47b0
 optimum==1.17.1
+optuna==3.6.1
 orjson==3.10.6
-packaging==22.0
-pandas==2.2.2
+overrides==7.7.0
+packaging==24.1
+pandas==2.0.3
 pathvalidate==3.2.0
-peft==0.12.0
+peft==0.8.2
 pillow==10.4.0
 platformdirs==4.2.2
-pluggy==1.5.0
 portalocker==2.10.1
+posthog==2.4.2
+preshed==3.0.9
 protobuf==4.25.4
 psutil==6.0.0
+pulsar-client==3.5.0
 pyarrow==17.0.0
 pyarrow-hotfix==0.6
+pyasn1==0.6.0
+pyasn1_modules==0.4.0
 pybind11==2.13.1
-pycparser==2.22
+pycountry==24.6.1
 pydantic==2.8.2
 pydantic_core==2.20.1
 pydub==0.25.1
 Pygments==2.18.0
 pyparsing==3.1.2
+PyPika==0.48.9
+pyproject_hooks==1.1.0
 pytablewriter==1.2.0
-pytest==8.3.2
-pytest-xdist==3.6.1
+pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.9
-pytorch-triton==3.0.0
 pytorch-triton-rocm==3.0.0
 pytz==2024.1
-PyYAML==6.0.1
-rapidfuzz==3.9.5
+PyYAML==6.0.2
+referencing==0.35.1
 regex==2024.7.24
 requests==2.32.3
+requests-oauthlib==2.0.0
 rich==13.7.1
 rouge-score==0.1.2
-ruff==0.5.5
-sacrebleu==2.4.2
-safetensors==0.4.3
+rpds-py==0.20.0
+rsa==4.9
+ruff==0.5.6
+sacrebleu==1.5.0
+safetensors==0.4.4
 scikit-learn==1.5.1
 scipy==1.14.0
 semantic-version==2.10.0
+sentence-transformers==2.2.2
 sentencepiece==0.2.0
-sentry-sdk==2.11.0
+sentry-sdk==2.12.0
+setuptools==72.1.0
 setproctitle==1.3.3
 shellingham==1.5.4
 six==1.16.0
+smart-open==7.0.4
 smmap==5.0.1
 sniffio==1.3.1
-SpeechRecognition==3.10.4
+soupsieve==2.5
+spacy==3.7.5
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+SpeechRecognition==3.10.0
+SQLAlchemy==2.0.32
 sqlitedict==2.1.0
-sse-starlette==2.1.2
+srsly==2.4.8
+sse-starlette==1.6.5
 starlette==0.37.2
 sympy==1.13.1
 tabledata==1.3.3
-tabulate==0.9.0
 tcolorpy==0.1.6
+tenacity==9.0.0
 tensorboard==2.17.0
 tensorboard-data-server==0.7.2
 termcolor==2.4.0
-thefuzz==0.22.1
+thinc==8.2.5
 threadpoolctl==3.5.0
 tiktoken==0.7.0
 tokenizers==0.19.1
 tomlkit==0.12.0
+toolz==0.12.1
 torch==2.4.0+rocm6.1
 torchaudio==2.4.0+rocm6.1
 torchvision==0.19.0+rocm6.1
-tornado==6.4.1
-tqdm==4.66.4
+tqdm==4.66.5
 tqdm-multiprocess==0.0.11
 typepy==1.3.2
 typer==0.12.3
 typing_extensions==4.12.2
 tzdata==2024.1
-urllib3==2.2.1
-uvicorn==0.30.3
+urllib3==2.2.2
+uvicorn==0.30.5
 uvloop==0.19.0
 wandb==0.17.5
-watchfiles==0.22.0
+wasabi==1.1.3
+watchfiles==0.23.0
+weasel==0.4.1
+websocket-client==1.8.0
 websockets==11.0.3
 Werkzeug==3.0.3
-word2number==1.1
+wheel==0.44.0
+wrapt==1.16.0
 xxhash==3.4.1
 yarl==1.9.4
+zipp==3.19.2
 zstandard==0.23.0
 EOF
+
     pip install -r custom_requirements.txt
-
-    git clone https://github.com/ROCm/bitsandbytes.git
-    cd bitsandbytes
-    git checkout 43d39760e5490239330631fd4e61f9d00cfc8479
-    pip install .
-
-    cd $installation_path/text-generation-webui
-    git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git /repositories/flash-attention
-    cd /repositories/flash-attention
-    git checkout 2554f490101742ccdc56620a938f847f61754be6
-    # git checkout c4b9015d74bd9f638c6fd574482accf4bbbd4197
-    pip install -e . 
-    # --no-build-isolation --use-pep517 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     pip install https://download.pytorch.org/whl/cpu/torchtext-0.18.0%2Bcpu-cp311-cp311-linux_x86_64.whl#sha256=c760e672265cd6f3e4a7c8d4a78afe9e9617deacda926a743479ee0418d4207d
 
-    cd $installation_path/text-generation-webui
-    git clone https://github.com/huggingface/transformers.git /repositories/transformers
-    cd repositories/transformers
-    git checkout 7e5d46ded433605a906fcab6be43ac85307cca9b
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e
+    
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
+
+    pip install hqq==0.1.7.post3
+
+    pip install https://github.com/casper-hansen/AutoAWQ/releases/download/v0.2.5/autoawq-0.2.5+rocm561-cp311-cp311-linux_x86_64.whl#sha256=7beb816dcfb1e669aa75ceee94dbfef13da32b34a462dcaa4cb34d58c7997aa1
+    pip installhttps://github.com/casper-hansen/AutoAWQ_kernels/releases/download/v0.0.6/autoawq_kernels-0.0.6+rocm561-cp311-cp311-linux_x86_64.whl#sha256=b453d520398692efdf106df5197b372106001756ffcfc013acc9cf1bf5efe35c
+
+    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
-
-    # pip install -U git+https://github.com/huggingface/transformers.git@44f6fdd74f84744b159fa919474fd3108311a906 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
-
-    # git clone  --recurse-submodules  https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
-    # cd repositories/llama-cpp-python
-    # CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir .
-
-    # cd $installation_path/text-generation-webui/modules
-    # sed -i '37d;39d' llama_cpp_python_hijack.py
+    git clone --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
+    cd repositories/llama-cpp-python
+    git checkout 5575fedd33141ffdeb87304da3b1225da58db76a
+    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/nightly
 
     cd $installation_path/text-generation-webui/extensions/superboogav2
-    pip install -r ./requirements.txt
+    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/
 
     cd $installation_path/text-generation-webui/extensions/superbooga
-    pip install -r ./requirements.txt
+    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/
 
     cd $installation_path/text-generation-webui
-
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export CUDA_VISIBLE_DEVICES=0
 source $installation_path/text-generation-webui/.venv/bin/activate
 TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --loader=exllamav2 --extensions sd_api_pictures send_pictures gallery
 EOF
-    chmod u+x run.sh
+chmod u+x run.sh
 }
 
 # ANIMAGINE XL 3.1
