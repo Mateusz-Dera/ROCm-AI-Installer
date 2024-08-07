@@ -414,7 +414,7 @@ install_koboldcpp() {
     fi
     git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
     cd koboldcpp-rocm
-    git checkout 32666598ad226a6fa9624af97761ce6e46a6feca
+    git checkout 63a53b27012df5009e63a181a26010a28fd0a26b
     python3.12 -m venv .venv --prompt Kobold
     source .venv/bin/activate
     make LLAMA_HIPBLAS=1 -j4
@@ -741,7 +741,7 @@ EOF
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
-    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     git clone --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
