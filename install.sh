@@ -747,13 +747,7 @@ EOF
     git clone --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
     cd repositories/llama-cpp-python
     git checkout 5575fedd33141ffdeb87304da3b1225da58db76a
-    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/nightly
-
-    cd $installation_path/text-generation-webui/extensions/superboogav2
-    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/
-
-    cd $installation_path/text-generation-webui/extensions/superbooga
-    pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/
+    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     tee --append run.sh <<EOF
