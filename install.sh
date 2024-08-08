@@ -162,10 +162,11 @@ sillytavern_restore() {
 }
 
 image_generation() {
-    whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
+    whiptail --title "Image generation" --menu "Choose an option:" 15 100 4 \
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
     2 "ComfyUI + Addons" \
+    3 "Artist" \
     2>&1 > /dev/tty
 }
 
@@ -288,7 +289,7 @@ remove_old() {
 }
 
 # Repositories
-repo_old(){
+repo(){
     sudo apt-add-repository -y -s -s
     sudo apt install -y "linux-headers-$(uname -r)" \
         "linux-modules-extra-$(uname -r)"
@@ -317,41 +318,45 @@ repo_old(){
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
 
     sudo systemctl daemon-reload
-    sudo apt update -y 
+    sudo apt update -y
+
+    # Install
+    sudo apt install -y amdgpu-dkms
+    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
 }
 
 # Repositories
-repo(){
-    # Update
-    sudo apt update -y && sudo apt upgrade -y
+# repo_new(){
+#     # Update
+#     sudo apt update -y && sudo apt upgrade -y
     
-    # Wget
-    sudo apt install -y wget
+#     # Wget
+#     sudo apt install -y wget
 
-    # AMDGPU
-    sudo apt-add-repository -y -s -s
-    sudo apt install -y "linux-headers-$(uname -r)" \
-	"linux-modules-extra-$(uname -r)"
-    sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2/ubuntu noble main' \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-    sudo apt update -y
-    sudo apt install -y amdgpu-dkms
+#     # AMDGPU
+#     sudo apt-add-repository -y -s -s
+#     sudo apt install -y "linux-headers-$(uname -r)" \
+# 	"linux-modules-extra-$(uname -r)"
+#     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+#     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
+#     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+#     echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2/ubuntu noble main' \
+#     | sudo tee /etc/apt/sources.list.d/amdgpu.list
+#     sudo apt update -y
+#     sudo apt install -y amdgpu-dkms
 
-    # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2 noble main" \
-    | sudo tee --append /etc/apt/sources.list.d/rocm.list
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-    | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    sudo apt update -y
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+#     # ROCm
+#     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2 noble main" \
+#     | sudo tee --append /etc/apt/sources.list.d/rocm.list
+#     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
+#     | sudo tee /etc/apt/preferences.d/rocm-pin-600
+#     sudo apt update -y
+#     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
 
-    # Python
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    sudo apt update -y 
-}
+#     # Python
+#     sudo add-apt-repository ppa:deadsnakes/ppa -y
+#     sudo apt update -y 
+# }
 
 profile(){
     # Check if there's a line starting with PATH=
@@ -401,8 +406,8 @@ EOF
 
 # KoboldCPP
 install_koboldcpp() {
-    if ! command -v python3.11 &> /dev/null; then
-        echo "Install Python 3.11 first"
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
         exit 1
     fi
 
@@ -414,12 +419,45 @@ install_koboldcpp() {
     fi
     git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
     cd koboldcpp-rocm
-    git checkout 63a53b27012df5009e63a181a26010a28fd0a26b
+    git checkout d8262dd54df068e461040644d631e454292f066d
     python3.12 -m venv .venv --prompt Kobold
     source .venv/bin/activate
     make LLAMA_HIPBLAS=1 -j4
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+# certifi==2024.7.4
+# charset-normalizer==3.3.2
+# customtkinter==5.2.2
+# darkdetect==0.8.0
+# filelock==3.15.4
+# fsspec==2024.6.1
+# gguf==0.9.1
+# huggingface-hub==0.23.4
+# idna==3.7
+# Jinja2==3.1.3
+# MarkupSafe==2.1.5
+# mpmath==1.3.0
+# networkx==3.2.1
+# numpy==1.26.4
+# packaging==24.1
+# pillow==10.2.0
+# protobuf==5.27.2
+# psutil==6.0.0
+# pytorch-triton-rocm==3.0.0
+# PyYAML==6.0.1
+# regex==2024.5.15
+# requests==2.32.3
+# safetensors==0.4.3
+# sentencepiece==0.2.0
+# setuptools==70.0.0
+# sympy==1.12
+# tokenizers==0.19.1
+# torch==2.4.0+rocm6.1
+# torchaudio==2.4.0+rocm6.1
+# torchvision==0.19.0+rocm6.1
+# tqdm==4.66.4
+# typing_extensions==4.12.2
+# urllib3==2.2.2
 certifi==2024.7.4
 charset-normalizer==3.3.2
 customtkinter==5.2.2
@@ -427,30 +465,20 @@ darkdetect==0.8.0
 filelock==3.15.4
 fsspec==2024.6.1
 gguf==0.9.1
-huggingface-hub==0.23.4
+huggingface-hub==0.24.5
 idna==3.7
-Jinja2==3.1.3
-MarkupSafe==2.1.5
-mpmath==1.3.0
-networkx==3.2.1
-numpy==1.26.4
+numpy==2.0.1
 packaging==24.1
-pillow==10.2.0
-protobuf==5.27.2
+protobuf==5.27.3
 psutil==6.0.0
-pytorch-triton-rocm==3.0.0
-PyYAML==6.0.1
-regex==2024.5.15
+PyYAML==6.0.2
+regex==2024.7.24
 requests==2.32.3
-safetensors==0.4.3
+safetensors==0.4.4
 sentencepiece==0.2.0
-setuptools==70.0.0
-sympy==1.12
 tokenizers==0.19.1
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
-tqdm==4.66.4
+tqdm==4.66.5
+transformers==4.44.0
 typing_extensions==4.12.2
 urllib3==2.2.2
 EOF
@@ -478,7 +506,7 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout 6915c5077a402b4cc6608f74981ecb6b08bdba7e
+    git checkout d011040f43c447d699dfd4cf863198907e16c10d
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
     
@@ -487,13 +515,12 @@ install_text_generation_web_ui() {
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
-accelerate==0.30.1
+accelerate==0.33.0
 aiofiles==23.2.1
 aiohappyeyeballs==2.3.5
 aiohttp==3.10.1
 aiosignal==1.3.1
 alembic==1.13.2
-altair==5.3.0
 annotated-types==0.7.0
 anyio==4.4.0
 asgiref==3.8.1
@@ -502,80 +529,89 @@ attrs==24.2.0
 backoff==2.2.1
 bcrypt==4.2.0
 beautifulsoup4==4.12.2
+bitblas==0.0.1.dev13
 blinker==1.8.2
 blis==0.7.11
 build==1.2.1
 cachetools==5.4.0
 catalogue==2.0.10
-certifi==2024.7.4
+certifi==2022.12.7
+cffi==1.17.0
 chardet==5.2.0
-charset-normalizer==3.3.2
+charset-normalizer==2.1.1
 chroma-hnswlib==0.7.3
 chromadb==0.4.24
 click==8.1.7
 cloudpathlib==0.18.1
-cmake==3.30.2
+cloudpickle==3.0.0
+cmake==3.25.0
 colorama==0.4.6
 coloredlogs==15.0.1
 colorlog==6.8.2
 confection==0.1.5
 contourpy==1.2.1
+cpplint==1.6.1
 cramjam==2.8.3
 cycler==0.12.1
 cymem==2.0.8
+Cython==3.0.11
 DataProperty==1.0.1
 datasets==2.20.0
+decorator==5.1.1
 Deprecated==1.2.14
 dill==0.3.8
 diskcache==5.6.3
-distro==1.9.0
 docker-pycreds==0.4.0
 docopt==0.6.2
+docutils==0.21.2
+dtlib==0.0.0.dev2
 einops==0.8.0
+evaluate==0.4.2
+execnet==2.1.1
 executing==2.0.1
 fastapi==0.112.0
 fastparquet==2024.5.0
 ffmpy==0.4.0
-filelock==3.15.4
+filelock==3.13.1
 Flask==3.0.3
 flask-cloudflared==0.0.14
 flatbuffers==24.3.25
 fonttools==4.53.1
 frozenlist==1.4.1
-fsspec==2024.5.0
+fsspec==2024.2.0
 gitdb==4.0.11
 GitPython==3.1.43
 google-auth==2.33.0
 googleapis-common-protos==1.63.2
-gradio==4.26.0
-gradio_client==0.15.1
+gradio==4.40.0
+gradio_client==1.2.0
 graphviz==0.20.3
 greenlet==3.0.3
 grpcio==1.65.4
 h11==0.14.0
+hqq==0.1.8
 httpcore==1.0.5
 httptools==0.6.1
 httpx==0.27.0
 huggingface-hub==0.24.5
 humanfriendly==10.0
 icecream==2.1.3
-idna==3.7
+idna==3.4
 importlib_metadata==8.0.0
 importlib_resources==6.4.0
+iniconfig==2.0.0
 itsdangerous==2.2.0
-Jinja2==3.1.2
-jiter==0.5.0
+Jinja2==3.1.4
 joblib==1.4.2
 jsonlines==4.0.0
-jsonschema==4.23.0
-jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
 kubernetes==30.1.0
 langcodes==3.4.0
 language_data==1.2.0
-lit==18.1.8
-llvmlite==0.42.0
-lm-eval==0.3.0
+lit==15.0.7
+llama_cpp_python==0.2.87
+llvmlite==0.43.0
+lm_eval==0.4.3
 lxml==5.2.2
 Mako==1.3.5
 marisa-trie==1.2.0
@@ -585,22 +621,23 @@ MarkupSafe==2.1.5
 matplotlib==3.9.1.post1
 mbstrdecoder==1.1.3
 mdurl==0.1.2
+ml-dtypes==0.4.0
 mmh3==4.1.0
 monotonic==1.6
+more-itertools==10.4.0
 mpmath==1.3.0
 multidict==6.0.5
 multiprocess==0.70.16
 murmurhash==1.0.10
-networkx==3.3
+networkx==3.2.1
 ninja==1.11.1.1
 nltk==3.8.1
 num2words==0.5.13
-numba==0.59.1
+numba==0.60.0
 numexpr==2.10.1
-numpy==1.26.4
+numpy==1.26.3
 oauthlib==3.2.2
 onnxruntime==1.18.1
-openai==1.40.1
 opentelemetry-api==1.26.0
 opentelemetry-exporter-otlp-proto-common==1.26.0
 opentelemetry-exporter-otlp-proto-grpc==1.26.0
@@ -611,16 +648,16 @@ opentelemetry-proto==1.26.0
 opentelemetry-sdk==1.26.0
 opentelemetry-semantic-conventions==0.47b0
 opentelemetry-util-http==0.47b0
-optimum==1.17.1
 optuna==3.6.1
 orjson==3.10.6
 overrides==7.7.0
-packaging==24.1
+packaging==22.0
 pandas==2.0.3
 pathvalidate==3.2.0
-peft==0.8.2
-pillow==10.4.0
+peft==0.12.0
+pillow==10.2.0
 platformdirs==4.2.2
+pluggy==1.5.0
 portalocker==2.10.1
 posthog==2.4.2
 preshed==3.0.9
@@ -632,7 +669,7 @@ pyarrow-hotfix==0.6
 pyasn1==0.6.0
 pyasn1_modules==0.4.0
 pybind11==2.13.1
-pycountry==24.6.1
+pycparser==2.22
 pydantic==2.8.2
 pydantic_core==2.20.1
 pydub==0.25.1
@@ -641,6 +678,8 @@ pyparsing==3.1.2
 PyPika==0.48.9
 pyproject_hooks==1.1.0
 pytablewriter==1.2.0
+pytest==8.3.2
+pytest-xdist==3.6.1
 pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
@@ -648,16 +687,15 @@ python-multipart==0.0.9
 pytorch-triton-rocm==3.0.0
 pytz==2024.1
 PyYAML==6.0.2
-referencing==0.35.1
+rapidfuzz==3.9.6
 regex==2024.7.24
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.7.1
 rouge-score==0.1.2
-rpds-py==0.20.0
 rsa==4.9
 ruff==0.5.6
-sacrebleu==1.5.0
+sacrebleu==2.4.2
 safetensors==0.4.4
 scikit-learn==1.5.1
 scipy==1.14.0
@@ -676,30 +714,33 @@ soupsieve==2.5
 spacy==3.7.5
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
-SpeechRecognition==3.10.0
+SpeechRecognition==3.10.4
 SQLAlchemy==2.0.32
 sqlitedict==2.1.0
 srsly==2.4.8
-sse-starlette==1.6.5
+sse-starlette==2.1.3
 starlette==0.37.2
-sympy==1.13.1
+sympy==1.12
 tabledata==1.3.3
+tabulate==0.9.0
 tcolorpy==0.1.6
 tenacity==9.0.0
 tensorboard==2.17.0
 tensorboard-data-server==0.7.2
 termcolor==2.4.0
+thefuzz==0.22.1
 thinc==8.2.5
 threadpoolctl==3.5.0
 tiktoken==0.7.0
 tokenizers==0.19.1
 tomlkit==0.12.0
-toolz==0.12.1
 torch==2.4.0+rocm6.1
 torchaudio==2.4.0+rocm6.1
 torchvision==0.19.0+rocm6.1
+tornado==6.4.1
 tqdm==4.66.5
 tqdm-multiprocess==0.0.11
+triton==3.0.0
 typepy==1.3.2
 typer==0.12.3
 typing_extensions==4.12.2
@@ -707,14 +748,15 @@ tzdata==2024.1
 urllib3==2.2.2
 uvicorn==0.30.5
 uvloop==0.19.0
-wandb==0.17.5
+wandb==0.17.6
 wasabi==1.1.3
 watchfiles==0.23.0
 weasel==0.4.1
 websocket-client==1.8.0
-websockets==11.0.3
+websockets==12.0
 Werkzeug==3.0.3
 wheel==0.44.0
+word2number==1.1
 wrapt==1.16.0
 xxhash==3.4.1
 yarl==1.9.4
@@ -730,8 +772,6 @@ EOF
     
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
-    pip install hqq==0.1.7.post3
-
     pip install https://github.com/casper-hansen/AutoAWQ/releases/download/v0.2.5/autoawq-0.2.5+rocm561-cp311-cp311-linux_x86_64.whl#sha256=7beb816dcfb1e669aa75ceee94dbfef13da32b34a462dcaa4cb34d58c7997aa1
     pip installhttps://github.com/casper-hansen/AutoAWQ_kernels/releases/download/v0.0.6/autoawq_kernels-0.0.6+rocm561-cp311-cp311-linux_x86_64.whl#sha256=b453d520398692efdf106df5197b372106001756ffcfc013acc9cf1bf5efe35c
 
@@ -743,11 +783,11 @@ EOF
     git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
-    cd $installation_path/text-generation-webui
-    git clone --recurse-submodules https://github.com/abetlen/llama-cpp-python.git repositories/llama-cpp-python 
-    cd repositories/llama-cpp-python
-    git checkout 5575fedd33141ffdeb87304da3b1225da58db76a
-    CC='/opt/rocm/llvm/bin/clang' CXX='/opt/rocm/llvm/bin/clang++' CFLAGS='-fPIC' CXXFLAGS='-fPIC' CMAKE_PREFIX_PATH='/opt/rocm' ROCM_PATH="/opt/rocm" HIP_PATH="/opt/rocm" CMAKE_ARGS="-GNinja -DLLAMA_HIPBLAS=ON -DLLAMA_AVX2=on " pip install --no-cache-dir . --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    export GGML_HIPBLAS=on
+    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python
+
+    cd $installation_path/text-generation-webui/modules
+    sed -i '37,40d' llama_cpp_python_hijack.py
 
     cd $installation_path/text-generation-webui
     tee --append run.sh <<EOF
@@ -880,6 +920,115 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 source $installation_path/animagine-xl-3.1/.venv/bin/activate
 python3 ./app.py
+EOF
+    chmod +x run.sh
+}
+
+# Artist
+install_artist() {
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+    rm -rf Artist
+    git clone https://github.com/songrise/Artist.git 
+    cd Artist
+    git checkout dcc252adb81e7e57e1763758cf57b8c865dbe1bb
+    python3.12 -m venv .venv --prompt Artist
+    source .venv/bin/activate
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
+aiofiles==23.2.1
+annotated-types==0.7.0
+antlr4-python3-runtime==4.9.3
+anyio==4.4.0
+certifi==2024.7.4
+charset-normalizer==3.3.2
+click==8.1.7
+clip==0.2.0
+contourpy==1.2.1
+cycler==0.12.1
+diffusers==0.26.3
+einops==0.8.0
+fastapi==0.112.0
+ffmpy==0.4.0
+filelock==3.15.4
+fonttools==4.53.1
+fsspec==2024.6.1
+gradio==4.41.0
+gradio_client==1.3.0
+h11==0.14.0
+httpcore==1.0.5
+httpx==0.27.0
+huggingface-hub==0.24.5
+idna==3.7
+importlib_metadata==8.2.0
+importlib_resources==6.4.0
+Jinja2==3.1.4
+kiwisolver==1.4.5
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.9.1.post1
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.3
+numpy==2.0.1
+omegaconf==2.3.0
+orjson==3.10.6
+packaging==24.1
+pandas==2.2.2
+pillow==10.4.0
+pydantic==2.8.2
+pydantic_core==2.20.1
+pydub==0.25.1
+Pygments==2.18.0
+pyparsing==3.1.2
+python-dateutil==2.9.0.post0
+python-multipart==0.0.9
+pytorch-triton-rocm==3.0.0
+pytz==2024.1
+PyYAML==6.0.2
+regex==2024.7.24
+requests==2.32.3
+rich==13.7.1
+ruff==0.5.6
+safetensors==0.4.4
+semantic-version==2.10.0
+setuptools==72.1.0
+shellingham==1.5.4
+six==1.16.0
+sniffio==1.3.1
+starlette==0.37.2
+sympy==1.13.1
+tokenizers==0.19.1
+tomlkit==0.12.0
+torch==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
+tqdm==4.66.5
+typer==0.12.3
+typing_extensions==4.12.2
+tzdata==2024.1
+urllib3==2.2.2
+uvicorn==0.30.5
+websockets==12.0
+zipp==3.19.2
+EOF
+
+    pip install -r custom_requirements.txt
+
+    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    
+    #TODO
+    sed -i 's/app.launch()/app.launch()(share=False, server_name="0.0.0.0")/' injection_main.py
+
+    tee --append run.sh <<EOF
+export HSA_OVERRIDE_GFX_VERSION=11.0.0
+source $installation_path/Artist/.venv/bin/activate
+python injection_main.py --mode app
 EOF
     chmod +x run.sh
 }
@@ -2209,6 +2358,10 @@ while true; do
                                     ;;
                             esac
                         done
+                        ;;
+                    3)
+                        # Artist
+                        install_artist
                         ;;
                     *)
                         first=false
