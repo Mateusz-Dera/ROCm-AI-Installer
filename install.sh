@@ -1021,9 +1021,8 @@ EOF
     pip install -r custom_requirements.txt
 
     pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.1
-    
-    #TODO
-    sed -i 's/app.launch()/app.launch()(share=False, server_name="0.0.0.0")/' injection_main.py
+
+    sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
 
     tee --append run.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
