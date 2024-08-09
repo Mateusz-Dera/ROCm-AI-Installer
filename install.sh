@@ -1266,6 +1266,7 @@ EOF
     cd $installation_path/ComfyUI
     rm -rf ComfyUI-CLIPSeg
 
+    # Aura
     git clone --no-checkout https://huggingface.co/fal/AuraFlow
     cd AuraFlow
     git sparse-checkout init --cone
@@ -1288,12 +1289,20 @@ EOF
     cd ComfyUI-AuraSR
     git checkout f839d729c201d805ad0c1a8b0978d6da8105d1cd
 
+    # Flux
+    cd $installation_path/ComfyUI
+    git clone https://huggingface.co/Comfy-Org/flux1-schnell
+    cd flux1-schnell
+    git checkout f2808ab17fe9ff81dcf89ed0301cf644c281be0a
+    mv ./flux1-schnell-fp8.safetensors $installation_path/ComfyUI/models/checkpoints
+    cd .. && rm -rf flux-fp8
+
     cd $installation_path/ComfyUI
 
     tee --append run.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 source $installation_path/ComfyUI/.venv/bin/activate
-python3 ./main.py
+python3 ./main.py --listen
 EOF
     chmod +x run.sh
 }
