@@ -1701,7 +1701,7 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/MeloTTS/.venv/bin/activate
-python melo/app.py
+python melo/app.py -h 0.0.0.0
 EOF
     chmod u+x run.sh
 }
