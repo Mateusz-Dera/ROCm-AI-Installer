@@ -885,6 +885,8 @@ EOF
 
     pip install -r custom_requirements.txt
 
+    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=IS_COLAB, share=False, server_name="0.0.0.0")/' app.py
+
     tee --append run.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 source $installation_path/animagine-xl-3.1/.venv/bin/activate
@@ -1466,12 +1468,13 @@ xformers==0.0.27.post2
 EOF
 
     pip install -r custom_requirements.txt
+
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/audiocraft/.venv/bin/activate
-python -m demos.musicgen_app
+python -m demos.musicgen_app --listen 0.0.0.0
 EOF
     chmod +x run.sh
 }
