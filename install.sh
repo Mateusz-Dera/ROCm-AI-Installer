@@ -1174,7 +1174,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python_cmd="python3.11"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export TORCH_COMMAND="pip install --pre torch==2.4.0+rocm6.1  torchvision==0.19.0+rocm6.1 --extra-index-url https://download.pytorch.org/whl/rocm6.1"
-export COMMANDLINE_ARGS="--api"
+export COMMANDLINE_ARGS="--api --listen"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
     mv ./webui.sh ./run.sh
@@ -1837,7 +1837,7 @@ EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/TripoSR/.venv/bin/activate
-python3 gradio_app.py
+python3 gradio_app.py --listen
 EOF
     chmod u+x run.sh
 }
