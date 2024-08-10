@@ -166,7 +166,7 @@ image_generation() {
     0 "Stable Diffusion web UI" \
     1 "ANIMAGINE XL 3.1" \
     2 "ComfyUI + Addons" \
-    3 "Artist" \
+    3 "Install Artist" \
     2>&1 > /dev/tty
 }
 
@@ -246,7 +246,7 @@ music_generation() {
 voice_generation() {
     whiptail --title "Voice generation" --menu "Choose an option:" 15 100 2 \
     0 "Install WhisperSpeech web UI" \
-    1 "MeloTTS" \
+    1 "Install MeloTTS" \
     2>&1 > /dev/tty
 }
 

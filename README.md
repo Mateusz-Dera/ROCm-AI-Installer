@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 [![Version](https://img.shields.io/badge/5.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 5.x is not compatible with older systems.
+> Ubuntu 24.04 is recommended. Version 5.x is not tested on older systems.
 
 Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/
 
