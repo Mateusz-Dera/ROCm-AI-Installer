@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="5.0"
+version="5.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -1145,7 +1145,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout eac2e3d81e128c61299c94ef6c9dd1a8fd87a8c1
+    git checkout 2428c3979fe6dee360426b72fe6aa88e46091dd8
 
     mv ./start.sh ./run.sh
 
