@@ -290,73 +290,36 @@ remove_old() {
 
 # Repositories
 repo(){
+    # Update
+    sudo apt update -y && sudo apt upgrade -y
+    
+    # Wget
+    sudo apt install -y wget
+
+    # AMDGPU
     sudo apt-add-repository -y -s -s
     sudo apt install -y "linux-headers-$(uname -r)" \
-        "linux-modules-extra-$(uname -r)"
-
-    # jammy
-    sudo add-apt-repository -y -s deb http://security.ubuntu.com/ubuntu jammy main universe
-
-    # python
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    
-    sudo apt update -y 
-
+	"linux-modules-extra-$(uname -r)"
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-
-    # amd
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu//6.1.3/ubuntu jammy main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
+    sudo apt update -y
+    sudo apt install -y amdgpu-dkms
 
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.1.3/ jammy main" \
+    # ROCm
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
-
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
-
-    sudo systemctl daemon-reload
     sudo apt update -y
-
-    # Install
-    sudo apt install -y amdgpu-dkms
     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+
+    # Python
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt update -y 
 }
-
-# Repositories
-# repo_new(){
-#     # Update
-#     sudo apt update -y && sudo apt upgrade -y
-    
-#     # Wget
-#     sudo apt install -y wget
-
-#     # AMDGPU
-#     sudo apt-add-repository -y -s -s
-#     sudo apt install -y "linux-headers-$(uname -r)" \
-# 	"linux-modules-extra-$(uname -r)"
-#     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-#     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-#     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-#     echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2/ubuntu noble main' \
-#     | sudo tee /etc/apt/sources.list.d/amdgpu.list
-#     sudo apt update -y
-#     sudo apt install -y amdgpu-dkms
-
-#     # ROCm
-#     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2 noble main" \
-#     | sudo tee --append /etc/apt/sources.list.d/rocm.list
-#     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-#     | sudo tee /etc/apt/preferences.d/rocm-pin-600
-#     sudo apt update -y
-#     sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
-
-#     # Python
-#     sudo add-apt-repository ppa:deadsnakes/ppa -y
-#     sudo apt update -y 
-# }
 
 profile(){
     # Check if there's a line starting with PATH=
@@ -1145,7 +1108,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 2428c3979fe6dee360426b72fe6aa88e46091dd8
+    git checkout 5b8681ea9793f98c8f7bbb7a802d2193306cbec1
 
     mv ./start.sh ./run.sh
 
