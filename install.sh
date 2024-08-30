@@ -438,7 +438,7 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout d011040f43c447d699dfd4cf863198907e16c10d
+    git checkout 5522584992c632d75d2389e9342793fd1dcc391d
     python3.11 -m venv .venv --prompt TextGen
     source .venv/bin/activate
     
@@ -704,19 +704,20 @@ EOF
     
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
+
     pip install https://github.com/casper-hansen/AutoAWQ/releases/download/v0.2.5/autoawq-0.2.5+rocm561-cp311-cp311-linux_x86_64.whl#sha256=7beb816dcfb1e669aa75ceee94dbfef13da32b34a462dcaa4cb34d58c7997aa1
     pip installhttps://github.com/casper-hansen/AutoAWQ_kernels/releases/download/v0.0.6/autoawq_kernels-0.0.6+rocm561-cp311-cp311-linux_x86_64.whl#sha256=b453d520398692efdf106df5197b372106001756ffcfc013acc9cf1bf5efe35c
 
-    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install transformers==4.44.2 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
-    git checkout 6a8172cfce919a0e3c3c31015cf8deddab34c851
+    git checkout 40e37f494488d930bb196b6e01d9c5c8a64456e8
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
     export GGML_HIPBLAS=on
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python
+    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.2.87
 
     cd $installation_path/text-generation-webui/modules
     sed -i '37,40d' llama_cpp_python_hijack.py
