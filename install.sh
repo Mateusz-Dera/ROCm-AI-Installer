@@ -1474,11 +1474,9 @@ install_melotts(){
     rm -rf MeloTTS
     git clone https://github.com/myshell-ai/MeloTTS
     cd MeloTTS
-    git checkout 2374f4674b8b2760761d3cc167799691f21efe29
+    git checkout 5b538481e24e0d578955be32a95d88fcbde26dc8
     python3.12 -m venv .venv --prompt MeloTTS
     source .venv/bin/activate
-
-    # pip install setuptools_rust
 
     rm requirements.txt
 
@@ -1809,7 +1807,7 @@ install_exllamav2(){
     rm -rf exllamav2
     git clone https://github.com/turboderp/exllamav2
     cd exllamav2
-    git checkout 3aabad216ba7492b0a5b1a3a429ce3c4a85b7cc3
+    git checkout 40e37f494488d930bb196b6e01d9c5c8a64456e8
     python3.12 -m venv .venv --prompt ExLlamaV2
     source .venv/bin/activate
 
