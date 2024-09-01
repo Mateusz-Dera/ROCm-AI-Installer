@@ -382,7 +382,7 @@ install_koboldcpp() {
     fi
     git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
     cd koboldcpp-rocm
-    git checkout d8262dd54df068e461040644d631e454292f066d
+    git checkout d15e1fd60bfe53d0a159dc8bb47504d682c53d59
     python3.12 -m venv .venv --prompt Kobold
     source .venv/bin/activate
     
@@ -743,7 +743,7 @@ install_animagine_xl() {
     cd $installation_path
     rm -rf animagine-xl-3.1
     git clone https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1
-    git checkout f240016348c54945299cfb4163fbc514fba1c2ed
+    git checkout 914bc5dc90bc05f8782f6fe10ab6cae0607f5566
     cd animagine-xl-3.1
     python3.12 -m venv .venv --prompt ANIMAGINE
     source .venv/bin/activate
@@ -978,7 +978,7 @@ install_cinemo() {
     cd $installation_path
     rm -rf Cinemo
     git clone https://huggingface.co/spaces/maxin-cn/Cinemo
-    git checkout 95a07ef9ea8a048ed45cb7f37ec2593e356e08c8
+    git checkout 2bf400b88528c0ff3aedeaac064ca98b42acf2ca
     cd Cinemo
     python3.12 -m venv .venv --prompt Cinemo
     source .venv/bin/activate
@@ -1157,7 +1157,7 @@ install_comfyui() {
     rm -rf ComfyUI
     git clone https://github.com/comfyanonymous/ComfyUI.git
     cd ComfyUI
-    git checkout 0a6b0081176c6233015ec00d004c534c088ddcb0
+    git checkout b643eae08b7f0c8eb69b77bd61e31009bfb325b9
     
     python3.12 -m venv .venv --prompt ComfyUI
     source .venv/bin/activate
@@ -1233,22 +1233,14 @@ EOF
     rm -rf ComfyUI-CLIPSeg
 
     # Aura
-    git clone --no-checkout https://huggingface.co/fal/AuraFlow
-    cd AuraFlow
-    git sparse-checkout init --cone
-    git sparse-checkout set aura_flow_0.1.safetensors
-    git checkout f16d500f22e8689f10581936c6a453d7c6fe646a
-    mv ./aura_flow_0.1.safetensors $installation_path/ComfyUI/models/checkpoints
-    rm -rf $installation_path/ComfyUI/AuraFlow
-
     cd $installation_path/ComfyUI
-    git clone --no-checkout https://huggingface.co/fal/AuraFlow-v0.2
-    cd AuraFlow-v0.2
+    git clone --no-checkout https://huggingface.co/fal/AuraFlow-v0.3
+    cd AuraFlow-v0.3
     git sparse-checkout init --cone
-    git sparse-checkout set aura_flow_0.2.safetensors
-    git checkout ea13150f559b7f85d2c5959297f7de10325584b4
-    mv ./aura_flow_0.2.safetensors $installation_path/ComfyUI/models/checkpoints
-    rm -rf $installation_path/ComfyUI/AuraFlow-v0.2
+    git sparse-checkout set aura_flow_0.3.safetensors
+    git checkout 2cd8588f04c886002be4571697d84654a50e3af3
+    mv ./aura_flow_0.3.safetensors $installation_path/ComfyUI/models/checkpoints
+    rm -rf $installation_path/ComfyUI/AuraFlow-v0.3
 
     cd $installation_path/ComfyUI/custom_nodes
     git clone https://github.com/alexisrolland/ComfyUI-AuraSR

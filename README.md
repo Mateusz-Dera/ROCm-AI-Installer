@@ -26,7 +26,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|Text generation web UI|Python 3.11 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2</br> https://github.com/abetlen/llama-cpp-python|1. Tested: ExLlamav2, llama.ccp, Transformers<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default<br> 3. Requrements for SuperboogaV2 are installed, but the extension is not enabled by default|
+|Text generation web UI|Python 3.11 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, llama.ccp, Transformers<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default<br> 3. Requrements for SuperboogaV2 are installed, but the extension is not enabled by default|
 |SillyTavern (1.12.5)|Node|https://github.com/SillyTavern/SillyTavern||
 
 ###  Image generation
@@ -34,7 +34,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 |:---|:---|:---|:---|
 |Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1</br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
-|ComfyUI<br>ComfyUI-CLIPSeg<br>AuraFlow<br>AuraSR<br>FLUX.1-schnell|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI</br> https://github.com/biegert/ComfyUI-CLIPSeg</br> https://huggingface.co/fal/AuraFlow</br> https://huggingface.co/fal/AuraFlow-v0.2</br> https://huggingface.co/fal/AuraSR</br> https://huggingface.co/fal/AuraSR-v2</br> https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/Comfy-Org/flux1-schnell/blob/main/|1. Flux examples: https://comfyanonymous.github.io/ComfyUI_examples/flux/#simple-to-use-fp8-checkpoint-version|
+|ComfyUI<br>ComfyUI-CLIPSeg<br>ComfyUI-BiRefNet<br>AuraFlow<br>AuraSR<br>FLUX.1-schnell|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI</br> https://github.com/biegert/ComfyUI-CLIPSeg</br> https://github.com/viperyl/ComfyUI-BiRefNet<br> https://huggingface.co/fal/AuraFlow-v0.3</br> https://huggingface.co/fal/AuraSR</br> https://huggingface.co/fal/AuraSR-v2</br> https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/Comfy-Org/flux1-schnell/blob/main/|1. Flux examples: https://comfyanonymous.github.io/ComfyUI_examples/flux/#simple-to-use-fp8-checkpoint-version|
 |Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
 
 ###  Video generation
