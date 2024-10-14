@@ -418,12 +418,12 @@ install_text_generation_web_ui() {
     rm -rf text-generation-webui
     git clone https://github.com/oobabooga/text-generation-webui.git
     cd text-generation-webui
-    git checkout d1af7a41ade7bd3c3a463bfa640725edb818ebaf
+    git checkout 3b06cb4523b09fef4f9caedee252163c5704c2e1
     python3.12 -m venv .venv --prompt TextGen
     source .venv/bin/activate
-    
+
     pip install --upgrade pip
-    
+
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
@@ -432,88 +432,149 @@ aiofiles==23.2.1
 aiohappyeyeballs==2.4.3
 aiohttp==3.10.10
 aiosignal==1.3.1
+alembic==1.13.3
 annotated-types==0.7.0
 anyio==4.6.1
+asgiref==3.8.1
+asttokens==2.4.1
 attrs==24.2.0
+backoff==2.2.1
+bcrypt==4.2.0
+beautifulsoup4==4.12.2
 blinker==1.8.2
+blis==1.0.1
+build==1.2.2.post1
+cachetools==5.5.0
+catalogue==2.0.10
 certifi==2024.8.30
 chardet==5.2.0
 charset-normalizer==3.4.0
+chroma-hnswlib==0.7.3
+chromadb==0.4.24
 click==8.1.7
+cloudpathlib==0.19.0
 colorama==0.4.6
 coloredlogs==15.0.1
+colorlog==6.8.2
+confection==0.1.5
 DataProperty==1.0.1
 datasets==3.0.1
+deprecated==1.2.14
 dill==0.3.8
 docker-pycreds==0.4.0
+docopt==0.6.2
+durationpy==0.9
 einops==0.8.0
 evaluate==0.4.3
+executing==2.1.0
 fastapi==0.115.2
 ffmpy==0.4.0
 filelock==3.16.1
+flatbuffers==24.3.25
 Flask==3.0.3
 flask-cloudflared==0.0.14
 frozenlist==1.4.1
 fsspec==2024.6.1
 gitdb==4.0.11
 GitPython==3.1.43
-gradio==5.0.2
-gradio_client==1.4.0
+google-auth==2.35.0
+googleapis-common-protos==1.65.0
+gradio==4.44.1
+gradio_client==1.3.0
+graphviz==0.20.3
+greenlet==3.1.1
 grpcio==1.66.2
 h11==0.14.0
 hqq==0.2.2
 httpcore==1.0.6
+httptools==0.6.2
 httpx==0.27.2
 huggingface-hub==0.25.2
 humanfriendly==10.0
+icecream==2.1.3
 idna==3.10
+importlib-metadata==8.4.0
 itsdangerous==2.2.0
 Jinja2==3.1.4
 joblib==1.4.2
 jsonlines==4.0.0
+kubernetes==31.0.0
+langcodes==3.4.1
+language-data==1.2.0
 llvmlite==0.43.0
 lm_eval==0.4.5
 lxml==5.3.0
+Mako==1.3.5
 Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
+marisa-trie==1.2.1
 mbstrdecoder==1.1.3
 mdurl==0.1.2
+mmh3==5.0.1
+monotonic==1.6
 more-itertools==10.5.0
 mpmath==1.3.0
 multidict==6.1.0
 multiprocess==0.70.16
+murmurhash==1.0.10
 networkx==3.4.1
 nltk==3.9.1
+num2words==0.5.13
 numba==0.60.0
 numexpr==2.10.1
 numpy==2.0.2
+oauthlib==3.2.2
+onnxruntime==1.19.2
+opentelemetry-api==1.27.0
+opentelemetry-exporter-otlp-proto-common==1.27.0
+opentelemetry-exporter-otlp-proto-grpc==1.27.0
+opentelemetry-instrumentation==0.48b0
+opentelemetry-instrumentation-asgi==0.48b0
+opentelemetry-instrumentation-fastapi==0.48b0
+opentelemetry-proto==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-semantic-conventions==0.48b0
+opentelemetry-util-http==0.48b0
 optimum==1.23.1
+optuna==4.0.0
 orjson==3.10.7
+overrides==7.7.0
 packaging==24.1
+pandas==2.0.3
 pandas==2.2.3
 pathvalidate==3.2.1
 peft==0.13.2
 pillow==10.4.0
 platformdirs==4.3.6
 portalocker==2.10.1
+posthog==2.4.2
+preshed==3.0.9
 propcache==0.2.0
+protobuf==4.25.5
 protobuf==5.28.2
 psutil==6.0.0
 pyarrow==17.0.0
+pyasn1==0.6.1
+pyasn1-modules==0.4.1
 pybind11==2.13.6
 pydantic==2.9.2
 pydantic_core==2.23.4
 pydub==0.25.1
 Pygments==2.18.0
+pyproject_hooks==1.2.0
+pypika==0.48.9
 pytablewriter==1.2.0
+pytextrank==3.3.0
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 python-multipart==0.0.12
 pytorch-triton-rocm==3.0.0
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.9.11
 requests==2.32.3
+requests-oauthlib==2.0.0
 rich==13.9.2
 rouge_score==0.1.2
 ruff==0.6.9
@@ -522,25 +583,35 @@ safetensors==0.4.5
 scikit-learn==1.5.2
 scipy==1.14.1
 semantic-version==2.10.0
+sentence_transformers==2.2.2
 sentencepiece==0.2.0
 sentry-sdk==2.16.0
 setproctitle==1.3.3
 setuptools==75.1.0
 shellingham==1.5.4
 six==1.16.0
+smart-open==7.0.5
 smmap==5.0.1
 sniffio==1.3.1
-SpeechRecognition==3.10.4
+soupsieve==2.6
+spacy==3.8.2
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+sqlalchemy==2.0.35
 sqlitedict==2.1.0
+srsly==2.4.8
+SpeechRecognition==3.10.4
 sse-starlette==2.1.3
 starlette==0.39.2
 sympy==1.13.3
 tabledata==1.3.3
 tabulate==0.9.0
 tcolorpy==0.1.6
+tenacity==9.0.0
 tensorboard==2.18.0
 tensorboard-data-server==0.7.2
 termcolor==2.5.0
+thinc==8.3.2
 threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
@@ -555,12 +626,19 @@ typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==2.2.3
 uvicorn==0.31.1
+uvloop==0.20.0
 wandb==0.18.3
+wasabi==1.1.3
+watchfiles==0.24.0
+weasel==0.4.1
+websocket-client==1.8.0
 websockets==12.0
 Werkzeug==3.0.4
 word2number==1.1
+wrapt==1.16.0
 xxhash==3.5.0
 yarl==1.15.2
+zipp==3.20.2
 zstandard==0.23.0
 EOF
 
@@ -977,7 +1055,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 5b8681ea9793f98c8f7bbb7a802d2193306cbec1
+    git checkout d1af7a41ade7bd3c3a463bfa640725edb818ebaf
 
     mv ./start.sh ./run.sh
 
