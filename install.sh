@@ -424,6 +424,10 @@ install_text_generation_web_ui() {
 
     pip install --upgrade pip
 
+    pip install setuptools==75.1.0 wheel==0.44.0 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+
+    pip install ninja==1.11.1.1 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
@@ -457,10 +461,15 @@ colorama==0.4.6
 coloredlogs==15.0.1
 colorlog==6.8.2
 confection==0.1.5
+contourpy==1.3.0
+cramjam==2.9.0
+cycler==0.12.1
+cymem==2.0.8
 DataProperty==1.0.1
 datasets==3.0.1
-deprecated==1.2.14
+Deprecated==1.2.14
 dill==0.3.8
+diskcache==5.6.3
 docker-pycreds==0.4.0
 docopt==0.6.2
 durationpy==0.9
@@ -468,13 +477,15 @@ einops==0.8.0
 evaluate==0.4.3
 executing==2.1.0
 fastapi==0.115.2
+fastparquet==2024.5.0
 ffmpy==0.4.0
 filelock==3.16.1
-flatbuffers==24.3.25
 Flask==3.0.3
 flask-cloudflared==0.0.14
+flatbuffers==24.3.25
+fonttools==4.54.1
 frozenlist==1.4.1
-fsspec==2024.6.1
+fsspec==2024.9.0
 gitdb==4.0.11
 GitPython==3.1.43
 google-auth==2.35.0
@@ -493,22 +504,25 @@ huggingface-hub==0.25.2
 humanfriendly==10.0
 icecream==2.1.3
 idna==3.10
-importlib-metadata==8.4.0
+importlib_metadata==8.4.0
+importlib_resources==6.4.5
 itsdangerous==2.2.0
 Jinja2==3.1.4
 joblib==1.4.2
 jsonlines==4.0.0
+kiwisolver==1.4.7
 kubernetes==31.0.0
 langcodes==3.4.1
-language-data==1.2.0
+language_data==1.2.0
 llvmlite==0.43.0
 lm_eval==0.4.5
 lxml==5.3.0
 Mako==1.3.5
+marisa-trie==1.2.1
 Markdown==3.7
 markdown-it-py==3.0.0
-MarkupSafe==2.1.5
-marisa-trie==1.2.1
+MarkupSafe==3.0.2
+matplotlib==3.9.2
 mbstrdecoder==1.1.3
 mdurl==0.1.2
 mmh3==5.0.1
@@ -519,13 +533,16 @@ multidict==6.1.0
 multiprocess==0.70.16
 murmurhash==1.0.10
 networkx==3.4.1
+ninja==1.11.1.1
 nltk==3.9.1
 num2words==0.5.13
 numba==0.60.0
 numexpr==2.10.1
 numpy==2.0.2
 oauthlib==3.2.2
-onnxruntime==1.19.2
+onnx==1.17.0
+onnxruntime==1.15.1
+onnxruntime_extensions==0.12.0
 opentelemetry-api==1.27.0
 opentelemetry-exporter-otlp-proto-common==1.27.0
 opentelemetry-exporter-otlp-proto-grpc==1.27.0
@@ -537,11 +554,11 @@ opentelemetry-sdk==1.27.0
 opentelemetry-semantic-conventions==0.48b0
 opentelemetry-util-http==0.48b0
 optimum==1.23.1
+optimum-amd==0.1.0
 optuna==4.0.0
 orjson==3.10.7
 overrides==7.7.0
 packaging==24.1
-pandas==2.0.3
 pandas==2.2.3
 pathvalidate==3.2.1
 peft==0.13.2
@@ -552,42 +569,43 @@ posthog==2.4.2
 preshed==3.0.9
 propcache==0.2.0
 protobuf==4.25.5
-protobuf==5.28.2
 psutil==6.0.0
+pulsar-client==3.5.0
 pyarrow==17.0.0
 pyasn1==0.6.1
-pyasn1-modules==0.4.1
+pyasn1_modules==0.4.1
 pybind11==2.13.6
 pydantic==2.9.2
 pydantic_core==2.23.4
 pydub==0.25.1
 Pygments==2.18.0
+pyparsing==3.2.0
+PyPika==0.48.9
 pyproject_hooks==1.2.0
-pypika==0.48.9
 pytablewriter==1.2.0
 pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.12
-pytorch-triton-rocm==3.0.0
+pytorch-triton-rocm==3.1.0
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.9.11
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.2
-rouge_score==0.1.2
+rouge-score==0.1.2
+rsa==4.9
 ruff==0.6.9
 sacrebleu==2.4.3
 safetensors==0.4.5
 scikit-learn==1.5.2
 scipy==1.14.1
 semantic-version==2.10.0
-sentence_transformers==2.2.2
+sentence-transformers==2.2.2
 sentencepiece==0.2.0
 sentry-sdk==2.16.0
 setproctitle==1.3.3
-setuptools==75.1.0
 shellingham==1.5.4
 six==1.16.0
 smart-open==7.0.5
@@ -597,13 +615,13 @@ soupsieve==2.6
 spacy==3.8.2
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
-sqlalchemy==2.0.35
+SpeechRecognition==3.10.4
+SQLAlchemy==2.0.35
 sqlitedict==2.1.0
 srsly==2.4.8
-SpeechRecognition==3.10.4
 sse-starlette==2.1.3
 starlette==0.39.2
-sympy==1.13.3
+sympy==1.13.1
 tabledata==1.3.3
 tabulate==0.9.0
 tcolorpy==0.1.6
@@ -616,7 +634,8 @@ threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.4.1+rocm6.1
+torch==2.5.0+rocm6.1
+torchvision==0.19.1+rocm6.1
 tqdm==4.66.5
 tqdm-multiprocess==0.0.11
 transformers==4.45.2
@@ -642,15 +661,9 @@ zipp==3.20.2
 zstandard==0.23.0
 EOF
 
-    pip install torch torchvision torchaudio triton pytorch-triton-rocm --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.2
-
-    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.1
-
     pip install -r custom_requirements.txt
 
-    pip install contourpy==1.3.0 cycler==0.12.1 fonttools==4.54.1 kiwisolver==1.4.7 matplotlib==3.9.2 pyparsing==3.2.0  --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.2
-
-    pip install ninja==1.11.1.1
+    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.1
     
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
 
