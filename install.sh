@@ -462,14 +462,12 @@ coloredlogs==15.0.1
 colorlog==6.8.2
 confection==0.1.5
 contourpy==1.3.0
-cramjam==2.9.0
 cycler==0.12.1
 cymem==2.0.8
 DataProperty==1.0.1
 datasets==3.0.1
 Deprecated==1.2.14
 dill==0.3.8
-diskcache==5.6.3
 docker-pycreds==0.4.0
 docopt==0.6.2
 durationpy==0.9
@@ -477,7 +475,6 @@ einops==0.8.0
 evaluate==0.4.3
 executing==2.1.0
 fastapi==0.115.2
-fastparquet==2024.5.0
 ffmpy==0.4.0
 filelock==3.16.1
 Flask==3.0.3
@@ -485,7 +482,7 @@ flask-cloudflared==0.0.14
 flatbuffers==24.3.25
 fonttools==4.54.1
 frozenlist==1.4.1
-fsspec==2024.9.0
+fsspec==2024.6.1
 gitdb==4.0.11
 GitPython==3.1.43
 google-auth==2.35.0
@@ -521,7 +518,7 @@ Mako==1.3.5
 marisa-trie==1.2.1
 Markdown==3.7
 markdown-it-py==3.0.0
-MarkupSafe==3.0.2
+MarkupSafe==2.1.5
 matplotlib==3.9.2
 mbstrdecoder==1.1.3
 mdurl==0.1.2
@@ -540,9 +537,7 @@ numba==0.60.0
 numexpr==2.10.1
 numpy==2.0.2
 oauthlib==3.2.2
-onnx==1.17.0
-onnxruntime==1.15.1
-onnxruntime_extensions==0.12.0
+onnxruntime==1.19.2
 opentelemetry-api==1.27.0
 opentelemetry-exporter-otlp-proto-common==1.27.0
 opentelemetry-exporter-otlp-proto-grpc==1.27.0
@@ -554,7 +549,6 @@ opentelemetry-sdk==1.27.0
 opentelemetry-semantic-conventions==0.48b0
 opentelemetry-util-http==0.48b0
 optimum==1.23.1
-optimum-amd==0.1.0
 optuna==4.0.0
 orjson==3.10.7
 overrides==7.7.0
@@ -587,14 +581,14 @@ pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-multipart==0.0.12
-pytorch-triton-rocm==3.1.0
+pytorch-triton-rocm==3.0.0
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.9.11
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.2
-rouge-score==0.1.2
+rouge_score==0.1.2
 rsa==4.9
 ruff==0.6.9
 sacrebleu==2.4.3
@@ -606,6 +600,7 @@ sentence-transformers==2.2.2
 sentencepiece==0.2.0
 sentry-sdk==2.16.0
 setproctitle==1.3.3
+setuptools==75.1.0
 shellingham==1.5.4
 six==1.16.0
 smart-open==7.0.5
@@ -621,7 +616,7 @@ sqlitedict==2.1.0
 srsly==2.4.8
 sse-starlette==2.1.3
 starlette==0.39.2
-sympy==1.13.1
+sympy==1.13.3
 tabledata==1.3.3
 tabulate==0.9.0
 tcolorpy==0.1.6
@@ -634,7 +629,7 @@ threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.5.0+rocm6.1
+torch==2.4.1+rocm6.1
 torchvision==0.19.1+rocm6.1
 tqdm==4.66.5
 tqdm-multiprocess==0.0.11
@@ -653,6 +648,7 @@ weasel==0.4.1
 websocket-client==1.8.0
 websockets==12.0
 Werkzeug==3.0.4
+wheel==0.44.0
 word2number==1.1
 wrapt==1.16.0
 xxhash==3.5.0

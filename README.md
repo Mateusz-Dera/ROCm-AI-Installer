@@ -32,7 +32,7 @@ Part of the installation script is based on this guide: https://github.com/nktic
 ###  Image generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|Stable Diffusion web UI|Python 3.11 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
+|Stable Diffusion web UI|Python 3.12 venv|https://github.com/AUTOMATIC1111/stable-diffusion-webui|1. Startup parameters are in the webui-user.sh file|
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1</br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
 |ComfyUI<br>ComfyUI-CLIPSeg<br>AuraFlow<br>AuraSR<br>FLUX.1-schnell|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI</br> https://github.com/biegert/ComfyUI-CLIPSeg</br> https://huggingface.co/fal/AuraFlow-v0.3</br> https://huggingface.co/fal/AuraSR</br> https://huggingface.co/fal/AuraSR-v2</br> https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/Comfy-Org/flux1-schnell/blob/main/|1. Flux examples: https://comfyanonymous.github.io/ComfyUI_examples/flux/#simple-to-use-fp8-checkpoint-version|
 |Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
