@@ -362,7 +362,7 @@ EOF
     sudo apt install -y libgl1
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
-    sudo apt install -y rustc
+    sudo apt install -y rustc 
 
     sudo snap install node --classic
 }
@@ -382,23 +382,23 @@ install_koboldcpp() {
     fi
     git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
     cd koboldcpp-rocm
-    git checkout f27e9a9a08e9667796656ba3050a9820cf0eb0e6
+    git checkout da9339a07f061e2d7577e21411dc29b6c004c6f7
     python3.12 -m venv .venv --prompt Kobold
     source .venv/bin/activate
     
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 customtkinter==5.2.2
 darkdetect==0.8.0
 packaging==24.1
 EOF
-    # pip install -r custom_requirements.txt
+    pip install -r custom_requirements.txt
     
     make LLAMA_HIPBLAS=1 -j4
         
     tee --append run.sh <<EOF
 #!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/koboldcpp-rocm/.venv/bin/activate
 python koboldcpp.py
@@ -424,13 +424,12 @@ install_text_generation_web_ui() {
 
     pip install --upgrade pip
 
-    pip install setuptools==75.1.0 wheel==0.44.0 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install setuptools==75.1.0 wheel==0.44.0 --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
-    pip install ninja==1.11.1.1 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install ninja==1.11.1.1 --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
-absl-py==2.1.0
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 accelerate==1.0.1
 aiofiles==23.2.1
 aiohappyeyeballs==2.4.3
@@ -438,51 +437,47 @@ aiohttp==3.10.10
 aiosignal==1.3.1
 alembic==1.13.3
 annotated-types==0.7.0
-anyio==4.6.1
+anyio==4.6.2.post1
 asgiref==3.8.1
 asttokens==2.4.1
 attrs==24.2.0
 backoff==2.2.1
 bcrypt==4.2.0
 beautifulsoup4==4.12.2
-blinker==1.8.2
 blis==1.0.1
 build==1.2.2.post1
 cachetools==5.5.0
 catalogue==2.0.10
 certifi==2024.8.30
-chardet==5.2.0
 charset-normalizer==3.4.0
 chroma-hnswlib==0.7.3
 chromadb==0.4.24
 click==8.1.7
-cloudpathlib==0.19.0
+cloudpathlib==0.20.0
 colorama==0.4.6
 coloredlogs==15.0.1
 colorlog==6.8.2
 confection==0.1.5
 contourpy==1.3.0
+cramjam==2.9.0
 cycler==0.12.1
 cymem==2.0.8
-DataProperty==1.0.1
 datasets==3.0.1
 Deprecated==1.2.14
 dill==0.3.8
-docker-pycreds==0.4.0
+diskcache==5.6.3
 docopt==0.6.2
 durationpy==0.9
 einops==0.8.0
-evaluate==0.4.3
 executing==2.1.0
 fastapi==0.115.2
+fastparquet==2024.5.0
 ffmpy==0.4.0
-filelock==3.16.1
-Flask==3.0.3
-flask-cloudflared==0.0.14
+filelock==3.13.1
 flatbuffers==24.3.25
 fonttools==4.54.1
 frozenlist==1.4.1
-fsspec==2024.6.1
+fsspec==2024.2.0
 gitdb==4.0.11
 GitPython==3.1.43
 google-auth==2.35.0
@@ -491,28 +486,24 @@ gradio==4.44.1
 gradio_client==1.3.0
 graphviz==0.20.3
 greenlet==3.1.1
-grpcio==1.66.2
+grpcio==1.67.0
 h11==0.14.0
-hqq==0.2.2
 httpcore==1.0.6
-httptools==0.6.2
+httptools==0.6.4
 httpx==0.27.2
-huggingface-hub==0.25.2
+huggingface-hub==0.26.0
 humanfriendly==10.0
 icecream==2.1.3
 idna==3.10
 importlib_metadata==8.4.0
 importlib_resources==6.4.5
-itsdangerous==2.2.0
-Jinja2==3.1.4
+Jinja2==3.1.3
 joblib==1.4.2
-jsonlines==4.0.0
 kiwisolver==1.4.7
 kubernetes==31.0.0
 langcodes==3.4.1
 language_data==1.2.0
 llvmlite==0.43.0
-lm_eval==0.4.5
 lxml==5.3.0
 Mako==1.3.5
 marisa-trie==1.2.1
@@ -520,21 +511,18 @@ Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.9.2
-mbstrdecoder==1.1.3
 mdurl==0.1.2
 mmh3==5.0.1
 monotonic==1.6
-more-itertools==10.5.0
 mpmath==1.3.0
 multidict==6.1.0
 multiprocess==0.70.16
 murmurhash==1.0.10
-networkx==3.4.1
+networkx==3.2.1
 ninja==1.11.1.1
 nltk==3.9.1
 num2words==0.5.13
 numba==0.60.0
-numexpr==2.10.1
 numpy==2.0.2
 oauthlib==3.2.2
 onnxruntime==1.19.2
@@ -548,27 +536,21 @@ opentelemetry-proto==1.27.0
 opentelemetry-sdk==1.27.0
 opentelemetry-semantic-conventions==0.48b0
 opentelemetry-util-http==0.48b0
-optimum==1.23.1
 optuna==4.0.0
-orjson==3.10.7
+orjson==3.10.9
 overrides==7.7.0
 packaging==24.1
 pandas==2.2.3
-pathvalidate==3.2.1
-peft==0.13.2
-pillow==10.4.0
-platformdirs==4.3.6
-portalocker==2.10.1
+pillow==10.2.0
 posthog==2.4.2
 preshed==3.0.9
 propcache==0.2.0
 protobuf==4.25.5
-psutil==6.0.0
+psutil==6.1.0
 pulsar-client==3.5.0
 pyarrow==17.0.0
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
-pybind11==2.13.6
 pydantic==2.9.2
 pydantic_core==2.23.4
 pydub==0.25.1
@@ -576,30 +558,25 @@ Pygments==2.18.0
 pyparsing==3.2.0
 PyPika==0.48.9
 pyproject_hooks==1.2.0
-pytablewriter==1.2.0
 pytextrank==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-multipart==0.0.12
-pytorch-triton-rocm==3.0.0
+python-multipart==0.0.13
+pytorch-triton-rocm==3.1.0
 pytz==2024.2
 PyYAML==6.0.2
 regex==2024.9.11
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.2
-rouge_score==0.1.2
 rsa==4.9
-ruff==0.6.9
-sacrebleu==2.4.3
+ruff==0.7.0
 safetensors==0.4.5
 scikit-learn==1.5.2
 scipy==1.14.1
 semantic-version==2.10.0
 sentence-transformers==2.2.2
 sentencepiece==0.2.0
-sentry-sdk==2.16.0
-setproctitle==1.3.3
 setuptools==75.1.0
 shellingham==1.5.4
 six==1.16.0
@@ -610,58 +587,46 @@ soupsieve==2.6
 spacy==3.8.2
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
-SpeechRecognition==3.10.4
-SQLAlchemy==2.0.35
-sqlitedict==2.1.0
+SpeechRecognition==3.11.0
+SQLAlchemy==2.0.36
 srsly==2.4.8
 sse-starlette==2.1.3
-starlette==0.39.2
-sympy==1.13.3
-tabledata==1.3.3
-tabulate==0.9.0
-tcolorpy==0.1.6
+starlette==0.40.0
+sympy==1.13.1
 tenacity==9.0.0
-tensorboard==2.18.0
-tensorboard-data-server==0.7.2
-termcolor==2.5.0
 thinc==8.3.2
 threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.4.1+rocm6.1
-torchvision==0.19.1+rocm6.1
+torch==2.5.0+rocm6.2
+torchaudio==2.5.0+rocm6.2
+torchvision==0.20.0+rocm6.2
 tqdm==4.66.5
-tqdm-multiprocess==0.0.11
 transformers==4.45.2
-typepy==1.3.2
 typer==0.12.5
-typing_extensions==4.12.2
+typing_extensions==4.9.0
 tzdata==2024.2
 urllib3==2.2.3
-uvicorn==0.31.1
-uvloop==0.20.0
-wandb==0.18.3
+uvicorn==0.32.0
+uvloop==0.21.0
 wasabi==1.1.3
 watchfiles==0.24.0
 weasel==0.4.1
 websocket-client==1.8.0
 websockets==12.0
-Werkzeug==3.0.4
 wheel==0.44.0
-word2number==1.1
 wrapt==1.16.0
 xxhash==3.5.0
-yarl==1.15.2
+yarl==1.15.5
 zipp==3.20.2
-zstandard==0.23.0
 EOF
 
     pip install -r custom_requirements.txt
 
-    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.2
     
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1
 
@@ -669,7 +634,7 @@ EOF
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
     cd repositories/exllamav2
     git checkout 03b2d551b2a3a398807199456737859eb34c9f9c
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1 --no-build-isolation
+    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2 --no-build-isolation
 
     # export GGML_HIPBLAS=on
     CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1
@@ -680,9 +645,10 @@ EOF
     cd $installation_path/text-generation-webui
     tee --append run.sh <<EOF
 #!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 source $installation_path/text-generation-webui/.venv/bin/activate
-TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --loader=exllamav2 --extensions sd_api_pictures send_pictures gallery
+TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --extensions sd_api_pictures send_pictures gallery
 EOF
 chmod u+x run.sh
 }
@@ -698,108 +664,108 @@ install_animagine_xl() {
     cd $installation_path
     rm -rf animagine-xl-3.1
     git clone https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1
-    git checkout 914bc5dc90bc05f8782f6fe10ab6cae0607f5566
+    git checkout 76b0dfc75bdc06e7bceeae96de3c09c8fa833008
     cd animagine-xl-3.1
     python3.12 -m venv .venv --prompt ANIMAGINE
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
-accelerate==0.27.2
-aiofiles==23.2.1
-altair==5.3.0
-annotated-types==0.6.0
-antlr4-python3-runtime==4.9.3
-anyio==4.3.0
-attrs==23.2.0
-certifi==2024.2.2
-charset-normalizer==3.3.2
-click==8.1.7
-contourpy==1.2.1
-cycler==0.12.1
-diffusers==0.26.3
-dnspython==2.6.1
-email_validator==2.1.1
-exceptiongroup==1.2.1
-fastapi==0.111.0
-fastapi-cli==0.0.2
-ffmpy==0.3.2
-filelock==3.14.0
-fonttools==4.51.0
-fsspec==2024.3.1
-gradio==4.20.0
-gradio_client==0.11.0
-h11==0.14.0
-httpcore==1.0.5
-httptools==0.6.1
-httpx==0.27.0
-huggingface-hub==0.23.0
-idna==3.7
-importlib_metadata==7.1.0
-importlib_resources==6.4.0
-invisible-watermark==0.2.0
-Jinja2==3.1.4
-jsonschema==4.22.0
-jsonschema-specifications==2023.12.1
-kiwisolver==1.4.5
-markdown-it-py==3.0.0
-MarkupSafe==2.1.5
-matplotlib==3.8.4
-mdurl==0.1.2
-mpmath==1.3.0
-networkx==3.3
-numpy==1.26.4
-omegaconf==2.3.0
-opencv-python==4.9.0.80
-orjson==3.10.3
-packaging==24.0
-pandas==2.2.2
-pillow==10.2.0
-psutil==5.9.8
-pydantic==2.7.1
-pydantic_core==2.18.2
-pydub==0.25.1
-Pygments==2.18.0
-pyparsing==3.1.2
-python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
-python-multipart==0.0.9
-pytorch-triton-rocm
-pytz==2024.1
-PyWavelets==1.6.0
-PyYAML==6.0.1
-referencing==0.35.1
-regex==2024.4.28
-requests==2.31.0
-rich==13.7.1
-rpds-py==0.18.1
-ruff==0.4.3
-safetensors==0.4.3
-semantic-version==2.10.0
-shellingham==1.5.4
-six==1.16.0
-sniffio==1.3.1
-spaces==0.24.0
-starlette==0.37.2
-sympy==1.12
-timm==0.9.10
-tokenizers==0.15.2
-tomlkit==0.12.0
-toolz==0.12.1
-torch
-torchvision
-tqdm==4.66.4
-transformers==4.38.1
-typer==0.12.3
-typing_extensions==4.11.0
-tzdata==2024.1
-ujson==5.9.0
-urllib3==2.2.1
-uvicorn==0.29.0
-uvloop==0.19.0
-watchfiles==0.21.0
-websockets==11.0.3
-zipp==3.18.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
+# accelerate==0.27.2
+# aiofiles==23.2.1
+# altair==5.3.0
+# annotated-types==0.6.0
+# antlr4-python3-runtime==4.9.3
+# anyio==4.3.0
+# attrs==23.2.0
+# certifi==2024.2.2
+# charset-normalizer==3.3.2
+# click==8.1.7
+# contourpy==1.2.1
+# cycler==0.12.1
+# diffusers==0.26.3
+# dnspython==2.6.1
+# email_validator==2.1.1
+# exceptiongroup==1.2.1
+# fastapi==0.111.0
+# fastapi-cli==0.0.2
+# ffmpy==0.3.2
+# filelock==3.14.0
+# fonttools==4.51.0
+# fsspec==2024.3.1
+# gradio==4.20.0
+# gradio_client==0.11.0
+# h11==0.14.0
+# httpcore==1.0.5
+# httptools==0.6.1
+# httpx==0.27.0
+# huggingface-hub==0.23.0
+# idna==3.7
+# importlib_metadata==7.1.0
+# importlib_resources==6.4.0
+# invisible-watermark==0.2.0
+# Jinja2==3.1.4
+# jsonschema==4.22.0
+# jsonschema-specifications==2023.12.1
+# kiwisolver==1.4.5
+# markdown-it-py==3.0.0
+# MarkupSafe==2.1.5
+# matplotlib==3.8.4
+# mdurl==0.1.2
+# mpmath==1.3.0
+# networkx==3.3
+# numpy==1.26.4
+# omegaconf==2.3.0
+# opencv-python==4.9.0.80
+# orjson==3.10.3
+# packaging==24.0
+# pandas==2.2.2
+# pillow==10.2.0
+# psutil==5.9.8
+# pydantic==2.7.1
+# pydantic_core==2.18.2
+# pydub==0.25.1
+# Pygments==2.18.0
+# pyparsing==3.1.2
+# python-dateutil==2.9.0.post0
+# python-dotenv==1.0.1
+# python-multipart==0.0.9
+# pytorch-triton-rocm
+# pytz==2024.1
+# PyWavelets==1.6.0
+# PyYAML==6.0.1
+# referencing==0.35.1
+# regex==2024.4.28
+# requests==2.31.0
+# rich==13.7.1
+# rpds-py==0.18.1
+# ruff==0.4.3
+# safetensors==0.4.3
+# semantic-version==2.10.0
+# shellingham==1.5.4
+# six==1.16.0
+# sniffio==1.3.1
+# spaces==0.24.0
+# starlette==0.37.2
+# sympy==1.12
+# timm==0.9.10
+# tokenizers==0.15.2
+# tomlkit==0.12.0
+# toolz==0.12.1
+# torch
+# torchvision
+# tqdm==4.66.4
+# transformers==4.38.1
+# typer==0.12.3
+# typing_extensions==4.11.0
+# tzdata==2024.1
+# ujson==5.9.0
+# urllib3==2.2.1
+# uvicorn==0.29.0
+# uvloop==0.19.0
+# watchfiles==0.21.0
+# websockets==11.0.3
+# zipp==3.18.1
 EOF
 
     pip install -r custom_requirements.txt
@@ -831,7 +797,7 @@ install_artist() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 aiofiles==23.2.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
@@ -896,8 +862,8 @@ starlette==0.37.2
 sympy==1.13.1
 tokenizers==0.19.1
 tomlkit==0.12.0
-torch==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.5
 typer==0.12.3
 typing_extensions==4.12.2
@@ -910,7 +876,7 @@ EOF
 
     pip install -r custom_requirements.txt
 
-    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
 
@@ -939,7 +905,7 @@ install_cinemo() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 absl-py==2.1.0
 accelerate==0.33.0
 aiofiles==23.2.1
@@ -1025,10 +991,10 @@ tifffile==2024.7.24
 timm==1.0.8
 tokenizers==0.19.1
 tomlkit==0.12.0
-torch==2.4.0+rocm6.1
+torch==2.4.0+rocm6.2
 torch-dct==0.1.6
-torchaudio==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
+torchaudio==2.4.0+rocm6.2
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.5
 transformers==4.43.3
 typer==0.12.3
@@ -1064,7 +1030,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout d1af7a41ade7bd3c3a463bfa640725edb818ebaf
+    git checkout 2428c3979fe6dee360426b72fe6aa88e46091dd8
 
     mv ./start.sh ./run.sh
 
@@ -1087,13 +1053,19 @@ install_stable_diffusion_web_ui() {
     git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
     cd stable-diffusion-webui
     git checkout 82a973c04367123ae98bd9abdf80d9eda9b910e2
-            
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
+EOF
+
     tee --append webui-user.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python_cmd="python3.11"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install --pre torch==2.4.0+rocm6.1  torchvision==0.19.0+rocm6.1 --extra-index-url https://download.pytorch.org/whl/rocm6.1"
+export TORCH_COMMAND="pip install torch==2.4.0+rocm6.2  torchvision==0.19.0+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2"
 export COMMANDLINE_ARGS="--api --listen"
+export venv_dir=".venv"
+export REQS_FILE="custom_requirements.txt"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
     mv ./webui.sh ./run.sh
@@ -1118,7 +1090,7 @@ install_comfyui() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 aiohttp==3.9.5
 aiosignal==1.3.1
 attrs==23.2.0
@@ -1166,10 +1138,10 @@ soundfile==0.12.1
 spandrel==0.3.4
 sympy==1.12
 tokenizers==0.15.2
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchaudio==2.4.0+rocm6.2
 torchsde==0.2.6
-torchvision==0.19.0+rocm6.1
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.4
 trampoline==0.1.2
 transformers==4.36.0
@@ -1237,7 +1209,7 @@ install_audiocraft() {
     source .venv/bin/activate
             
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 aiofiles==23.2.1
 altair==5.3.0
 annotated-types==0.6.0
@@ -1360,10 +1332,10 @@ threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchaudio==2.4.0+rocm6.2
 torchmetrics==1.4.0
-torchvision==0.19.0+rocm6.1
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.4
 transformers==4.40.2
 treetable==0.2.5
@@ -1576,9 +1548,9 @@ threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchaudio==2.4.0+rocm6.2
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.4
 transformers==4.41.2
 txtsplit==1.0.0
@@ -1601,8 +1573,8 @@ wrapt==1.16.0
 EOF
 
     pip install --upgrade pip
-    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.1
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     python -m unidic download
 
     tee --append run.sh <<EOF
@@ -1633,7 +1605,7 @@ install_triposr(){
     pip install -U wheel
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 aiofiles==23.2.1
 altair==5.2.0
 annotated-types==0.6.0
@@ -1722,9 +1694,9 @@ tifffile==2024.2.12
 tokenizers==0.14.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchaudio==2.4.0+rocm6.2
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.2
 transformers==4.35.0
 trimesh==4.0.5
@@ -1767,7 +1739,7 @@ install_exllamav2(){
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.1
+--extra-index-url https://download.pytorch.org/whl/rocm6.2
 certifi==2024.6.2
 charset-normalizer==3.3.2
 cramjam==2.8.3
@@ -1801,9 +1773,9 @@ setuptools==70.1.1
 six==1.16.0
 sympy==1.12.1
 tokenizers==0.19.1
-torch==2.4.0+rocm6.1
-torchaudio==2.4.0+rocm6.1
-torchvision==0.19.0+rocm6.1
+torch==2.4.0+rocm6.2
+torchaudio==2.4.0+rocm6.2
+torchvision==0.19.0+rocm6.2
 tqdm==4.66.4
 typing_extensions==4.12.2
 tzdata==2024.1
@@ -1813,7 +1785,7 @@ wheel==0.43.0
 EOF
 
 pip install -r custom_requirements.txt
-pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.1
+pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 ## MAIN
 
