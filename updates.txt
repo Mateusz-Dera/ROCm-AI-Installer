@@ -1,3 +1,4 @@
 Updated iterfaces to PyTorch 2.5.0 (ROCm 6.2)
 Text generation web UI now run on Python 3.12
 Updated KoboldCPP
+Moved Stable Diffusion web UI venv to .venv

@@ -9,15 +9,13 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 > [!Note]
 > Ubuntu 24.04 is recommended. Version 5.x is not tested on older systems.
 
-Part of the installation script is based on this guide: https://github.com/nktice/AMD-AI/blob/main/
-
 ### Test platform:
 |Name|Info|
 |:---|:---|
 |CPU|AMD Ryzen 7900X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (2.10)|
+|Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04|
 |Kernel|6.8.0-47-generic|
 |ROCm|6.2.1|

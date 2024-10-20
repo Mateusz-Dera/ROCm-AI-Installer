@@ -1054,18 +1054,13 @@ install_stable_diffusion_web_ui() {
     cd stable-diffusion-webui
     git checkout 82a973c04367123ae98bd9abdf80d9eda9b910e2
 
-    tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.2
-EOF
-
     tee --append webui-user.sh <<EOF
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python_cmd="python3.11"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install torch==2.4.0+rocm6.2  torchvision==0.19.0+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2"
+export TORCH_COMMAND="pip install torch==2.5.0+rocm6.2  torchvision==0.20.0+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2"
 export COMMANDLINE_ARGS="--api --listen"
 export venv_dir=".venv"
-export REQS_FILE="custom_requirements.txt"
 #export CUDA_VISIBLE_DEVICES="1"
 EOF
     mv ./webui.sh ./run.sh
