@@ -444,7 +444,7 @@ attrs==24.2.0
 backoff==2.2.1
 bcrypt==4.2.0
 beautifulsoup4==4.12.2
-blis==1.0.1
+blis==0.7.11
 build==1.2.2.post1
 cachetools==5.5.0
 catalogue==2.0.10
@@ -491,7 +491,7 @@ h11==0.14.0
 httpcore==1.0.6
 httptools==0.6.4
 httpx==0.27.2
-huggingface-hub==0.26.0
+huggingface-hub==0.24.7
 humanfriendly==10.0
 icecream==2.1.3
 idna==3.10
@@ -523,7 +523,7 @@ ninja==1.11.1.1
 nltk==3.9.1
 num2words==0.5.13
 numba==0.60.0
-numpy==2.0.2
+numpy==1.26.3
 oauthlib==3.2.2
 onnxruntime==1.19.2
 opentelemetry-api==1.27.0
@@ -584,7 +584,7 @@ smart-open==7.0.5
 smmap==5.0.1
 sniffio==1.3.1
 soupsieve==2.6
-spacy==3.8.2
+spacy==3.7.5
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 SpeechRecognition==3.11.0
@@ -594,7 +594,7 @@ sse-starlette==2.1.3
 starlette==0.40.0
 sympy==1.13.1
 tenacity==9.0.0
-thinc==8.3.2
+thinc==8.2.5
 threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
