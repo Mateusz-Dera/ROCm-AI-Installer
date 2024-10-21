@@ -437,8 +437,7 @@ aiohttp==3.10.10
 aiosignal==1.3.1
 alembic==1.13.3
 annotated-types==0.7.0
-anyio==4.6.2.post1
-asgiref==3.8.1
+anyio==4.6.2.post1asgiref==3.8.1
 asttokens==2.4.1
 attrs==24.2.0
 backoff==2.2.1
@@ -671,101 +670,87 @@ install_animagine_xl() {
 
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.2
-# accelerate==0.27.2
-# aiofiles==23.2.1
-# altair==5.3.0
-# annotated-types==0.6.0
-# antlr4-python3-runtime==4.9.3
-# anyio==4.3.0
-# attrs==23.2.0
-# certifi==2024.2.2
-# charset-normalizer==3.3.2
-# click==8.1.7
-# contourpy==1.2.1
-# cycler==0.12.1
-# diffusers==0.26.3
-# dnspython==2.6.1
-# email_validator==2.1.1
-# exceptiongroup==1.2.1
-# fastapi==0.111.0
-# fastapi-cli==0.0.2
-# ffmpy==0.3.2
-# filelock==3.14.0
-# fonttools==4.51.0
-# fsspec==2024.3.1
-# gradio==4.20.0
-# gradio_client==0.11.0
-# h11==0.14.0
-# httpcore==1.0.5
-# httptools==0.6.1
-# httpx==0.27.0
-# huggingface-hub==0.23.0
-# idna==3.7
-# importlib_metadata==7.1.0
-# importlib_resources==6.4.0
-# invisible-watermark==0.2.0
-# Jinja2==3.1.4
-# jsonschema==4.22.0
-# jsonschema-specifications==2023.12.1
-# kiwisolver==1.4.5
-# markdown-it-py==3.0.0
-# MarkupSafe==2.1.5
-# matplotlib==3.8.4
-# mdurl==0.1.2
-# mpmath==1.3.0
-# networkx==3.3
-# numpy==1.26.4
-# omegaconf==2.3.0
-# opencv-python==4.9.0.80
-# orjson==3.10.3
-# packaging==24.0
-# pandas==2.2.2
-# pillow==10.2.0
-# psutil==5.9.8
-# pydantic==2.7.1
-# pydantic_core==2.18.2
-# pydub==0.25.1
-# Pygments==2.18.0
-# pyparsing==3.1.2
-# python-dateutil==2.9.0.post0
-# python-dotenv==1.0.1
-# python-multipart==0.0.9
-# pytorch-triton-rocm
-# pytz==2024.1
-# PyWavelets==1.6.0
-# PyYAML==6.0.1
-# referencing==0.35.1
-# regex==2024.4.28
-# requests==2.31.0
-# rich==13.7.1
-# rpds-py==0.18.1
-# ruff==0.4.3
-# safetensors==0.4.3
-# semantic-version==2.10.0
-# shellingham==1.5.4
-# six==1.16.0
-# sniffio==1.3.1
-# spaces==0.24.0
-# starlette==0.37.2
-# sympy==1.12
-# timm==0.9.10
-# tokenizers==0.15.2
-# tomlkit==0.12.0
-# toolz==0.12.1
-# torch
-# torchvision
-# tqdm==4.66.4
-# transformers==4.38.1
-# typer==0.12.3
-# typing_extensions==4.11.0
-# tzdata==2024.1
-# ujson==5.9.0
-# urllib3==2.2.1
-# uvicorn==0.29.0
-# uvloop==0.19.0
-# watchfiles==0.21.0
-# websockets==11.0.3
-# zipp==3.18.1
+accelerate==1.0.1
+aiofiles==23.2.1
+annotated-types==0.7.0
+antlr4-python3-runtime==4.9.3
+anyio==4.6.2.post1
+certifi==2024.8.30
+charset-normalizer==3.4.0
+click==8.1.7
+contourpy==1.3.0
+cycler==0.12.1
+diffusers==0.30.3
+fastapi==0.115.2
+ffmpy==0.4.0
+filelock==3.13.1
+fonttools==4.54.1
+fsspec==2024.2.0
+gradio==4.44.1
+gradio_client==1.3.0
+h11==0.14.0
+httpcore==1.0.6
+httpx==0.27.2
+huggingface-hub==0.26.1
+idna==3.10
+importlib_metadata==8.5.0
+importlib_resources==6.4.5
+invisible-watermark==0.2.0
+Jinja2==3.1.3
+kiwisolver==1.4.7
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.9.2
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.2.1
+numpy==1.26.3
+omegaconf==2.3.0
+opencv-python==4.10.0.84
+orjson==3.10.9
+packaging==24.1
+pandas==2.2.3
+pillow==10.2.0
+psutil==5.9.8
+pydantic==2.9.2
+pydantic_core==2.23.4
+pydub==0.25.1
+Pygments==2.18.0
+pyparsing==3.2.0
+python-dateutil==2.9.0.post0
+python-multipart==0.0.12
+pytorch-triton-rocm==3.1.0
+pytz==2024.2
+PyWavelets==1.7.0
+PyYAML==6.0.2
+regex==2024.9.11
+requests==2.32.3
+rich==13.9.2
+ruff==0.7.0
+safetensors==0.4.5
+semantic-version==2.10.0
+setuptools==70.0.0
+shellingham==1.5.4
+six==1.16.0
+sniffio==1.3.1
+spaces==0.30.4
+starlette==0.40.0
+sympy==1.13.1
+timm==1.0.11
+tokenizers==0.20.1
+tomlkit==0.12.0
+torch==2.5.0+rocm6.2
+torchaudio==2.5.0+rocm6.2
+torchvision==0.20.0+rocm6.2
+tqdm==4.66.5
+transformers==4.45.2
+typer==0.12.5
+typing_extensions==4.9.0
+tzdata==2024.2
+urllib3==2.2.3
+uvicorn==0.32.0
+websockets==12.0
+zipp==3.20.2
 EOF
 
     pip install -r custom_requirements.txt
