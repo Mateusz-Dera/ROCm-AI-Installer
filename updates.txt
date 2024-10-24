@@ -1,5 +1,4 @@
 Update ROCm to 6.2.2
-Updated iterfaces to PyTorch 2.5.0 (ROCm 6.2) extcept ComfyUI
 Text generation web UI now run on Python 3.12
 Moved Stable Diffusion web UI venv to .venv
 
@@ -7,3 +6,10 @@ Updated:
 * KoboldCPP
 * Text generation web UI
 * Stable Diffusion web UI
+* Cinemo
+
+Updated PyTorch to 2.5.0:
+* Text generation web UI
+* ANIMAGINE XL 3.1
+* Artist
+* AudioCraft

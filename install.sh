@@ -891,7 +891,7 @@ install_cinemo() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.2
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 absl-py==2.1.0
 accelerate==0.33.0
 aiofiles==23.2.1
@@ -977,10 +977,10 @@ tifffile==2024.7.24
 timm==1.0.8
 tokenizers==0.19.1
 tomlkit==0.12.0
-torch==2.4.0+rocm6.2
+torch==2.4.0+rocm6.1
 torch-dct==0.1.6
-torchaudio==2.4.0+rocm6.2
-torchvision==0.19.0+rocm6.2
+torchaudio==2.4.0+rocm6.1
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.5
 transformers==4.43.3
 typer==0.12.3
@@ -1280,7 +1280,7 @@ Pygments==2.18.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==3.0.0
+pytorch-triton-rocm==3.1.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.35.1
@@ -1307,16 +1307,16 @@ spacy-loggers==1.0.5
 srsly==2.4.8
 starlette==0.37.2
 submitit==1.5.1
-sympy==1.12
+sympy==1.13.1
 thinc==8.2.3
 threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.4.0+rocm6.2
-torchaudio==2.4.0+rocm6.2
+torch==2.5.0+rocm6.2
+torchaudio==2.5.0+rocm6.2
 torchmetrics==1.4.0
-torchvision==0.19.0+rocm6.2
+torchvision==0.20.0+rocm6.2
 tqdm==4.66.4
 transformers==4.40.2
 treetable==0.2.5
@@ -1328,7 +1328,7 @@ uvicorn==0.29.0
 wasabi==1.1.2
 weasel==0.3.4
 websockets==11.0.3
-xformers==0.0.27.post2
+xformers==0.0.28.post2
 EOF
 
     pip install -r custom_requirements.txt
