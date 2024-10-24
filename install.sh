@@ -1583,7 +1583,7 @@ install_triposr(){
     python3.12 -m venv .venv --prompt TripoSR
     source .venv/bin/activate
 
-    pip install -U wheel
+    pip install wheel==0.44.0
 
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.2
@@ -1652,7 +1652,7 @@ PyMatting==1.1.12
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==3.0.0
+pytorch-triton-rocm==3.1.0
 pytz==2024.1
 PyYAML==6.0.1
 referencing==0.33.0
@@ -1670,14 +1670,14 @@ shellingham==1.5.4
 six==1.16.0
 sniffio==1.3.1
 starlette==0.36.3
-sympy==1.12
+sympy==1.13.1
 tifffile==2024.2.12
 tokenizers==0.14.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.4.0+rocm6.2
-torchaudio==2.4.0+rocm6.2
-torchvision==0.19.0+rocm6.2
+torch==2.5.0+rocm6.2
+torchaudio==2.5.0+rocm6.2
+torchvision==0.20.0+rocm6.2
 tqdm==4.66.2
 transformers==4.35.0
 trimesh==4.0.5
@@ -1692,7 +1692,7 @@ EOF
 
     pip install -r custom_requirements.txt
     
-    pip install git+https://github.com/tatsy/torchmcubes.git@3aef8afa5f21b113afc4f4ea148baee850cbd472
+    pip install git+https://github.com/tatsy/torchmcubes.git@cb81cddece46a8a126b08f7fbb9742f8605eefab
 
     tee --append run.sh <<EOF
 #!/bin/bash
