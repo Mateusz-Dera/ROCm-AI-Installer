@@ -303,13 +303,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.1/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.2/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.1 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.2 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -783,6 +783,7 @@ install_artist() {
 
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.2
+accelerate==1.0.1
 aiofiles==23.2.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
@@ -800,7 +801,7 @@ ffmpy==0.4.0
 filelock==3.15.4
 fonttools==4.53.1
 fsspec==2024.6.1
-gradio==4.41.0
+gradio==4.44.1
 gradio_client==1.3.0
 h11==0.14.0
 httpcore==1.0.5
@@ -823,6 +824,7 @@ orjson==3.10.6
 packaging==24.1
 pandas==2.2.2
 pillow==10.4.0
+psutil==6.1.0
 pydantic==2.8.2
 pydantic_core==2.20.1
 pydub==0.25.1
@@ -830,7 +832,7 @@ Pygments==2.18.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==3.0.0
+pytorch-triton-rocm==3.1.0
 pytz==2024.1
 PyYAML==6.0.2
 regex==2024.7.24
@@ -845,11 +847,12 @@ six==1.16.0
 sniffio==1.3.1
 starlette==0.37.2
 sympy==1.13.1
-tokenizers==0.19.1
+tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.4.0+rocm6.2
-torchvision==0.19.0+rocm6.2
+torch==2.5.0+rocm6.2
+torchvision==0.20.0+rocm6.2
 tqdm==4.66.5
+transformers==4.46.0
 typer==0.12.3
 typing_extensions==4.12.2
 tzdata==2024.1
@@ -860,8 +863,6 @@ zipp==3.19.2
 EOF
 
     pip install -r custom_requirements.txt
-
-    pip install git+https://github.com/huggingface/transformers.git@4fdc7020b227ab606a9b68470a798824232c17ca --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
 
@@ -1070,7 +1071,7 @@ install_comfyui() {
     source .venv/bin/activate
 
     tee --append custom_requirements.txt <<EOF
---extra-index-url https://download.pytorch.org/whl/rocm6.2
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
 aiohttp==3.9.5
 aiosignal==1.3.1
 attrs==23.2.0
@@ -1118,10 +1119,10 @@ soundfile==0.12.1
 spandrel==0.3.4
 sympy==1.12
 tokenizers==0.15.2
-torch==2.4.0+rocm6.2
-torchaudio==2.4.0+rocm6.2
+torch==2.4.0+rocm6.1
+torchaudio==2.4.0+rocm6.1
 torchsde==0.2.6
-torchvision==0.19.0+rocm6.2
+torchvision==0.19.0+rocm6.1
 tqdm==4.66.4
 trampoline==0.1.2
 transformers==4.36.0
