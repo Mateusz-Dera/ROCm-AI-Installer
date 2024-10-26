@@ -6,10 +6,12 @@ Updated:
 * KoboldCPP
 * Text generation web UI
 * Stable Diffusion web UI
+* WhisperSpeech web UI
 * Cinemo
 
 Updated PyTorch to 2.5.0:
 * Text generation web UI
+* WhisperSpeech web UI
 * ANIMAGINE XL 3.1
 * Artist
 * AudioCraft

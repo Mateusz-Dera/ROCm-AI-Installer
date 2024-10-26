@@ -1354,19 +1354,20 @@ install_whisperspeech_web_ui(){
     rm -rf whisperspeech-webui
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
     cd whisperspeech-webui
-    git checkout c295d6b5503465067ea4fe24b2b20214fa827d94
+    git checkout 30c75da3ede245f1436aee9cfd511261aa1eddae
     python3.12 -m venv .venv --prompt WhisperSpeech
     source .venv/bin/activate
 
-    pip install -r requirements_rocm_6.1.txt
-    pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6
+    pip install -r requirements_rocm_6.2.txt
+    # pip install git+https://github.com/ROCmSoftwarePlatform/flash-attention.git@2554f490101742ccdc56620a938f847f61754be6
 
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export CUDA_VISIBLE_DEVICES=0
 source $installation_path/whisperspeech-webui/.venv/bin/activate
-python3 webui.py
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+python3 webui.py --listen
 EOF
     chmod u+x run.sh
 }
