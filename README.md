@@ -18,7 +18,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04|
 |Kernel|6.8.0-47-generic|
-|ROCm|6.2.1|
+|ROCm|6.2.2|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|

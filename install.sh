@@ -437,7 +437,8 @@ aiohttp==3.10.10
 aiosignal==1.3.1
 alembic==1.13.3
 annotated-types==0.7.0
-anyio==4.6.2.post1asgiref==3.8.1
+anyio==4.6.2.post1
+asgiref==3.8.1
 asttokens==2.4.1
 attrs==24.2.0
 backoff==2.2.1
