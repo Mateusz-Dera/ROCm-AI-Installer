@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="5.2"
+version="5.2.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -140,6 +140,7 @@ sillytavern_backup() {
     10 "Backup presets" \
     11 "Backup context" \
     12 "Backup instruct" \
+    13 "Backup sysprompt" \
     2>&1 > /dev/tty
 }
 
@@ -158,6 +159,7 @@ sillytavern_restore() {
     10 "Restore presets" \
     11 "Restore context" \
     12 "Restore instruct" \
+    13 "Restore sysprompt" \
     2>&1 > /dev/tty
 }
 
@@ -1017,7 +1019,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 2428c3979fe6dee360426b72fe6aa88e46091dd8
+    git checkout 17b7f176765693b557dfe15be8cd7050cd24994f
 
     mv ./start.sh ./run.sh
 
@@ -1967,6 +1969,10 @@ while true; do
                                                 # Backup instruct
                                                 backup_and_restore $installation_path/SillyTavern/data/default-user/instruct $installation_path/Backups/SillyTavern/data/default-user/instruct
                                                 ;;
+                                            13)
+                                                # Backup sysprompt
+                                                backup_and_restore $installation_path/SillyTavern/data/default-user/sysprompt $installation_path/Backups/SillyTavern/data/default-user/sysprompt
+                                                ;;
                                             *)
                                                 next=false
                                                 ;;
@@ -2034,6 +2040,10 @@ while true; do
                                             12)
                                                 # Restore instruct
                                                 backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/instruct $installation_path/SillyTavern/data/default-user/instruct
+                                                ;;
+                                            13)
+                                                # Restore sysprompt
+                                                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/sysprompt $installation_path/SillyTavern/data/default-user/sysprompt
                                                 ;;
                                             *)
                                                 next=false
