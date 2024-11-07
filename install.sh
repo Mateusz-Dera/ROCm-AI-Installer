@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="5.2.1"
+version="5.3"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -246,9 +246,10 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 2 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 3 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
+    2 "Install MetaVoice" \
     2>&1 > /dev/tty
 }
 
@@ -1572,6 +1573,218 @@ EOF
     chmod u+x run.sh
 }
 
+install_metavoice(){
+    if ! command -v python3.12 &> /dev/null; then
+        echo "Install Python 3.12 first"
+        exit 1
+    fi
+
+    mkdir -p $installation_path
+    cd $installation_path
+
+    if [ -d "metavoice-src" ]
+    then
+        rm -rf metavoice-src
+    fi
+
+    git clone https://github.com/metavoiceio/metavoice-src.git
+    cd ./metavoice-src
+    git checkout e606e8af2b154db2ee7eb76f9ab4389fd8e52822
+
+    python3.12 -m venv .venv --prompt MetaVoice
+    source .venv/bin/activate
+
+    rm ./requirements.txt
+    touch ./requirements.txt
+
+    tee --append custom_requirements.txt <<EOF
+--extra-index-url https://download.pytorch.org/whl/rocm6.1
+aiofiles==23.2.1
+altair==5.3.0
+annotated-types==0.6.0
+antlr4-python3-runtime==4.9.3
+anyio==4.3.0
+appdirs==1.4.4
+attrs==23.2.0
+audioread==3.0.1
+av==12.0.0
+backoff==2.2.1
+blis==0.7.11
+catalogue==2.0.10
+certifi==2024.2.2
+cffi==1.16.0
+charset-normalizer==3.3.2
+click==8.1.7
+cloudpathlib==0.16.0
+cloudpickle==3.0.0
+colorama==0.4.6
+colorlog==6.8.2
+confection==0.1.4
+contourpy==1.2.1
+cycler==0.12.1
+cymem==2.0.8
+decorator==5.1.1
+DeepFilterLib==0.5.6
+DeepFilterNet==0.5.6
+demucs==4.0.1
+docopt==0.6.2
+docstring_parser==0.16
+dora_search==0.1.12
+einops==0.8.0
+encodec==0.1.1
+exceptiongroup==1.2.1
+fastapi==0.110.3
+ffmpy==0.3.2
+filelock==3.14.0
+flashy==0.0.2
+fonttools==4.51.0
+fsspec==2024.3.1
+gradio==4.44.1
+gradio_client==1.3.0
+h11==0.14.0
+httpcore==1.0.5
+httpx==0.27.0
+huggingface-hub==0.21.4
+hydra-colorlog==1.2.0
+hydra-core==1.3.2
+idna==3.7
+importlib_resources==6.4.0
+Jinja2==3.1.4
+joblib==1.4.2
+jsonschema==4.22.0
+jsonschema-specifications==2023.12.1
+julius==0.2.7
+kiwisolver==1.4.5
+lameenc==1.7.0
+langcodes==3.4.0
+language_data==1.2.0
+lazy_loader==0.4
+librosa==0.10.2
+lightning-utilities==0.11.2
+llvmlite==0.42.0
+loguru==0.7.2
+marisa-trie==1.1.1
+markdown-it-py==3.0.0
+MarkupSafe==2.1.5
+matplotlib==3.8.4
+mdurl==0.1.2
+monotonic==1.6
+mpmath==1.3.0
+msgpack==1.0.8
+murmurhash==1.0.10
+networkx==3.3
+ninja==1.11.1.1
+num2words==0.5.13
+numba==0.59.1
+numpy==1.26.4
+omegaconf==2.3.0
+openunmix==1.3.0
+orjson==3.10.3
+packaging==23.2
+pandas==2.2.2
+pillow==10.3.0
+platformdirs==4.2.1
+pooch==1.8.1
+posthog==3.7.0
+preshed==3.0.9
+pretty-errors==1.2.25
+protobuf==5.26.1
+pycparser==2.22
+pydantic==2.7.1
+pydantic_core==2.18.2
+pydub==0.25.1
+Pygments==2.18.0
+pyparsing==3.1.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+python-multipart==0.0.9
+pytorch-triton-rocm==3.1.0
+pytz==2024.1
+PyYAML==6.0.1
+referencing==0.35.1
+regex==2024.4.28
+requests==2.31.0
+retrying==1.3.4
+rich==13.7.1
+rpds-py==0.18.1
+ruff==0.4.3
+safetensors==0.4.3
+scikit-learn==1.4.2
+scipy==1.13.0
+semantic-version==2.10.0
+sentencepiece==0.2.0
+setuptools==75.3.0
+shellingham==1.5.4
+shtab==1.7.1
+six==1.16.0
+smart-open==6.4.0
+sniffio==1.3.1
+soundfile==0.12.1
+soxr==0.3.7
+spacy==3.7.5
+spacy-legacy==3.0.12
+spacy-loggers==1.0.5
+srsly==2.4.8
+starlette==0.37.2
+submitit==1.5.1
+sympy==1.13.1
+thinc==8.2.3
+threadpoolctl==3.5.0
+tiktoken==0.5.1
+tokenizers==0.19.1
+tomlkit==0.12.0
+toolz==0.12.1
+torch==2.5.1+rocm6.1
+torchaudio==2.5.1+rocm6.1
+torchmetrics==1.4.0
+torchvision==0.20.1+rocm6.1
+tqdm==4.66.4
+transformers==4.40.2
+treetable==0.2.5
+typer==0.12.5
+typing_extensions==4.11.0
+tyro==0.7.3
+tzdata==2024.1
+urllib3==2.2.1
+uvicorn==0.27.1
+wasabi==1.1.2
+weasel==0.4.1
+websockets==11.0.3
+wheel==0.44.0
+xformers==0.0.28.post3
+EOF
+
+    pip install -r custom_requirements.txt
+
+    git clone https://github.com/facebookresearch/audiocraft.git
+    cd audiocraft
+    git checkout adf0b04a4452f171970028fcf80f101dd5e26e19
+    rm ./requirements.txt
+    touch ./requirements.txt
+    pip install -e .
+
+    cd $installation_path/metavoice-src
+
+    pip install -e .
+    sed -i 's|TTS_MODEL = tyro\.cli(TTS, args=\["--telemetry_origin", "webapp"\])|TTS_MODEL = tyro.cli(TTS)|' app.py
+
+    sed -i '/logging\.basicConfig(level=logging\.INFO, handlers=\[logging\.StreamHandler(sys\.stdout), logging\.StreamHandler(sys\.stderr)\])/a def get_telemetry_status():\n    value = os.getenv("ANONYMIZED_TELEMETRY", "True")  # Default to "True"\n    return value.lower() in ("1", "true", "yes")' ./fam/telemetry/posthog.py
+    sed -i 's/if not os.getenv("ANONYMIZED_TELEMETRY", True) or "pytest" in sys.modules:/if not get_telemetry_status() or "pytest" in sys.modules:/g' ./fam/telemetry/posthog.py
+
+    tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export CUDA_VISIBLE_DEVICES=0
+export TORCH_BLAS_PREFER_HIPBLASLT=0
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+export ANONYMIZED_TELEMETRY=False
+source .venv/bin/activate
+python app.py
+EOF
+
+    chmod +x run.sh
+}
+
 install_triposr(){
     if ! command -v python3.12 &> /dev/null; then
         echo "Install Python 3.12 first"
@@ -2274,6 +2487,10 @@ while true; do
                     1)
                         # MeloTTS
                         install_melotts
+                        ;;
+                    2)
+                        # MetaVoice
+                        install_metavoice
                         ;;
                     *)
                         first=false

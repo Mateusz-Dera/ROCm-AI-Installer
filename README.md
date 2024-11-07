@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/5.2.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/5.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04 is recommended. Version 5.x is not tested on older systems.
@@ -17,7 +17,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04|
-|Kernel|6.8.0-47-generic|
+|Kernel|6.8.0-48-generic|
 |ROCm|6.2.2|
 
 ###  Text generation
@@ -50,6 +50,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |:---|:---|:---|:---|
 |WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
+|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src.git<br>https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding branch.<br> 2. Telemetry is disabled by default|
 
 ###  3D generation
 |Name|Enviroment|Links|Additional information|
