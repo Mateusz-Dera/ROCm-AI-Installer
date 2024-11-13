@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="5.3"
+version="6.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -306,13 +306,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.2/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.3/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.2 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.3 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -370,25 +370,70 @@ EOF
     sudo snap install node --classic
 }
 
-# KoboldCPP
-install_koboldcpp() {
-    if ! command -v python3.12 &> /dev/null; then
-        echo "Install Python 3.12 first"
+# Universal function
+install() {
+    local git_repo=$1
+    local git_commit=$2
+    local start_command=$3
+    local python_version=${4:-python3.12}
+
+    # Check if git repo and commit are provided
+    if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
+        echo "Error: git repo, git commit, and start command must be provided"
         exit 1
     fi
 
-    mkdir -p $installation_path
-    cd $installation_path
-    if [ -d "koboldcpp-rocm" ]
-    then
-        rm -rf koboldcpp-rocm
+    # Get the repository name
+    local repo_name=$(basename "$git_repo" .git)
+
+    # Check if Python version is installed
+    if ! command -v $python_version &> /dev/null; then
+        echo "Install $python_version first"
+        exit 1
     fi
-    git clone https://github.com/YellowRoseCx/koboldcpp-rocm.git
-    cd koboldcpp-rocm
-    git checkout da9339a07f061e2d7577e21411dc29b6c004c6f7
-    python3.12 -m venv .venv --prompt Kobold
-    source .venv/bin/activate
+
+    # Create installation path
+    if [ ! -d "$installation_path" ]; then
+        mkdir -p $installation_path
+    fi
     
+    cd $installation_path
+    
+    # Clone the repository
+    if [ -d "$repo_name" ]; then
+        rm -rf $repo_name
+    fi
+
+    git clone $git_repo
+
+    cd $repo_name || exit 1
+
+    # Checkout the commit
+    git checkout $git_commit
+
+    # Create a virtual environment
+    $python_version -m venv .venv --prompt $repo_name
+
+    # Activate the virtual environment
+    source .venv/bin/activate
+
+    # Create run.sh
+    tee --append run.sh <<EOF
+#!/bin/bash
+source $installation_path/$repo_name/.venv/bin/activate
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export CUDA_VISIBLE_DEVICES=0
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+export TORCH_BLAS_PREFER_HIPBLASLT=0
+$start_command
+EOF
+    chmod +x run.sh
+}
+
+# KoboldCPP
+install_koboldcpp() {
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "5ac2de794ddf791194854c86cb8512e9ab6b4cc4" "python koboldcpp.py"
+
     tee --append custom_requirements.txt <<EOF
 --extra-index-url https://download.pytorch.org/whl/rocm6.2
 customtkinter==5.2.2
@@ -398,32 +443,11 @@ EOF
     pip install -r custom_requirements.txt
     
     make LLAMA_HIPBLAS=1 -j4
-        
-    tee --append run.sh <<EOF
-#!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
-source $installation_path/koboldcpp-rocm/.venv/bin/activate
-python koboldcpp.py
-EOF
-    chmod +x run.sh
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    if ! command -v python3.12 &> /dev/null; then
-        echo "Install Python 3.12 first"
-        exit 1
-    fi
-
-    mkdir -p $installation_path
-    cd $installation_path
-    rm -rf text-generation-webui
-    git clone https://github.com/oobabooga/text-generation-webui.git
-    cd text-generation-webui
-    git checkout 3b06cb4523b09fef4f9caedee252163c5704c2e1
-    python3.12 -m venv .venv --prompt TextGen
-    source .venv/bin/activate
+    install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     pip install --upgrade pip
 
@@ -602,9 +626,9 @@ threadpoolctl==3.5.0
 tiktoken==0.8.0
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.5.0+rocm6.2
-torchaudio==2.5.0+rocm6.2
-torchvision==0.20.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.5
 transformers==4.45.2
 typer==0.12.5
@@ -639,21 +663,29 @@ EOF
     git checkout 03b2d551b2a3a398807199456737859eb34c9f9c
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2 --no-build-isolation
 
-    # export GGML_HIPBLAS=on
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1
-
     cd $installation_path/text-generation-webui/modules
-    sed -i '37,40d' llama_cpp_python_hijack.py
+    # sed -i '37,40d' llama_cpp_python_hijack.py
+}
 
-    cd $installation_path/text-generation-webui
-    tee --append run.sh <<EOF
-#!/bin/bash
-export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-source $installation_path/text-generation-webui/.venv/bin/activate
-TORCH_BLAS_PREFER_HIPBLASLT=0 python server.py --api --listen --extensions sd_api_pictures send_pictures gallery
-EOF
-chmod u+x run.sh
+# SillyTavern
+install_sillytavern() {
+    mkdir -p $installation_path
+    cd $installation_path
+    if [ -d "SillyTavern" ]
+    then
+        rm -rf SillyTavern
+    fi
+    git clone https://github.com/SillyTavern/SillyTavern.git
+    cd SillyTavern
+    git checkout a3ca407b2714df5af5a9f83aa925fd64fb778e24
+
+    mv ./start.sh ./run.sh
+
+    # Default config
+    cd ./default
+    sed -i 's/listen: false/listen: true/' config.yaml
+    sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
+    sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
 }
 
 # ANIMAGINE XL 3.1
@@ -743,9 +775,9 @@ sympy==1.13.1
 timm==1.0.11
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.5.0+rocm6.2
-torchaudio==2.5.0+rocm6.2
-torchvision==0.20.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.5
 transformers==4.45.2
 typer==0.12.5
@@ -853,8 +885,8 @@ starlette==0.37.2
 sympy==1.13.1
 tokenizers==0.20.1
 tomlkit==0.12.0
-torch==2.5.0+rocm6.2
-torchvision==0.20.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.5
 transformers==4.46.0
 typer==0.12.3
@@ -1010,27 +1042,6 @@ EOF
     chmod +x run.sh
 }
 
-# SillyTavern
-install_sillytavern() {
-    mkdir -p $installation_path
-    cd $installation_path
-    if [ -d "SillyTavern" ]
-    then
-        rm -rf SillyTavern
-    fi
-    git clone https://github.com/SillyTavern/SillyTavern.git
-    cd SillyTavern
-    git checkout 17b7f176765693b557dfe15be8cd7050cd24994f
-
-    mv ./start.sh ./run.sh
-
-    # Default config
-    cd ./default
-    sed -i 's/listen: false/listen: true/' config.yaml
-    sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
-    sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
-}
-
 # Stable Diffusion web UI
 install_stable_diffusion_web_ui() {
     if ! command -v python3.11 &> /dev/null; then
@@ -1048,7 +1059,7 @@ install_stable_diffusion_web_ui() {
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 python_cmd="python3.11"
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export TORCH_COMMAND="pip install torch==2.5.0+rocm6.2  torchvision==0.20.0+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2"
+export TORCH_COMMAND="pip install torch==2.5.1+rocm6.2  torchvision==0.20.1+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2"
 export COMMANDLINE_ARGS="--api --listen"
 export venv_dir=".venv"
 #export CUDA_VISIBLE_DEVICES="1"
@@ -1317,10 +1328,10 @@ threadpoolctl==3.5.0
 tokenizers==0.19.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.5.0+rocm6.2
-torchaudio==2.5.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
 torchmetrics==1.4.0
-torchvision==0.20.0+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.4
 transformers==4.40.2
 treetable==0.2.5
@@ -1534,9 +1545,9 @@ threadpoolctl==3.5.0
 tokenizers==0.20
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.5.0+rocm6.2
-torchaudio==2.5.0+rocm6.2
-torchvision==0.20.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.4
 transformers==4.45.2
 txtsplit==1.0.0
@@ -1892,9 +1903,9 @@ tifffile==2024.2.12
 tokenizers==0.14.1
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.5.0+rocm6.2
-torchaudio==2.5.0+rocm6.2
-torchvision==0.20.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.2
 transformers==4.35.0
 trimesh==4.0.5

@@ -4,10 +4,10 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/5.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04 is recommended. Version 5.x is not tested on older systems.
+> Ubuntu 24.04.1 is recommended. Version 6.x is not tested on older systems.
 
 ### Test platform:
 |Name|Info|
@@ -16,9 +16,9 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
-|OS|Ubuntu 24.04|
+|OS|Ubuntu 24.04.1|
 |Kernel|6.8.0-48-generic|
-|ROCm|6.2.2|
+|ROCm|6.2.3|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|
@@ -51,6 +51,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
 |MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src.git<br>https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding branch.<br> 2. Telemetry is disabled by default|
+|F5-TTS|Python 3.12 venv|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 
 ###  3D generation
 |Name|Enviroment|Links|Additional information|
