@@ -46,14 +46,14 @@ fi
 export NEWT_COLORS='
 root=,black
 textbox=white,black
-border=brightred,black
+border=brightgreen,black
 window=white,black
-title=brightred,black
+title=brightgreen,black
 button=black,white
-compactbutton=brightred,black
+compactbutton=brightgreen,black
 listbox=white,black
 actlistbox=black,white
-actsellistbox=black,brightred
+actsellistbox=black,brightgreen
 '
 
 # Function to display the main menu

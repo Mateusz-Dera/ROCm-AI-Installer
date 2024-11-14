@@ -20,7 +20,7 @@ pandas==2.2.2
 pillow==10.2.0
 Pygments==2.18.0
 python-dateutil==2.9.0.post0
-pytorch-triton-rocm==3.0.0
+pytorch-triton-rocm==3.1.0
 pytz==2024.1
 PyYAML==6.0.1
 regex==2024.5.15
@@ -32,9 +32,9 @@ setuptools==70.1.1
 six==1.16.0
 sympy==1.12.1
 tokenizers==0.19.1
-torch==2.4.0+rocm6.2
-torchaudio==2.4.0+rocm6.2
-torchvision==0.19.0+rocm6.2
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+torchvision==0.20.1+rocm6.2
 tqdm==4.66.4
 typing_extensions==4.12.2
 tzdata==2024.1
