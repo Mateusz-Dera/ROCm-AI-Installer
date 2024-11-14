@@ -18,7 +18,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04.1|
 |Kernel|6.8.0-48-generic|
-|ROCm|6.2.3|
+|ROCm|6.2.4|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|
@@ -82,17 +82,21 @@ sudo adduser `whoami` render
 ```bash
 sudo reboot
 ```
-3\. Run installer 
+3\. Clone repository 
+```bash
+git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
+```
+4\. Run installer 
 ```bash
 bash ./install.sh
 ```
-4\. Select installation path.
+5\. Select installation path.
 
-5\. Select ROCm installation if you are upgrading or running the script for the first time.
+6\. Select ROCm installation if you are upgrading or running the script for the first time.
 
-6\. Install selected interfaces
+7\. Install selected interfaces
 
-7\. Go to the installation path with the selected interface and run:
+8\. Go to the installation path with the selected interface and run:
 ```bash
 ./run.sh
 ```
