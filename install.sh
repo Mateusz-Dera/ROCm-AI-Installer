@@ -925,13 +925,7 @@ while true; do
                         ;;
                     1)
                         # ComfyUI
-#                         CHOICES=$(whiptail --separate-output --checklist "Choose options" 10 35 5 \
-#   "1" "The first option" ON \
-#   "2" "The second option" ON \
-#   "3" "The third option" OFF \
-#   "4" "The fourth option" OFF 3>&1 1>&2 2>&3)
-
-                        CHOICES=$(whiptail --separate-output --checklist "Addons:" 10 35 6 \
+                        CHOICES=$(whiptail --separate-output --checklist "Addons:" 17 50 6 \
     "0" "ComfyUI-Manager" ON \
     "1" "UltimateSDUpscale" ON \
     "2" "AuraFlow-v0.3" ON \
