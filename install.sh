@@ -54,6 +54,8 @@ compactbutton=brightgreen,black
 listbox=white,black
 actlistbox=black,white
 actsellistbox=black,brightgreen
+checkbox=white,black
+actcheckbox=brightgreen,black
 '
 
 # Function to display the main menu
@@ -172,7 +174,7 @@ sillytavern_restore() {
 image_generation() {
     whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "ANIMAGINE XL 3.1" \
-    1 "ComfyUI + Addons" \
+    1 "Install ComfyUI" \
     2 "Install Artist" \
     2>&1 > /dev/tty
 }
@@ -196,27 +198,6 @@ animagine_xl_restore() {
     0 "Restore config.py" \
     2>&1 > /dev/tty
 }
-
-comfyui() {
-    whiptail --title "ComfyUI + Addons" --menu "Choose an option:" 15 100 3 \
-    0 "Backup" \
-    1 "Install" \
-    2 "Restore" \
-    2>&1 > /dev/tty
-}
-
-comfyui_backup() {
-    whiptail --title "ComfyUI" --menu "Choose an option:" 15 100 1 \
-    0 "Backup models" \
-    2>&1 > /dev/tty
-}
-
-comfyui_restore() {
-    whiptail --title "ComfyUI" --menu "Choose an option:" 15 100 1 \
-    0 "Restore models" \
-    2>&1 > /dev/tty
-}
-
 
 video_generation() {
     whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 \
@@ -475,8 +456,7 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "122c9ca1cec50e78fb0fb0eb7a3d7fd015e7f037" "python comfyui.py"
-    pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/nightly/rocm6.2
+    install "https://github.com/comfyanonymous/ComfyUI.git" "122c9ca1cec50e78fb0fb0eb7a3d7fd015e7f037" "python3 ./main.py --listen"
 
     # git clone https://github.com/biegert/ComfyUI-CLIPSeg.git
     # cd ComfyUI-CLIPSeg
@@ -507,15 +487,6 @@ install_comfyui() {
     # git checkout f2808ab17fe9ff81dcf89ed0301cf644c281be0a
     # mv ./flux1-schnell-fp8.safetensors $installation_path/ComfyUI/models/checkpoints
     # cd .. && rm -rf flux-fp8
-
-    cd $installation_path/ComfyUI
-
-    tee --append run.sh <<EOF
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-source $installation_path/ComfyUI/.venv/bin/activate
-python3 ./main.py --listen
-EOF
-    chmod +x run.sh
 }
 
 # AudioCraft
@@ -918,51 +889,17 @@ while true; do
                         ;;
                     1)
                         # ComfyUI
-                        second=true
-                        while $second; do
-                            choice=$(comfyui)
-                            case $choice in
-                                0)
-                                    # Backup
-                                    next=true
-                                    while $next; do
-                                        choice=$(comfyui_backup)
-                                        case $choice in
-                                            0)
-                                                # Backup models
-                                                backup_and_restore $installation_path/ComfyUI/models $installation_path/Backups/ComfyUI/models
-                                                ;;
-                                            *)
-                                                next=false
-                                                ;;
-                                        esac
-                                    done
-                                    ;;
-                                1)
-                                    # Install
-                                    install_comfyui
-                                    ;;
-                                2)
-                                    # Restore
-                                    next=true
-                                    while $next; do
-                                        choice=$(comfyui_restore)
-                                        case $choice in
-                                            0)
-                                                # Restore models
-                                                backup_and_restore $installation_path/Backups/ComfyUI/models $installation_path/ComfyUI/models
-                                                ;;
-                                            *)
-                                                next=false
-                                                ;;
-                                        esac
-                                    done
-                                    ;;
-                                *)
-                                    second=false
-                                    ;;
-                            esac
-                        done
+                        CHOICES=$(whiptail --title "Install ComfyUI" \
+    --checklist "Addons:" 15 50 4 \
+    "1" "AuraFlow-v0.3" ON \
+    "2" "AuraSR" ON \
+    "3" "FLUX.1-schnell " ON \
+    "4" "AnimePro FLUX" ON 3>&1 1>&2 2>&3)
+
+                        echo "Choices: $CHOICES"
+                        exit 1
+
+                        install_comfyui
                         ;;
                     2)
                         # Artist
