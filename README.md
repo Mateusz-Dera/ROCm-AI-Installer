@@ -38,11 +38,12 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Name|Link|Additional information|
 |:---|:---|:---|
 |ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager| Manage nodes of ComfyUI.|
+|ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://huggingface.co/city96/t5-v1_1-xxl-encoder-bf16<br> https://huggingface.co/openai/clip-vit-large-patch14<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell|GGUF models loader.|
 |ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
-|AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3/|Text to image model.|
-|FLUX.1-schnell|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/Comfy-Org/flux1-schnell|Text to image model.|
-|AnimePro FLUX|https://civitai.com/models/934628?modelVersionId=1046190|Text to image model.|
-|Mochi|https://github.com/kijai/ComfyUI-MochiWrapper<br> https://huggingface.co/Kijai/Mochi_preview_comfy/tree/main|Video generation model.|
+|AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
+|FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
+|AnimePro FLUX GGUF|https://civitai.com/models/934628?modelVersionId=1053818|Text to image model.|
+|Mochi|https://github.com/kijai/ComfyUI-MochiWrapper<br> https://huggingface.co/Kijai/Mochi_preview_comfy|Video generation model.|
 
 
 ###  Video generation
