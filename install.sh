@@ -454,30 +454,47 @@ install_cinemo() {
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 
+# Download
+download() {
+    local repo=$1
+    local commit=$2
+    local file=$3
+    local repo_url="https://huggingface.co/$repo/resolve/$commit"
+
+    echo "Downloading $file..."
+    
+    wget "$repo_url/$file" -O "$file" || {
+        echo "Error downloading $file"
+        exit 1
+    }
+}
+
 # ComfyUI
 install_comfyui() {
-    local choices=$1
-    
     install "https://github.com/comfyanonymous/ComfyUI.git" "122c9ca1cec50e78fb0fb0eb7a3d7fd015e7f037" "python3 ./main.py --listen"
 
     # Process each selected choice
-    for choice in $choices; do
+    for choice in $CHOICES; do
         case $choice in
-            "0")
+            '"0"')
                 # ComfyUI-Manager
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
                 git checkout b6a8e6ba8147080a320b1b91c93a0b1cbdb93136
                 ;;
-            "1")
-                # ComfyUI_UltimateSDUpscale
+            '"1"')
+                # AuraSR
                 cd $installation_path/ComfyUI/custom_nodes
-                git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale --recursive
-                cd ComfyUI_UltimateSDUpscale
-                git checkout e617ff20e7ef5baf6526c5ff4eb46a35d24ecbba
+                git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive
+                cd ComfyUI-AuraSR
+                git checkout 0b91286850acaa01d5170b9d472db02443fda6e7
+
+                cd $installation_path/ComfyUI/models/checkpoints
+                download "fal/AuraSR-v2" "ff452185a7c8b51206dd62c21c292e7baad5c3a3" "model.safetensors"
+                download "fal/AuraSR" "87da2f52b29b6351391f71c74de581c393fc19f5" "model.safetensors"
                 ;;
-            "2")
+            '"2"')
                 # AuraFlow
                 cd $installation_path/ComfyUI
                 git clone --no-checkout https://huggingface.co/fal/AuraFlow-v0.3
@@ -488,7 +505,7 @@ install_comfyui() {
                 mv ./aura_flow_0.3.safetensors $installation_path/ComfyUI/models/checkpoints
                 rm -rf $installation_path/ComfyUI/AuraFlow-v0.3
                 ;;
-            "3")
+            '"3"')
                 # Flux
                 cd $installation_path/ComfyUI
                 git clone https://huggingface.co/Comfy-Org/flux1-schnell
@@ -497,26 +514,33 @@ install_comfyui() {
                 mv ./flux1-schnell-fp8.safetensors $installation_path/ComfyUI/models/checkpoints
                 rm -rf $installation_path/ComfyUI/flux1-schnell
                 ;;
-            "4")
+            '"4"')
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/checkpoints
                 wget 'https://civitai.com/api/download/models/1046190?type=Model&format=SafeTensor&size=pruned&fp=fp8'
                 ;;
-            "5")
+            '"5"')
                 # Mochi
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/kijai/ComfyUI-MochiWrapper.git
                 cd ComfyUI-MochiWrapper
                 git checkout e1bd05240ac31b72166e9d952c75dd5735352311
-                cd $installation_path/ComfyUI/models/checkpoints
-                wget https://huggingface.co/Kijai/Mochi_preview_comfy/resolve/83359d26a7e2bbe200ecbfda8ebff850fd03b545/mochi_preview_dit_fp8_e4m3fn.safetensors
+
                 cd $installation_path/ComfyUI/models/vae
                 if [ ! -d "mochi" ]; then
                     mkdir mochi
                 fi
                 cd mochi
-                wget https://huggingface.co/Kijai/Mochi_preview_comfy/resolve/83359d26a7e2bbe200ecbfda8ebff850fd03b545/mochi_preview_vae_encoder_bf16_.safetensors
-                wget https://huggingface.co/Kijai/Mochi_preview_comfy/resolve/83359d26a7e2bbe200ecbfda8ebff850fd03b545/mochi_preview_vae_decoder_bf16_.safetensors
+
+                # VAE
+                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_vae_encoder_bf16_.safetensors"
+                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_vae_decoder_bf16.safetensors"
+
+                # MODEL
+                cd $installation_path/ComfyUI/models/checkpoints
+                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_dit_fp8_e4m3fn.safetensors"
+                
+                pip install aura-sr==0.0.4
                 ;;
             *)
                 echo "Unknown option: $choice"
@@ -925,13 +949,13 @@ while true; do
                         ;;
                     1)
                         # ComfyUI
-                        CHOICES=$(whiptail --separate-output --checklist "Addons:" 17 50 6 \
-    "0" "ComfyUI-Manager" ON \
-    "1" "UltimateSDUpscale" ON \
-    "2" "AuraFlow-v0.3" ON \
-    "3" "FLUX.1-schnell " ON \
-    "4" "AnimePro FLUX" ON \
-    "5" "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+                        CHOICES=$(whiptail --checklist "Addons:" 17 50 6 \
+    0 "ComfyUI-Manager" ON \
+    1 "UltimateSDUpscale" ON \
+    2 "AuraFlow-v0.3" ON \
+    3 "FLUX.1-schnell " ON \
+    4 "AnimePro FLUX" ON \
+    5 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
                     2)
                         # Artist

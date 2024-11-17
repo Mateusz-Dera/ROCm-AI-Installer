@@ -38,7 +38,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Name|Link|Additional information|
 |:---|:---|:---|
 |ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager| Manage nodes of ComfyUI.|
-|ComfyUI_UltimateSDUpscale|https://github.com/ssitu/ComfyUI_UltimateSDUpscale|ComfyUI node to upscale images.|
+|ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3/|Text to image model.|
 |FLUX.1-schnell|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/Comfy-Org/flux1-schnell|Text to image model.|
 |AnimePro FLUX|https://civitai.com/models/934628?modelVersionId=1046190|Text to image model.|
