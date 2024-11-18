@@ -212,10 +212,11 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 3 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
+    3 "Install F5-TTS" \
     2>&1 > /dev/tty
 }
 
@@ -591,6 +592,7 @@ install_melotts(){
     python -m unidic download
 }
 
+# MetaVoice
 install_metavoice(){
     install "https://github.com/metavoiceio/metavoice-src.git" "e606e8af2b154db2ee7eb76f9ab4389fd8e52822" "ANONYMIZED_TELEMETRY=False python app.py"
 
@@ -613,6 +615,14 @@ install_metavoice(){
     sed -i 's/if not os.getenv("ANONYMIZED_TELEMETRY", True) or "pytest" in sys.modules:/if not get_telemetry_status() or "pytest" in sys.modules:/g' ./fam/telemetry/posthog.py
 }
 
+# F5-TTS
+install_f5_tts(){
+    install "https://github.com/SWivid/F5-TTS.git" "5cc02536a614f9f06042fa7f0bc2e3d3b46aa225" "f5-tts_infer-gradio --host 0.0.0.0"
+    git submodule update --init --recursive
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
+}
+
+# TripoSR
 install_triposr(){
     install "https://github.com/VAST-AI-Research/TripoSR" "d26e33181947bbbc4c6fc0f5734e1ec6c080956e" "python3 gradio_app.py --listen"
 
@@ -1045,6 +1055,10 @@ while true; do
                     2)
                         # MetaVoice
                         install_metavoice
+                        ;;
+                    3)
+                        # F5-TTS
+                        install_f5_tts
                         ;;
                     *)
                         first=false
