@@ -434,9 +434,10 @@ install_text_generation_web_ui() {
     install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
+    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/turboderp/exllamav2@03b2d551b2a3a398807199456737859eb34c9f9c --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1 --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # SillyTavern
@@ -617,7 +618,7 @@ install_metavoice(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "c38dc25324c7f0cc07bffc51527def1c28a21173" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "eea65de823daa37c9d5b565cc01254d0c94bcc58" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
