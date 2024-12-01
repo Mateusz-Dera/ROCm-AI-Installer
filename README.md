@@ -17,7 +17,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04.1|
-|Kernel|6.8.0-48-generic|
+|Kernel|6.8.0-49-generic|
 |ROCm|6.2.4|
 
 ###  Text generation
@@ -25,7 +25,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, llama.ccp, Transformers<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default<br> 3. Requrements for SuperboogaV2 are installed, but the extension is not enabled by default<br> 4. Remember to check Flash Attention|
-|SillyTavern (1.12.7)|Node|https://github.com/SillyTavern/SillyTavern||
+|SillyTavern (1.12.8)|Node|https://github.com/SillyTavern/SillyTavern||
 
 ###  Image generation
 |Name|Enviroment|Links|Additional information|

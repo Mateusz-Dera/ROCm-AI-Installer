@@ -400,6 +400,29 @@ EOF
     chmod +x run.sh
 }
 
+# Download
+download() {
+    local repo=$1
+    local commit=$2
+    local file=$3
+    local subdir=${4:-""}  # Use empty string if no subdirectory provided
+    
+    # Construct the repository URL
+    local repo_url="https://huggingface.co/$repo/resolve/$commit"
+    
+    # Add subdirectory to path if provided
+    if [ -n "$subdir" ]; then
+        repo_url="$repo_url/$subdir"
+    fi
+
+    echo "Downloading $file from ${subdir:+$subdir/}..."
+    
+    wget "$repo_url/$file" -O "$file" || {
+        echo "Error downloading $file"
+        exit 1
+    }
+}
+
 # KoboldCPP
 install_koboldcpp() {
     install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "5ac2de794ddf791194854c86cb8512e9ab6b4cc4" "python koboldcpp.py"
@@ -426,7 +449,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout a3ca407b2714df5af5a9f83aa925fd64fb778e24
+    git checkout ce34f14f1911b948d8d92dfd0d6a1a5265490a68
 
     mv ./start.sh ./run.sh
 
@@ -453,29 +476,6 @@ install_artist() {
 install_cinemo() {
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "2bf400b88528c0ff3aedeaac064ca98b42acf2ca" "python demo.py"
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
-}
-
-# Download
-download() {
-    local repo=$1
-    local commit=$2
-    local file=$3
-    local subdir=${4:-""}  # Use empty string if no subdirectory provided
-    
-    # Construct the repository URL
-    local repo_url="https://huggingface.co/$repo/resolve/$commit"
-    
-    # Add subdirectory to path if provided
-    if [ -n "$subdir" ]; then
-        repo_url="$repo_url/$subdir"
-    fi
-
-    echo "Downloading $file from ${subdir:+$subdir/}..."
-    
-    wget "$repo_url/$file" -O "$file" || {
-        echo "Error downloading $file"
-        exit 1
-    }
 }
 
 # ComfyUI
