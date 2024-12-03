@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 [![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04.1 is recommended. Version 6.x is not tested on older systems.
+> Version 5.3 is last tested on ubuntu.
 
 ### Test platform:
 |Name|Info|
@@ -16,8 +16,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
-|OS|Ubuntu 24.04.1|
-|Kernel|6.8.0-49-generic|
+|OS|Arch Linux|
+|Kernel|6.6.63-1-lts|
 |ROCm|6.2.4|
 
 ###  Text generation
