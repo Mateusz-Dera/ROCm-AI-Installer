@@ -7,7 +7,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 [![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Version 5.3 is last tested on ubuntu.
+> Arch Linux is recommended, other distributions require manual installation of ROCm, Python and other dependencies.
+
+> [!Note]
+> Version 5.3 is last tested Ubuntu version.
 
 ### Test platform:
 |Name|Info|
@@ -86,8 +89,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 
 1\. Add the user to the required groups.
 ```bash
-sudo adduser `whoami` video
-sudo adduser `whoami` render
+sudo usermod -a -G render,video $LOGNAME
 ```
 2\. Reboot
 ```bash
