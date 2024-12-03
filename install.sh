@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export ROCM_PATH=/opt/rocm
 
 # Version
 version="6.0"
@@ -38,8 +39,8 @@ REQUIREMENTS_DIR="$SCRIPT_DIR/requirements"
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
-    sudo apt update
-    sudo apt -y install whiptail
+    sudo pacman -Syu
+    sudo pacman -S whiptail --noconfirm
 fi
 
 ## MENUS
@@ -233,103 +234,17 @@ tools() {
 }
 ## INSTALLATIONS
 
-# Remove old
-remove_old() {
-    sudo apt purge -y rocm*
-    sudo apt purge -y hip*
-    sudo apt purge -y nvidia*
-
-    if [ -f /etc/apt/keyrings/rocm.gpg ]; then
-        sudo rm /etc/apt/keyrings/rocm.gpg
-    fi
-
-    if [ -f /etc/apt/sources.list.d/amdgpu.list ]; then
-        sudo rm /etc/apt/sources.list.d/amdgpu.list
-    fi
-
-    if [ -f /etc/apt/sources.list.d/rocm.list ]; then
-        sudo rm /etc/apt/sources.list.d/rocm.list
-    fi
-
-    if [ -f /etc/apt/preferences.d/rocm-pin-600 ]; then
-        sudo rm /etc/apt/preferences.d/rocm-pin-600
-    fi
-
-    sudo apt autoremove -y
-}
-
-# Repositories
-repo(){
-    # Update
-    sudo apt update -y && sudo apt upgrade -y
-    
-    # Wget
-    sudo apt install -y wget
-
-    # AMDGPU
-    sudo apt-add-repository -y -s -s
-    sudo apt install -y "linux-headers-$(uname -r)" \
-	"linux-modules-extra-$(uname -r)"
-    sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.4/ubuntu noble main' \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-    sudo apt update -y
-    sudo apt install -y amdgpu-dkms
-
-    # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.4 noble main" \
-    | sudo tee --append /etc/apt/sources.list.d/rocm.list
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-    | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    sudo apt update -y
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
-}
-
-profile(){
-    # Check if there's a line starting with PATH=
-    if grep -q '^PATH=' ~/.profile; then
-        # If the line exists, add new paths at the beginning if they're not already there
-        if ! grep -q '/opt/rocm/bin' ~/.profile || ! grep -q '/opt/rocm/opencl/bin' ~/.profile; then
-            sed -i '/^PATH=/ s|PATH=|PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:|' ~/.profile
-            echo "Added new paths ~/.profile"
-        else
-            echo "Paths already exist in ~/.profile"
-        fi
-    else
-        # If the line doesn't exist, add a new line with these paths at the beginning
-        echo 'PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH' >> ~/.profile
-        echo "Added a new PATH line to ~/.profile"
-    fi
-}
-
 # Function to install ROCm and basic packages
 install_rocm() {
-    sudo apt update -y
-    remove_old
-
-    repo
-
-    sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
-/opt/rocm/lib
-/opt/rocm/lib64
-EOF
-    sudo ldconfig
-
-    profile
-
-    sudo apt install -y git git-lfs
-    sudo apt install -y libstdc++-12-dev
-    sudo apt install -y libtcmalloc-minimal4
-    sudo apt install -y git git-lfs
-    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
-    sudo apt install -y libgl1
-    sudo apt install -y ffmpeg
-    sudo apt install -y libmecab-dev
-    sudo apt install -y rustc 
-
-    sudo snap install node --classic
+    sudo pacman -Syu
+    sudo pacman -S --needed base-devel git --noconfirm
+    if ! command -v yay &> /dev/null; then
+        cd /tmp
+        git clone https://aur.archlinux.org/yay.git
+        cd yay
+        makepkg -si --noconfirm
+    fi
+    yay -S rocm-hip-sdk rocm-opencl-sdk python3.12 nodejs-lts-iron npm tk --noconfirm
 }
 
 # Universal function
@@ -391,6 +306,7 @@ install() {
     tee --append run.sh <<EOF
 #!/bin/bash
 source $installation_path/$repo_name/.venv/bin/activate
+export ROCM_PATH=/opt/rocm
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
