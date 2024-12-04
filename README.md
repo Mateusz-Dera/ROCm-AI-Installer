@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 [![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Arch Linux is recommended, other distributions require manual installation of ROCm, Python and other dependencies.
+> Arch Linux is recommended. Arch based distros should work. Other distributions require manual installation of ROCm, Python and other dependencies.
 
 > [!Note]
 > Version 5.3 is last tested Ubuntu version.
@@ -88,29 +88,31 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 > [!Caution]
 > If you update, back up your settings and models. Reinstallation deletes the previous directories.
 
-1\. Add the user to the required groups.
+1\. If it is not installed install Python 3.12
+
+2\. Add the user to the required groups.
 ```bash
 sudo usermod -a -G render,video $LOGNAME
 ```
-2\. Reboot
+3\. Reboot
 ```bash
 sudo reboot
 ```
-3\. Clone repository 
+4\. Clone repository 
 ```bash
 git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 ```
-4\. Run installer 
+5\. Run installer 
 ```bash
 bash ./install.sh
 ```
-5\. Select installation path.
+6\. Select installation path.
 
-6\. Select ROCm installation if you are upgrading or running the script for the first time.
+7\. Select ROCm installation if you are upgrading or running the script for the first time.
 
-7\. Install selected interfaces
+8\. Install selected interfaces
 
-8\. Go to the installation path with the selected interface and run:
+9\. Go to the installation path with the selected interface and run:
 ```bash
 ./run.sh
 ```

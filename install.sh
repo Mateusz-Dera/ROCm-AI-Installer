@@ -47,16 +47,16 @@ fi
 export NEWT_COLORS='
 root=,black
 textbox=white,black
-border=brightgreen,black
+border=brightcyan,black
 window=white,black
-title=brightgreen,black
+title=brightcyan,black
 button=black,white
-compactbutton=brightgreen,black
+compactbutton=brightcyan,black
 listbox=white,black
 actlistbox=black,white
-actsellistbox=black,brightgreen
+actsellistbox=black,brightcyan
 checkbox=white,black
-actcheckbox=brightgreen,black
+actcheckbox=brightcyan,black
 '
 
 # Function to display the main menu
@@ -238,14 +238,7 @@ tools() {
 # Function to install ROCm and basic packages
 install_rocm() {
     sudo pacman -Syu
-    sudo pacman -S --needed base-devel git --noconfirm
-    if ! command -v yay &> /dev/null; then
-        cd /tmp
-        git clone https://aur.archlinux.org/yay.git
-        cd yay
-        makepkg -si --noconfirm
-    fi
-    yay -S rocm-hip-sdk rocm-opencl-sdk hipblaslt python3.12 nodejs-lts-iron npm tk --noconfirm
+    sudo pacman -S rocm-hip-sdk rocm-opencl-sdk hipblaslt npm tk --noconfirm
 }
 
 # Universal function
