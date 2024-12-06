@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export GFX_NAME="gfx1100"
 export ROCM_PATH=/opt/rocm
 
 # Version
@@ -238,7 +239,7 @@ tools() {
 # Function to install ROCm and basic packages
 install_rocm() {
     sudo pacman -Syu
-    sudo pacman -S rocm-hip-sdk rocm-opencl-sdk hipblaslt npm tk --noconfirm
+    sudo pacman -S git git-lfs rocm-hip-sdk=6.2.2-1 rocm-opencl-sdk=6.2.2-1 hipblaslt=6.2.4-1 npm tk --noconfirm
 }
 
 # Universal function
@@ -302,7 +303,7 @@ install() {
 source $installation_path/$repo_name/.venv/bin/activate
 export ROCM_PATH=/opt/rocm
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
+#export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
 $start_command
@@ -341,13 +342,12 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    install "https://github.com/oobabooga/text-generation-webui.git" "aa629e2809dd89b704ce37e1574ae6f0bd7b8f52" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
     pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/turboderp/exllamav2@03b2d551b2a3a398807199456737859eb34c9f9c --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # SillyTavern

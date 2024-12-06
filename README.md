@@ -1,7 +1,7 @@
 # ROCm-AI-Installer
 A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
 It should also work on 7900XT cards.
-For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
+For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX_NAME at the beginning of the script (Not tested).
 
 ## Info
 [![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
@@ -21,13 +21,13 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Arch Linux|
 |Kernel|6.6.63-1-lts|
-|ROCm|6.2.4|
+|ROCm|6.2.x|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm||
-|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/> https://github.com/ROCmSoftwarePlatform/flash-attention<br/> https://github.com/turboderp/exllamav2|1. Tested: ExLlamav2, llama.ccp, Transformers<br> 2. Requrements for Superbooga are installed, but the extension is not enabled by default<br> 3. Requrements for SuperboogaV2 are installed, but the extension is not enabled by default<br> 4. Remember to check Flash Attention|
+|KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm|GGML and GGUF models.|
+|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui|ExLlamaV2 and Transformers models|
 |SillyTavern (1.12.8)|Node|https://github.com/SillyTavern/SillyTavern||
 
 ###  Image generation

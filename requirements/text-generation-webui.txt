@@ -89,7 +89,6 @@ multidict==6.1.0
 multiprocess==0.70.16
 murmurhash==1.0.10
 networkx==3.2.1
-ninja==1.11.1.1
 nltk==3.9.1
 num2words==0.5.13
 numba==0.60.0
@@ -190,4 +189,3 @@ wrapt==1.16.0
 xxhash==3.5.0
 yarl==1.15.5
 zipp==3.20.2
-git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786#egg=bitsandbytes
