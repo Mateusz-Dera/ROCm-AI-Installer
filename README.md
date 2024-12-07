@@ -16,7 +16,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
-|OS|Ubuntu 24.04|
+|OS|Ubuntu 24.04.1|
 |Kernel|6.8.0-49-generic|
 |ROCm|6.2.2|
 
