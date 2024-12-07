@@ -1,0 +1,1 @@
+echo $(( $(rocm-smi --showmeminfo vram | grep 'Used Memory' | awk '{print $NF}') / 1048576 )) 'MiB /' $(( $(rocm-smi --showmeminfo vram | grep 'Total Memory' | awk '{print $NF}') / 1048576 )) 'MiB'

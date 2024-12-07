@@ -229,7 +229,7 @@ d3_generation() {
 tools() {
     whiptail --title "Tools" --menu "Choose an option:" 15 100 2 \
     0 "Install ExLlamaV2" \
-    1 "Install Neofetch" \
+    1 "Install Fastfetch" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -481,7 +481,7 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "122c9ca1cec50e78fb0fb0eb7a3d7fd015e7f037" "python3 ./main.py --listen"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "ac2f0523cac112a071de43217ecc741d75e74e53" "python3 ./main.py --listen"
 
     local gguf=0
 
@@ -555,8 +555,6 @@ install_comfyui() {
         esac
     done
 
-    #1053818?type=Model&format=GGUF&size=full&fp=bf16
-
     if [ $gguf -eq 1 ]; then
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
@@ -575,7 +573,7 @@ install_comfyui() {
 
 # AudioCraft
 install_audiocraft() {
-    install "https://github.com/facebookresearch/audiocraft.git" "adf0b04a4452f171970028fcf80f101dd5e26e19" "python -m demos.musicgen_app --listen 0.0.0.0"
+    install "https://github.com/facebookresearch/audiocraft.git" "f5931855b8e662462d0af8256d9c084ca04d6a94" "python -m demos.musicgen_app --listen 0.0.0.0"
 }
 
 # WhisperSpeech web UI
@@ -639,15 +637,17 @@ install_exllamav2(){
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
-# Install Neofetch
-install_neofetch(){
-    # Install neofetch
-    if ! command -v neofetch &> /dev/null; then
+# Install fastfetch
+install_fastfetch(){
+    # Install fastfetch
+    if ! command -v fastfetch &> /dev/null; then
         sudo apt update
-        sudo apt -y install neofetch
+        sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
+        sudo apt update
+        sudo apt -y install fastfetch
     fi
 
-    # Add neofetch to shell
+    # Add fastfetch to shell
 
     # Detect shell configuration file
     detect_shell_config() {
@@ -671,7 +671,7 @@ install_neofetch(){
         fi
     }
 
-    NEOFETCH_LINE="neofetch"
+    fastfetch_LINE="fastfetch"
     CONFIG_FILE=$(detect_shell_config)
 
     if [ -z "$CONFIG_FILE" ]; then
@@ -684,156 +684,67 @@ install_neofetch(){
         touch "$CONFIG_FILE"
     fi
 
-    if ! grep -Fxq "$NEOFETCH_LINE" "$CONFIG_FILE"; then
-        echo "$NEOFETCH_LINE" >> "$CONFIG_FILE"
-        echo "Neofetch line added to $CONFIG_FILE"
+    if ! grep -Fxq "$fastfetch_LINE" "$CONFIG_FILE"; then
+        echo "$fastfetch_LINE" >> "$CONFIG_FILE"
+        echo "Fastfetch line added to $CONFIG_FILE"
     else
-        echo "Neofetch line already exists in $CONFIG_FILE"
+        echo "fastfetch line already exists in $CONFIG_FILE"
     fi
 
-    # Add neofetch config
-    if [ ! -d "$HOME/.config/neofetch" ]; then
-        mkdir -p "$HOME/.config/neofetch"
+    if [ -d "$HOME/.config/fastfetch" ]; then
+        echo "Fastfetch config already exists"
+    else
+        mkdir -p "$HOME/.config/fastfetch"
+        echo "Fastfetch config created"
     fi
 
-    if [ -f "$HOME/.config/neofetch/config.conf" ]; then
-        rm "$HOME/.config/neofetch/config.conf"
+    if [ -f "$HOME/.config/fastfetch/config.toml" ]; then
+        rm "$HOME/.config/fastfetch/config.toml"
     fi
-    
-    tee ~/.config/neofetch/config.conf > /dev/null << 'EOF'
-#!/bin/bash
 
-get_true_gpu_name() {
-    rocminfo | awk '
-    BEGIN { 
-        in_agent = 0
-        found_gpu = 0
-    }
-    /^Agent/ { 
-        in_agent = 1
-        marketing_name = ""
-        device_type = ""
-    }
-    /Marketing Name:/ && in_agent { 
-        marketing_name = substr($0, index($0,":")+1)
-        gsub(/^[ \t]+/, "", marketing_name)
-    }
-    /Device Type:/ && in_agent {
-        device_type = $3
-        if (device_type == "GPU" && found_gpu == 0) {
-            printf "%s", marketing_name
-            found_gpu = 1
-            exit
-        }
-    }'
+    tee --append "$HOME/.config/fastfetch/config.toml" << 'EOF'
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "modules": [
+    "title",
+    "separator",
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "display",
+    "de",
+    "wm",
+    "wmtheme",
+    "theme",
+    "icons",
+    "font",
+    "cursor",
+    "terminal",
+    "terminalfont",
+    "cpu",
+    "memory",
+    "swap",
+    "gpu",
+    {
+        "type": "command",
+        "text": "echo $(( $(rocm-smi --showmeminfo vram | grep 'Used Memory' | awk '{print $NF}') / 1048576 )) 'MiB /' $(( $(rocm-smi --showmeminfo vram | grep 'Total Memory' | awk '{print $NF}') / 1048576 )) 'MiB'",
+        "key": "GPU Memory"
+    },
+    "disk",
+    "localip",
+    "battery",
+    "poweradapter",
+    "locale",
+    "break",
+    "colors"
+  ]
 }
-
-print_gpu_memory() {
-    local gpu_info=$(rocm-smi --showmeminfo vram)
-    local total_bytes=$(echo "$gpu_info" | grep "Total Memory" | awk '{print $NF}')
-    local used_bytes=$(echo "$gpu_info" | grep "Used Memory" | awk '{print $NF}')
-    local total_mib=$(( total_bytes / 1048576 ))
-    local used_mib=$(( used_bytes / 1048576 ))
-    prin "GPU Memory" "${used_mib}MiB / ${total_mib}MiB"
-}
-
-print_info() {
-    info title
-    info underline
-
-    info "OS" distro
-    info "Host" model
-    info "Kernel" kernel
-    info "Uptime" uptime
-    info "Packages" packages
-    info "Shell" shell
-    info "Resolution" resolution
-    info "DE" de
-    info "WM" wm
-    info "WM Theme" wm_theme
-    info "Theme" theme
-    info "Icons" icons
-    info "Terminal" term
-    info "Terminal Font" term_font
-    info "CPU" cpu
-    info "Memory" memory
-    prin "GPU" "$(get_true_gpu_name)"
-    print_gpu_memory
-
-    info cols
-}
-
-# Rest of your existing configuration
-title_fqdn="off"
-kernel_shorthand="on"
-distro_shorthand="off"
-os_arch="on"
-uptime_shorthand="on"
-memory_percent="off"
-memory_unit="mib"
-package_managers="on"
-shell_path="off"
-shell_version="on"
-speed_type="bios_limit"
-speed_shorthand="off"
-cpu_brand="on"
-cpu_speed="on"
-cpu_cores="logical"
-cpu_temp="off"
-gpu_brand="on"
-gpu_type="all"
-refresh_rate="off"
-gtk_shorthand="off"
-gtk2="on"
-gtk3="on"
-public_ip_host="http://ident.me"
-public_ip_timeout=2
-de_version="on"
-disk_show=('/')
-disk_subtitle="mount"
-disk_percent="on"
-music_player="auto"
-song_format="%artist% - %album% - %title%"
-song_shorthand="off"
-mpc_args=()
-colors=(distro)
-bold="on"
-underline_enabled="on"
-underline_char="-"
-separator=":"
-block_range=(0 15)
-color_blocks="on"
-block_width=3
-block_height=1
-col_offset="auto"
-bar_char_elapsed="-"
-bar_char_total="="
-bar_border="on"
-bar_length=15
-bar_color_elapsed="distro"
-bar_color_total="distro"
-cpu_display="off"
-memory_display="off"
-battery_display="off"
-disk_display="off"
-image_backend="ascii"
-image_source="auto"
-ascii_distro="auto"
-ascii_colors=(distro)
-ascii_bold="on"
-image_loop="off"
-thumbnail_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/thumbnails/neofetch"
-crop_mode="normal"
-crop_offset="center"
-image_size="auto"
-gap=3
-yoffset=0
-xoffset=0
-background_color=""
-stdout="off"
 EOF
 
-echo "New neofetch config created"
+echo "New Fastfetch config created"
 }
 ## MAIN
 
@@ -1298,7 +1209,7 @@ while true; do
                         install_exllamav2
                         ;;
                     1)  # Neotech
-                        install_neofetch
+                        install_fastfetch
                         ;;
                     *)
                         first=false
