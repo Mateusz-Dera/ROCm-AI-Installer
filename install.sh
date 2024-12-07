@@ -227,8 +227,9 @@ d3_generation() {
 }
 
 tools() {
-    whiptail --title "Tools" --menu "Choose an option:" 15 100 1 \
+    whiptail --title "Tools" --menu "Choose an option:" 15 100 2 \
     0 "Install ExLlamaV2" \
+    1 "Install Neofetch" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -425,7 +426,7 @@ download() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "5ac2de794ddf791194854c86cb8512e9ab6b4cc4" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "d6949d671138226504dca92827e11b59d4f7aead" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
@@ -434,10 +435,9 @@ install_text_generation_web_ui() {
     install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@2f124986059f4203b055da0f241c4cb0b9572786 --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/turboderp/exllamav2@03b2d551b2a3a398807199456737859eb34c9f9c --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install git+https://github.com/ROCm/bitsandbytes.git@4aad810bc1d93c38a5316ec54c822cd12b1f1cd2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install git+https://github.com/ROCm/flash-attention@7153673c1a3c7753c38e4c10ef2c98a02be5f778 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install git+https://github.com/turboderp/exllamav2@4f83f52d7d1bd31bf7e8f52c966600eefbbab80e --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # SillyTavern
@@ -450,7 +450,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout ce34f14f1911b948d8d92dfd0d6a1a5265490a68
+    git checkout bf4357774dc8ba1171899687181edea071b08221
 
     mv ./start.sh ./run.sh
 
@@ -633,9 +633,207 @@ install_triposr(){
     pip install git+https://github.com/tatsy/torchmcubes.git@cb81cddece46a8a126b08f7fbb9742f8605eefab --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
+# ExLlamaV2
 install_exllamav2(){
     install "https://github.com/turboderp/exllamav2" "40e37f494488d930bb196b6e01d9c5c8a64456e8" "python3 -i"
     pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2
+}
+
+# Install Neofetch
+install_neofetch(){
+    # Install neofetch
+    if ! command -v neofetch &> /dev/null; then
+        sudo apt update
+        sudo apt -y install neofetch
+    fi
+
+    # Add neofetch to shell
+
+    # Detect shell configuration file
+    detect_shell_config() {
+        if [ -n "$SHELL" ]; then
+            case "$SHELL" in
+                */zsh)
+                    echo "$HOME/.zshrc"
+                    ;;
+                */bash)
+                    echo "$HOME/.bashrc"
+                    ;;
+                */fish)
+                    echo "$HOME/.config/fish/config.fish"
+                    ;;
+                *)
+                    echo ""
+                    ;;
+            esac
+        else
+            echo ""
+        fi
+    }
+
+    NEOFETCH_LINE="neofetch"
+    CONFIG_FILE=$(detect_shell_config)
+
+    if [ -z "$CONFIG_FILE" ]; then
+        echo "Could not detect shell configuration file"
+        exit 1
+    fi
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Creating $CONFIG_FILE"
+        touch "$CONFIG_FILE"
+    fi
+
+    if ! grep -Fxq "$NEOFETCH_LINE" "$CONFIG_FILE"; then
+        echo "$NEOFETCH_LINE" >> "$CONFIG_FILE"
+        echo "Neofetch line added to $CONFIG_FILE"
+    else
+        echo "Neofetch line already exists in $CONFIG_FILE"
+    fi
+
+    # Add neofetch config
+    if [ ! -d "$HOME/.config/neofetch" ]; then
+        mkdir -p "$HOME/.config/neofetch"
+    fi
+
+    if [ -f "$HOME/.config/neofetch/config.conf" ]; then
+        rm "$HOME/.config/neofetch/config.conf"
+    fi
+    
+    tee ~/.config/neofetch/config.conf > /dev/null << 'EOF'
+#!/bin/bash
+
+get_true_gpu_name() {
+    rocminfo | awk '
+    BEGIN { 
+        in_agent = 0
+        found_gpu = 0
+    }
+    /^Agent/ { 
+        in_agent = 1
+        marketing_name = ""
+        device_type = ""
+    }
+    /Marketing Name:/ && in_agent { 
+        marketing_name = substr($0, index($0,":")+1)
+        gsub(/^[ \t]+/, "", marketing_name)
+    }
+    /Device Type:/ && in_agent {
+        device_type = $3
+        if (device_type == "GPU" && found_gpu == 0) {
+            printf "%s", marketing_name
+            found_gpu = 1
+            exit
+        }
+    }'
+}
+
+print_gpu_memory() {
+    local gpu_info=$(rocm-smi --showmeminfo vram)
+    local total_bytes=$(echo "$gpu_info" | grep "Total Memory" | awk '{print $NF}')
+    local used_bytes=$(echo "$gpu_info" | grep "Used Memory" | awk '{print $NF}')
+    local total_mib=$(( total_bytes / 1048576 ))
+    local used_mib=$(( used_bytes / 1048576 ))
+    prin "GPU Memory" "${used_mib}MiB / ${total_mib}MiB"
+}
+
+print_info() {
+    info title
+    info underline
+
+    info "OS" distro
+    info "Host" model
+    info "Kernel" kernel
+    info "Uptime" uptime
+    info "Packages" packages
+    info "Shell" shell
+    info "Resolution" resolution
+    info "DE" de
+    info "WM" wm
+    info "WM Theme" wm_theme
+    info "Theme" theme
+    info "Icons" icons
+    info "Terminal" term
+    info "Terminal Font" term_font
+    info "CPU" cpu
+    info "Memory" memory
+    prin "GPU" "$(get_true_gpu_name)"
+    print_gpu_memory
+
+    info cols
+}
+
+# Rest of your existing configuration
+title_fqdn="off"
+kernel_shorthand="on"
+distro_shorthand="off"
+os_arch="on"
+uptime_shorthand="on"
+memory_percent="off"
+memory_unit="mib"
+package_managers="on"
+shell_path="off"
+shell_version="on"
+speed_type="bios_limit"
+speed_shorthand="off"
+cpu_brand="on"
+cpu_speed="on"
+cpu_cores="logical"
+cpu_temp="off"
+gpu_brand="on"
+gpu_type="all"
+refresh_rate="off"
+gtk_shorthand="off"
+gtk2="on"
+gtk3="on"
+public_ip_host="http://ident.me"
+public_ip_timeout=2
+de_version="on"
+disk_show=('/')
+disk_subtitle="mount"
+disk_percent="on"
+music_player="auto"
+song_format="%artist% - %album% - %title%"
+song_shorthand="off"
+mpc_args=()
+colors=(distro)
+bold="on"
+underline_enabled="on"
+underline_char="-"
+separator=":"
+block_range=(0 15)
+color_blocks="on"
+block_width=3
+block_height=1
+col_offset="auto"
+bar_char_elapsed="-"
+bar_char_total="="
+bar_border="on"
+bar_length=15
+bar_color_elapsed="distro"
+bar_color_total="distro"
+cpu_display="off"
+memory_display="off"
+battery_display="off"
+disk_display="off"
+image_backend="ascii"
+image_source="auto"
+ascii_distro="auto"
+ascii_colors=(distro)
+ascii_bold="on"
+image_loop="off"
+thumbnail_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/thumbnails/neofetch"
+crop_mode="normal"
+crop_offset="center"
+image_size="auto"
+gap=3
+yoffset=0
+xoffset=0
+background_color=""
+stdout="off"
+EOF
+
+echo "New neofetch config created"
 }
 ## MAIN
 
@@ -1098,6 +1296,9 @@ while true; do
                     0)
                         # ExLlamaV2
                         install_exllamav2
+                        ;;
+                    1)  # Neotech
+                        install_neofetch
                         ;;
                     *)
                         first=false
