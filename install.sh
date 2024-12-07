@@ -24,7 +24,7 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # Version
-version="5.3"
+version="5.3.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -631,7 +631,7 @@ EOF
     
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
-    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1
+    #CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python==0.3.1
 
     cd $installation_path/text-generation-webui
     git clone https://github.com/turboderp/exllamav2 repositories/exllamav2
@@ -1358,7 +1358,7 @@ install_whisperspeech_web_ui(){
     rm -rf whisperspeech-webui
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui.git
     cd whisperspeech-webui
-    git checkout 30c75da3ede245f1436aee9cfd511261aa1eddae
+    git checkout 93b1a9747c37595135781b64c163c53ab7d99349
     python3.12 -m venv .venv --prompt WhisperSpeech
     source .venv/bin/activate
 
