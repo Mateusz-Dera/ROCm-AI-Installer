@@ -640,6 +640,10 @@ install_fastfetch(){
         sudo apt -y install fastfetch
     fi
 
+    if command -v gsettings &> /dev/null; then
+        gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/ default-size-columns 100
+    fi
+
     # Add fastfetch to shell
 
     # Detect shell configuration file
@@ -691,11 +695,11 @@ install_fastfetch(){
         echo "Fastfetch config created"
     fi
 
-    if [ -f "$HOME/.config/fastfetch/config.toml" ]; then
-        rm "$HOME/.config/fastfetch/config.toml"
+    if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
+        rm "$HOME/.config/fastfetch/config.jsonc"
     fi
 
-    tee --append "$HOME/.config/fastfetch/config.toml" << 'EOF'
+    tee --append "$HOME/.config/fastfetch/config.jsonc" << 'EOF'
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "modules": [
@@ -707,16 +711,7 @@ install_fastfetch(){
     "uptime",
     "packages",
     "shell",
-    "display",
     "de",
-    "wm",
-    "wmtheme",
-    "theme",
-    "icons",
-    "font",
-    "cursor",
-    "terminal",
-    "terminalfont",
     "cpu",
     "memory",
     "swap",
@@ -730,7 +725,6 @@ install_fastfetch(){
     "localip",
     "battery",
     "poweradapter",
-    "locale",
     "break",
     "colors"
   ]
