@@ -227,9 +227,8 @@ d3_generation() {
 }
 
 tools() {
-    whiptail --title "Tools" --menu "Choose an option:" 15 100 2 \
-    0 "Install ExLlamaV2" \
-    1 "Install Fastfetch" \
+    whiptail --title "Tools" --menu "Choose an option:" 15 100 1 \
+    0 "Install Fastfetch" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -629,12 +628,6 @@ install_triposr(){
 
     # Additional requirements
     pip install git+https://github.com/tatsy/torchmcubes.git@cb81cddece46a8a126b08f7fbb9742f8605eefab --extra-index-url https://download.pytorch.org/whl/rocm6.2
-}
-
-# ExLlamaV2
-install_exllamav2(){
-    install "https://github.com/turboderp/exllamav2" "40e37f494488d930bb196b6e01d9c5c8a64456e8" "python3 -i"
-    pip install . --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # Install fastfetch
@@ -1204,11 +1197,7 @@ while true; do
                 choice=$(tools)
 
                 case $choice in
-                    0)
-                        # ExLlamaV2
-                        install_exllamav2
-                        ;;
-                    1)  # Neotech
+                    0)  # Neotech
                         install_fastfetch
                         ;;
                     *)

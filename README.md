@@ -72,7 +72,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 ###  Tools
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|ExLlamaV2|Python3.12 venv|https://github.com/turboderp/exllamav2|1. LLM conversion to exl2 format using convert.py<br>2.Run:<br>```export HSA_OVERRIDE_GFX_VERSION=11.0.0```<br>```export CUDA_VISIBLE_DEVICES=0```<br>```source .venv/bin/activate```|
 |Fastfetch|Shell|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.|
 
 ## Instalation:
