@@ -580,7 +580,7 @@ install_audiocraft() {
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "295f314c6b267683d07b2a962a787a9a0adc62a2" "python3 webui.py --listen"
+    install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "93b1a9747c37595135781b64c163c53ab7d99349" "python3 webui.py --listen"
     pip install -r requirements_rocm_6.2.txt
 }
 
