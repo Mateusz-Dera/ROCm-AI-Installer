@@ -27,7 +27,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX_NAME at the beginning o
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm|GGML and GGUF models.|
-|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui|ExLlamaV2 and Transformers models|
+|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui|ExLlamaV2 and Transformers models.|
 |SillyTavern (1.12.8)|Node|https://github.com/SillyTavern/SillyTavern||
 
 ###  Image generation
