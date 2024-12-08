@@ -668,7 +668,7 @@ install_fastfetch(){
         fi
     }
 
-    fastfetch_LINE="fastfetch"
+    fastfetch_LINE="echo && fastfetch && echo"
     CONFIG_FILE=$(detect_shell_config)
 
     if [ -z "$CONFIG_FILE" ]; then
