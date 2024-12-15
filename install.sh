@@ -212,11 +212,12 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 5 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
+    4 "Install Matcha-TTS" \
     2>&1 > /dev/tty
 }
 
@@ -273,13 +274,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.4/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.2.2/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.4 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.2.2 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -620,6 +621,15 @@ install_f5_tts(){
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+}
+
+# Matcha-TTS
+install_matcha_tts(){
+    install "https://github.com/shivammehta25/Matcha-TTS.git" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    sed -i 's/cython==[^ ]*/cython/g; s/numpy==[^ ]*/numpy/g' pyproject.toml
+    sed -i "s/target-version = \['py310'\]/target-version = \['py312'\]/g" pyproject.toml
+    # pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # TripoSR
@@ -1158,6 +1168,10 @@ while true; do
                     3)
                         # F5-TTS
                         install_f5_tts
+                        ;;
+                    4)
+                        # Matcha-TTS
+                        install_matcha_tts
                         ;;
                     *)
                         first=false
