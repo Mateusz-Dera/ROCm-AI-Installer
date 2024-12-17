@@ -434,9 +434,10 @@ install_text_generation_web_ui() {
     install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
-    pip install wheel setuptools
+    pip install wheel==0.45.1 setuptools==75.6.0
     pip install git+https://github.com/ROCm/bitsandbytes.git@4aad810bc1d93c38a5316ec54c822cd12b1f1cd2 --extra-index-url https://download.pytorch.org/whl/rocm6.1
-    pip install git+https://github.com/ROCm/flash-attention@0dfb28174333d9eefb7c1dd4292690a8458d1e89 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.6/exllamav2-0.2.6+rocm6.1.torch2.4.0-cp312-cp312-linux_x86_64.whl
 }
 
 # SillyTavern
