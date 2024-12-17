@@ -31,7 +31,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1</br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
-|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI||
+|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI|1. Prepared workflows examples.|
 |Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
 
 #### ComfyUI Addons

@@ -493,7 +493,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout b6a8e6ba8147080a320b1b91c93a0b1cbdb93136
+                git checkout 445affd609e5fb6970de04de2b0d5020dbbc8bc5
                 ;;
             '"1"')
                 gguf=1
@@ -526,7 +526,7 @@ install_comfyui() {
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
-                wget 'https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16' -O animepro-flux-Q5_0.gguf
+                wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
                 ;;
             '"6"')
                 # Mochi
