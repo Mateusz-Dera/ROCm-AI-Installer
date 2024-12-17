@@ -434,9 +434,9 @@ install_text_generation_web_ui() {
     install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@4aad810bc1d93c38a5316ec54c822cd12b1f1cd2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/ROCm/flash-attention@7153673c1a3c7753c38e4c10ef2c98a02be5f778 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/turboderp/exllamav2@4f83f52d7d1bd31bf7e8f52c966600eefbbab80e --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install wheel setuptools
+    pip install git+https://github.com/ROCm/bitsandbytes.git@4aad810bc1d93c38a5316ec54c822cd12b1f1cd2 --extra-index-url https://download.pytorch.org/whl/rocm6.1
+    pip install git+https://github.com/ROCm/flash-attention@0dfb28174333d9eefb7c1dd4292690a8458d1e89 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
 }
 
 # SillyTavern
@@ -620,6 +620,7 @@ install_f5_tts(){
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.6/exllamav2-0.2.6+rocm6.1.torch2.4.0-cp312-cp312-linux_x86_64.whl
 }
 
 # TripoSR
