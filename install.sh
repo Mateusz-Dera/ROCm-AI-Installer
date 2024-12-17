@@ -449,7 +449,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout bf4357774dc8ba1171899687181edea071b08221
+    git checkout 79e3dda1df7b7bdb73a1f66d3a05ff0f4135111f
 
     mv ./start.sh ./run.sh
 
@@ -480,7 +480,7 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "ac2f0523cac112a071de43217ecc741d75e74e53" "python3 ./main.py --listen"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "e4e1bff60532ea1a2e2550a1d9beb9b87bfd8c7c" "python3 ./main.py --listen"
 
     local gguf=0
 
@@ -1080,14 +1080,14 @@ while true; do
                         ;;
                     1)
                         # ComfyUI
-                        CHOICES=$(whiptail --checklist "Addons:" 17 50 6 \
+                        CHOICES=$(whiptail --checklist "Addons:" 17 50 5 \
     0 "ComfyUI-Manager" ON \
     1 "ComfyUI-GGUF" ON \
     1 "ComfyUI-AuraSR" ON \
     2 "AuraFlow-v0.3" ON \
     3 "FLUX.1-schnell GGUF " ON \
-    4 "AnimePro FLUX GGUF" ON \
-    5 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    4 "AnimePro FLUX GGUF" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    # 5 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
                     2)
                         # Artist
