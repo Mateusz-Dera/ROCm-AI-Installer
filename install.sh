@@ -217,7 +217,6 @@ voice_generation() {
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
-    # 4 "Install Matcha-TTS" \
     2>&1 > /dev/tty
 }
 
@@ -622,16 +621,6 @@ install_f5_tts(){
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
-
-# # Matcha-TTS
-# install_matcha_tts(){
-#     install "https://github.com/shivammehta25/Matcha-TTS.git" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
-#     sed -i 's/requires = \["setuptools", "wheel", "cython==0.29.35", "numpy==1.24.3", "packaging"\]/requires = \["setuptools", "wheel", "cython==0.29.35", "numpy", "packaging"\]/' pyproject.toml
-#     sed -i "s/target-version = \['py310'\]/target-version = \['py312'\]/g" pyproject.toml
-#     # pip install numpy==2.2.0
-#     pip install -r ./requirements.txt --extra-index-url https://download.pytorch.org/whl/rocm6.2
-#     # pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
-# }
 
 # TripoSR
 install_triposr(){
@@ -1170,10 +1159,6 @@ while true; do
                         # F5-TTS
                         install_f5_tts
                         ;;
-                    # 4)
-                    #     # Matcha-TTS
-                    #     install_matcha_tts
-                    #     ;;
                     *)
                         first=false
                         ;;
