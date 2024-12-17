@@ -583,7 +583,7 @@ install_whisperspeech_web_ui(){
 
 # MeloTTS
 install_melotts(){
-    install "https://github.com/myshell-ai/MeloTTS" "5b538481e24e0d578955be32a95d88fcbde26dc8" "python3.12 -m venv .venv --prompt MeloTTS"
+    install "https://github.com/myshell-ai/MeloTTS" "0cb37e8ed67018e3224a9d27263d1bc73e026036" "python3.12 -m venv .venv --prompt MeloTTS"
     rm requirements.txt
     touch requirements.txt
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
@@ -615,7 +615,7 @@ install_metavoice(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "eea65de823daa37c9d5b565cc01254d0c94bcc58" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "84978268f0db498bea97a6cb8cb2898da1a7c078" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
