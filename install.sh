@@ -1082,14 +1082,14 @@ while true; do
                         ;;
                     1)
                         # ComfyUI
-                        CHOICES=$(whiptail --checklist "Addons:" 17 50 5 \
+                        CHOICES=$(whiptail --checklist "Addons:" 17 50 7 \
     0 "ComfyUI-Manager" ON \
     1 "ComfyUI-GGUF" ON \
-    1 "ComfyUI-AuraSR" ON \
-    2 "AuraFlow-v0.3" ON \
-    3 "FLUX.1-schnell GGUF " ON \
-    4 "AnimePro FLUX GGUF" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
-    # 5 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    2 "ComfyUI-AuraSR" ON \
+    3 "AuraFlow-v0.3" ON \
+    4 "FLUX.1-schnell GGUF " ON \
+    5 "AnimePro FLUX GGUF" ON \
+    6 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
                     2)
                         # Artist
