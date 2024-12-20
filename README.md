@@ -43,7 +43,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
 |AnimePro FLUX GGUF|https://civitai.com/models/934628?modelVersionId=1053818|Text to image model.|
-|Mochi|https://github.com/kijai/ComfyUI-MochiWrapper<br> https://huggingface.co/Kijai/Mochi_preview_comfy|Video generation model.|
+<!-- |Mochi|https://github.com/kijai/ComfyUI-MochiWrapper<br> https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite<br> https://github.com/kijai/ComfyUI-KJNodes<br> https://huggingface.co/mcmonkey/google_t5-v1_1-xxl_encoderonly |Video generation model.| -->
 
 
 ###  Video generation
@@ -61,7 +61,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |:---|:---|:---|:---|
 |WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
-|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src.git<br>https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding branch.<br> 2. Telemetry is disabled by default|
+|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding branch.<br> 2. Telemetry is disabled by default|
 |F5-TTS|Python 3.12 venv|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 
 ###  3D generation

@@ -482,6 +482,7 @@ install_cinemo() {
 # ComfyUI
 install_comfyui() {
     install "https://github.com/comfyanonymous/ComfyUI.git" "e4e1bff60532ea1a2e2550a1d9beb9b87bfd8c7c" "python3 ./main.py --listen"
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     local gguf=0
 
@@ -528,27 +529,26 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/models/unet
                 wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
                 ;;
-            '"6"')
-                # Mochi
-                cd $installation_path/ComfyUI/custom_nodes
-                git clone https://github.com/kijai/ComfyUI-MochiWrapper.git
-                cd ComfyUI-MochiWrapper
-                git checkout e1bd05240ac31b72166e9d952c75dd5735352311
+            # '"6"')
+            #     # Mochi
+            #     cd $installation_path/ComfyUI/custom_nodes
+            #     git clone https://github.com/kijai/ComfyUI-MochiWrapper.git
+            #     cd ComfyUI-MochiWrapper
+            #     git checkout e1bd05240ac31b72166e9d952c75dd5735352311
 
-                cd $installation_path/ComfyUI/models/vae
-                if [ ! -d "mochi" ]; then
-                    mkdir mochi
-                fi
-                cd mochi
+            #     cd $installation_path/ComfyUI/custom_nodes
+            #     git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+            #     cd ComfyUI-VideoHelperSuite 
+            #     git checkout 6953fa21443cf55f7c3b61ed3f4c87c5d3677fe1
 
-                # VAE
-                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_vae_encoder_bf16_.safetensors"
-                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_vae_decoder_bf16.safetensors"
+            #     cd $installation_path/ComfyUI/custom_nodes
+            #     git clone https://github.com/kijai/ComfyUI-KJNodes.git
+            #     cd ComfyUI-KJNodes
+            #     git checkout 973ceb6ca8b7525d54873805888ad690090d6b1e
 
-                # MODEL
-                cd $installation_path/ComfyUI/models/checkpoints
-                download "KiJai/Mochi_preview_comfy" "98b03c2e1220941fa6b7ea2cd35732d2485a5b1b" "mochi_preview_dit_fp8_e4m3fn.safetensors"    
-                ;;
+            #     cd $installation_path/ComfyUI/models/clip
+            #     download "mcmonkey/google_t5-v1_1-xxl_encoderonly" "b13e9156c8ea5d48d245929610e7e4ea366c9620" "t5xxl_fp8_e4m3fn.safetensors"
+            #     ;;
             *)
                 echo "Unknown option: $choice"
                 ;;
@@ -1088,8 +1088,7 @@ while true; do
     2 "ComfyUI-AuraSR" ON \
     3 "AuraFlow-v0.3" ON \
     4 "FLUX.1-schnell GGUF " ON \
-    5 "AnimePro FLUX GGUF" ON \
-    6 "Mochi" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    5 "AnimePro FLUX GGUF" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
                     2)
                         # Artist
