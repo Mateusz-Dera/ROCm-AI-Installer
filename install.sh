@@ -584,7 +584,7 @@ install_whisperspeech_web_ui(){
 
 # MeloTTS
 install_melotts(){
-    install "https://github.com/myshell-ai/MeloTTS" "0cb37e8ed67018e3224a9d27263d1bc73e026036" "python3.12 -m venv .venv --prompt MeloTTS"
+    install "https://github.com/myshell-ai/MeloTTS" "0cb37e8ed67018e3224a9d27263d1bc73e026036" "python melo/app.py -h 0.0.0.0"
     rm requirements.txt
     touch requirements.txt
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
