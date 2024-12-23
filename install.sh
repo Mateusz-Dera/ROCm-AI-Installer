@@ -212,7 +212,7 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 5 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
@@ -329,6 +329,7 @@ EOF
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
     sudo apt install -y rustc
+    sudo apt install -y python3-openssl
 
     sudo snap install node --classic
 }
@@ -617,12 +618,11 @@ install_metavoice(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "84978268f0db498bea97a6cb8cb2898da1a7c078" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "3e73553bd991835979263968fc82fdf1a1022630" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.6/exllamav2-0.2.6+rocm6.1.torch2.4.0-cp312-cp312-linux_x86_64.whl
 }
 
 # Matcha-TTS
