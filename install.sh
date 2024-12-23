@@ -212,11 +212,12 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 5 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
+    4 "Install Matcha-TTS" \
     2>&1 > /dev/tty
 }
 
@@ -328,7 +329,6 @@ EOF
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
     sudo apt install -y rustc
-    sudo apt install -y sox libsox-dev
 
     sudo snap install node --classic
 }
@@ -623,6 +623,18 @@ install_f5_tts(){
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.6/exllamav2-0.2.6+rocm6.1.torch2.4.0-cp312-cp312-linux_x86_64.whl
+}
+
+# Matcha-TTS
+install_matcha_tts(){
+    install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    cd ./matcha
+    sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
+    cd $installation_path/Matcha-TTS
+    sed -i 's/cython==0.29.35/cython/' "pyproject.toml"
+    sed -i 's/numpy==1.24.3/numpy/' "pyproject.toml"
+    pip install -e .
+    pip install matplotlib==3.9.0
 }
 
 # TripoSR
@@ -1160,6 +1172,10 @@ while true; do
                     3)
                         # F5-TTS
                         install_f5_tts
+                        ;;
+                    4)
+                        # Matcha-TTS
+                        install_matcha_tts
                         ;;
                     *)
                         first=false
