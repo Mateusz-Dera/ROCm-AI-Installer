@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/6.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/6.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.1 is recommended. Version 6.x is not tested on older systems.
@@ -18,7 +18,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION at the beginning of the script 
 |Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
 |OS|Ubuntu 24.04.1|
 |Kernel|6.8.0-51-generic|
-|ROCm|6.2.4|
+|ROCm|6.3.1|
 
 ###  Text generation
 |Name|Enviroment|Links|Additional information|
