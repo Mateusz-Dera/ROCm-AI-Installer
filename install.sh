@@ -633,8 +633,9 @@ install_matcha_tts(){
     cd $installation_path/Matcha-TTS
     sed -i 's/cython==0.29.35/cython/' "pyproject.toml"
     sed -i 's/numpy==1.24.3/numpy/' "pyproject.toml"
+    rm requirements.txt
+    touch requirements.txt
     pip install -e .
-    pip install matplotlib==3.9.0
 }
 
 # TripoSR
