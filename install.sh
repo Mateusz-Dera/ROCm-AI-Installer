@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
+export GFX=gfx1100
 
 # Version
 version="6.1"
@@ -90,10 +91,11 @@ set_installation_path() {
 
 # Text generation
 text_generation() {
-    whiptail --title "Text generation" --menu "Choose an option:" 15 100 3 \
-    0 "KoboldCPP" \
+    whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 \
+    0 "Install KoboldCPP" \
     1 "Text generation web UI" \
     2 "SillyTavern" \
+    3 "Install llama.cpp" \
     2>&1 > /dev/tty
 }
 
@@ -433,7 +435,7 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "cc8c7ed2093cbc747e7032420eae14b5b3c30311" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    install "https://github.com/oobabooga/text-generation-webui.git" "4d466d5c80eb83892b7dfb76fa4ab69efd6d6989" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
     pip install wheel==0.45.1 setuptools==75.6.0
@@ -461,6 +463,32 @@ install_sillytavern() {
     sed -i 's/listen: false/listen: true/' config.yaml
     sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
     sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
+}
+
+# llama.cpp
+install_llama_cpp() {
+    cd $installation_path
+    if [ -d "llama.cpp" ]
+    then
+        rm -rf llama.cpp
+    fi
+    git clone https://github.com/ggerganov/llama.cpp.git
+    cd llama.cpp
+    git checkout f865ea149d71ef883e3780fced8a20a1464eccf4
+
+    HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
+    cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --config Release -- -j 16
+
+    tee --append run.sh <<EOF
+#!/bin/bash
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export CUDA_VISIBLE_DEVICES=0
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+export TORCH_BLAS_PREFER_HIPBLASLT=0
+./build/bin/llama-server -m model.gguf --port 8080 --ctx-size 32768 --gpu-layers 1
+EOF
+    chmod +x run.sh
 }
 
 # ANIMAGINE XL 3.1
@@ -1033,6 +1061,10 @@ while true; do
                                 ;;
                             esac
                         done
+                        ;;
+                    3)
+                        # llama.cpp
+                        install_llama_cpp
                         ;;
                     *)
                         first=false
