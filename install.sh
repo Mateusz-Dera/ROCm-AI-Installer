@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.1"
+version="6.2"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -70,7 +70,7 @@ show_menu() {
     5 "Music generation" \
     6 "Voice generation" \
     7 "3D models generation" \
-    8 Tools \
+    8 "Tools" \
     2>&1 > /dev/tty
 }
 
@@ -174,30 +174,9 @@ sillytavern_restore() {
 }
 
 image_generation() {
-    whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
-    0 "ANIMAGINE XL 3.1" \
-    1 "Install ComfyUI" \
-    2 "Install Artist" \
-    2>&1 > /dev/tty
-}
-
-animagine_xl() {
-    whiptail --title "ANIMAGINE XL 3.1" --menu "Choose an option:" 15 100 3 \
-    0 "Backup" \
-    1 "Install" \
-    2 "Restore" \
-    2>&1 > /dev/tty
-}
-
-animagine_xl_backup() {
-    whiptail --title "ANIMAGINE XL 3.1" --menu "Choose an option:" 15 100 1 \
-    0 "Backup config.py" \
-    2>&1 > /dev/tty
-}
-
-animagine_xl_restore() {
-    whiptail --title "ANIMAGINE XL 3.1" --menu "Choose an option:" 15 100 1 \
-    0 "Restore config.py" \
+    whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 \
+    0 "Install ComfyUI" \
+    1 "Install Artist" \
     2>&1 > /dev/tty
 }
 
@@ -230,8 +209,9 @@ d3_generation() {
 }
 
 tools() {
-    whiptail --title "Tools" --menu "Choose an option:" 15 100 1 \
+    whiptail --title "Tools" --menu "Choose an option:" 15 100 2 \
     0 "Install Fastfetch" \
+    1 "Genesis" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -330,10 +310,13 @@ EOF
     sudo apt install -y libgl1
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
-    sudo apt install -y rustc
     sudo apt install -y python3-openssl
 
     sudo snap install node --classic
+
+    sudo apt purge -y cargo rustc
+    sudo snap install rustup --classic
+    rustup default stable
 }
 
 # Universal function
@@ -429,7 +412,7 @@ download() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "d6949d671138226504dca92827e11b59d4f7aead" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "7bcb7cbffaf1a19aebcc7759174bc2a5e7c23021" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
@@ -454,7 +437,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 79e3dda1df7b7bdb73a1f66d3a05ff0f4135111f
+    git checkout cc010643ad4f8fb5bbcfe7d36c6108ff5729c396
 
     mv ./start.sh ./run.sh
 
@@ -491,12 +474,6 @@ EOF
     chmod +x run.sh
 }
 
-# ANIMAGINE XL 3.1
-install_animagine_xl() {
-    install "https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1" "76b0dfc75bdc06e7bceeae96de3c09c8fa833008" "python app.py"
-    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=IS_COLAB, share=False, server_name="0.0.0.0")/' app.py
-}
-
 # Artist
 install_artist() {
     install "https://github.com/songrise/Artist.git" "dcc252adb81e7e57e1763758cf57b8c865dbe1bb" "python injection_main.py --mode app"
@@ -511,7 +488,7 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "e4e1bff60532ea1a2e2550a1d9beb9b87bfd8c7c" "python3 ./main.py --listen"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "4f011b9a0041e4600de117679bf6c9870f66dcc9" "python3 ./main.py --listen"
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 
     local gguf=0
@@ -559,26 +536,12 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/models/unet
                 wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
                 ;;
-            # '"6"')
-            #     # Mochi
-            #     cd $installation_path/ComfyUI/custom_nodes
-            #     git clone https://github.com/kijai/ComfyUI-MochiWrapper.git
-            #     cd ComfyUI-MochiWrapper
-            #     git checkout e1bd05240ac31b72166e9d952c75dd5735352311
-
-            #     cd $installation_path/ComfyUI/custom_nodes
-            #     git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
-            #     cd ComfyUI-VideoHelperSuite 
-            #     git checkout 6953fa21443cf55f7c3b61ed3f4c87c5d3677fe1
-
-            #     cd $installation_path/ComfyUI/custom_nodes
-            #     git clone https://github.com/kijai/ComfyUI-KJNodes.git
-            #     cd ComfyUI-KJNodes
-            #     git checkout 973ceb6ca8b7525d54873805888ad690090d6b1e
-
-            #     cd $installation_path/ComfyUI/models/clip
-            #     download "mcmonkey/google_t5-v1_1-xxl_encoderonly" "b13e9156c8ea5d48d245929610e7e4ea366c9620" "t5xxl_fp8_e4m3fn.safetensors"
-            #     ;;
+            '"6"')
+                gguf=1
+                # AnimePro FLUX
+                cd $installation_path/ComfyUI/models/unet
+                download "city96/FLUX.1-schnell-gguf" "2ccb9cb781dfbafdf707e21b915c654c4fa6a07d" "Flex.1-alpha-Q8_0.gguf"
+                ;;
             *)
                 echo "Unknown option: $choice"
                 ;;
@@ -777,6 +740,12 @@ EOF
 
 echo "New Fastfetch config created"
 }
+
+# Genesis
+install_genesis(){
+    install "https://github.com/Genesis-Embodied-AI/Genesis" "806d0a8d84512ff1982330a684bad920ec4262fe" "python3 gradio_app.py --listen"
+}
+
 ## MAIN
 
 backup_and_restore() {
@@ -1078,55 +1047,7 @@ while true; do
             while $first; do
                 choice=$(image_generation)
                 case $choice in
-                    0) 
-                        # ANIMAGINE XL 3.1
-                        second=true
-                        while $second; do
-                            choice=$(animagine_xl)
-                            case $choice in
-                                0)
-                                    # Backup
-                                    next=true
-                                    while $next; do
-                                        choice=$(animagine_xl_backup)
-                                        case $choice in
-                                            0)
-                                                # Backup config.py
-                                                backup_and_restore_file $installation_path/animagine-xl-3.1 $installation_path/Backups/animagine-xl-3.1 config.py
-                                                ;;
-                                            *)
-                                                next=false
-                                                ;;
-                                        esac
-                                    done
-                                    ;;
-                                1)
-                                    # Install
-                                    install_animagine_xl
-                                    ;;
-                                2)
-                                    # Restore
-                                    next=true
-                                    while $next; do
-                                        choice=$(animagine_xl_restore)
-                                        case $choice in
-                                            0)
-                                                # Restore config.py
-                                                backup_and_restore_file $installation_path/Backups/animagine-xl-3.1 $installation_path/animagine-xl-3.1 config.py
-                                                ;;
-                                            *)
-                                                next=false
-                                                ;;
-                                        esac
-                                    done
-                                    ;;
-                                *)
-                                    second=false
-                                    ;;
-                            esac
-                        done
-                        ;;
-                    1)
+                    0)
                         # ComfyUI
                         CHOICES=$(whiptail --checklist "Addons:" 17 50 7 \
     0 "ComfyUI-Manager" ON \
@@ -1134,9 +1055,10 @@ while true; do
     2 "ComfyUI-AuraSR" ON \
     3 "AuraFlow-v0.3" ON \
     4 "FLUX.1-schnell GGUF " ON \
-    5 "AnimePro FLUX GGUF" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    5 "AnimePro FLUX GGUF" ON \
+    6 "Flex.1-alpha GGUF" 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
-                    2)
+                    1)
                         # Artist
                         install_artist
                         ;;
@@ -1244,6 +1166,9 @@ while true; do
                 case $choice in
                     0)  # Neotech
                         install_fastfetch
+                        ;;
+                    1) # Genesis
+                        install_genesis
                         ;;
                     *)
                         first=false

@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/6.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/6.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.1 is recommended. Version 6.x is not tested on older systems.
@@ -31,7 +31,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Image generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|ANIMAGINE XL 3.1|Python 3.12 venv|https://huggingface.co/spaces/cagliostrolab/animagine-xl-3.1</br> https://huggingface.co/cagliostrolab/animagine-xl-3.1||
 |ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI|1. Prepared workflows examples.|
 |Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
 
@@ -44,7 +43,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
 |AnimePro FLUX GGUF|https://civitai.com/models/934628?modelVersionId=1053818|Text to image model.|
-<!-- |Mochi|https://github.com/kijai/ComfyUI-MochiWrapper<br> https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite<br> https://github.com/kijai/ComfyUI-KJNodes<br> https://huggingface.co/mcmonkey/google_t5-v1_1-xxl_encoderonly |Video generation model.| -->
+|Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
 
 
 ###  Video generation
@@ -75,6 +74,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |Fastfetch|Shell|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.|
+|Genesis|Python3.12 venv|https://github.com/Genesis-Embodied-AI/Genesis||
 
 ## Instalation:
 > [!Note]

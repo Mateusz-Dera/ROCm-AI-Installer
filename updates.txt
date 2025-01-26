@@ -1,0 +1,6 @@
+Drop ANIMAGINE XL 3.1 support
+Replace APT Rust to Snap version
+Updated KoboldCPP
+Added Flex.1-alpha GGUF for ComfyUI
+Updated ComfyUI
+Added Genesis
