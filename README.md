@@ -55,6 +55,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |AudioCraft|Python 3.12 venv|https://github.com/facebookresearch/audiocraft||
+|YuE|Python3.12 venv|https://github.com/multimodal-art-projection/YuE||
 
 ###  Voice generation
 |Name|Enviroment|Links|Additional information|

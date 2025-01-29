@@ -187,8 +187,9 @@ video_generation() {
 }
 
 music_generation() {
-    whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 \
+    whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 \
     0 "Install AudioCraft" \
+    1 "YuE" \
     2>&1 > /dev/tty
 }
 
@@ -567,6 +568,16 @@ install_comfyui() {
 # AudioCraft
 install_audiocraft() {
     install "https://github.com/facebookresearch/audiocraft.git" "f5931855b8e662462d0af8256d9c084ca04d6a94" "python -m demos.musicgen_app --listen 0.0.0.0"
+}
+
+# YuE
+install_yue() {
+    install "https://github.com/multimodal-art-projection/YuE.git" "45ec788c113d7c739ed149dd8f95f36b6cbbcc49" "cd inference && python infer.py --stage1_model m-a-p/YuE-s1-7B-anneal-en-cot --stage2_model m-a-p/YuE-s2-1B-general --genre_txt genre.txt --lyrics_txt lyrics.txt --run_n_segments 2 --stage2_batch_size 4 --output_dir ./output --cuda_idx 0 --max_new_tokens 3000"
+    cd $installation_path/YuE/inference
+    git clone https://huggingface.co/m-a-p/xcodec_mini_infer
+    cd xcodec_mini_infer
+    git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
+    # pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
 # WhisperSpeech web UI
@@ -1097,6 +1108,10 @@ while true; do
                     0)
                         # AudioCraft
                         install_audiocraft
+                        ;;
+                    1)
+                        # YuE
+                        install_yue
                         ;;
                     *)
                         first=false
