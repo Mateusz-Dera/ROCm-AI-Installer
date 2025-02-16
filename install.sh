@@ -189,17 +189,18 @@ video_generation() {
 music_generation() {
     whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 \
     0 "Install AudioCraft" \
-    1 "YuE" \
+    1 "YuEGP" \
     2>&1 > /dev/tty
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
     4 "Install Matcha-TTS" \
+    5 "Install Zonos" \
     2>&1 > /dev/tty
 }
 
@@ -312,6 +313,7 @@ EOF
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
     sudo apt install -y python3-openssl
+    sudo apt install -y espeak-ng
 
     sudo snap install node --classic
 
@@ -570,13 +572,14 @@ install_audiocraft() {
     install "https://github.com/facebookresearch/audiocraft.git" "f5931855b8e662462d0af8256d9c084ca04d6a94" "python -m demos.musicgen_app --listen 0.0.0.0"
 }
 
-# YuE
-install_yue() {
-    install "https://github.com/multimodal-art-projection/YuE.git" "45ec788c113d7c739ed149dd8f95f36b6cbbcc49" "cd inference && python infer.py --stage1_model m-a-p/YuE-s1-7B-anneal-en-cot --stage2_model m-a-p/YuE-s2-1B-general --genre_txt genre.txt --lyrics_txt lyrics.txt --run_n_segments 2 --stage2_batch_size 4 --output_dir ./output --cuda_idx 0 --max_new_tokens 3000"
-    cd $installation_path/YuE/inference
+# YuEGP
+install_yuegp() {
+    install "https://github.com/deepbeepmeep/YuEGP.git" "2d72ff734b7a127324353c0dcd0f95ca4cc0b797" "cd inference && TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python gradio_server.py --profile 1 --sdpa"
+    cd $installation_path/YuEGP/inference
     git clone https://huggingface.co/m-a-p/xcodec_mini_infer
     cd xcodec_mini_infer
     git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
+    # pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
     # pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
 }
 
@@ -620,7 +623,7 @@ install_metavoice(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "3e73553bd991835979263968fc82fdf1a1022630" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "f062403353539607f9844ee055e62db3bbc8a922" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
     pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
@@ -637,6 +640,16 @@ install_matcha_tts(){
     sed -i 's/numpy==1.24.3/numpy/' "pyproject.toml"
     rm requirements.txt
     touch requirements.txt
+    pip install -e .
+}
+
+# Zonos
+install_zonos(){
+    install "https://github.com/Zyphra/Zonos.git" "16d29a013d70dbada248ffcf542a7dad8814572b" "python gradio_interface.py"
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    git clone https://github.com/state-spaces/mamba.git
+    cd mamba 
+    git checkout 0cce0fa645f100f00620ddf2333c2b7712abfdec
     pip install -e .
 }
 
@@ -1110,8 +1123,8 @@ while true; do
                         install_audiocraft
                         ;;
                     1)
-                        # YuE
-                        install_yue
+                        # YuEGP
+                        install_yuegp
                         ;;
                     *)
                         first=false
@@ -1146,6 +1159,10 @@ while true; do
                     4)
                         # Matcha-TTS
                         install_matcha_tts
+                        ;;
+                    5)
+                        # Zonos
+                        install_zonos
                         ;;
                     *)
                         first=false
