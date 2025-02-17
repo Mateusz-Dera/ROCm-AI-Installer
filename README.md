@@ -62,10 +62,11 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |:---|:---|:---|:---|
 |WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech<br/> https://github.com/ROCmSoftwarePlatform/flash-attention||
 |MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
-|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding branch.<br> 2. Telemetry is disabled by default|
+|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding fork by sidroopdaska.<br> 2. Telemetry is disabled by default|
 |F5-TTS|Python 3.12 venv|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 |Matcha-TTS|Python 3.12 venv|https://github.com/shivammehta25/Matcha-TTS||
 |Zonos|Python 3.12 venv|https://github.com/Zyphra/Zonos||
+|StableTTS|Python 3.12 venv|https://github.com/lpscr/StableTTS|1. Script uses the all in one web UI fork by lpscr|
 
 ###  3D generation
 |Name|Enviroment|Links|Additional information|

@@ -189,7 +189,7 @@ video_generation() {
 music_generation() {
     whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 \
     0 "Install AudioCraft" \
-    1 "YuEGP" \
+    1 "Install YuEGP" \
     2>&1 > /dev/tty
 }
 
@@ -201,6 +201,7 @@ voice_generation() {
     3 "Install F5-TTS" \
     4 "Install Matcha-TTS" \
     5 "Install Zonos" \
+    6 "Install StableTTS" \
     2>&1 > /dev/tty
 }
 
@@ -651,6 +652,13 @@ install_zonos(){
     cd mamba 
     git checkout 0cce0fa645f100f00620ddf2333c2b7712abfdec
     pip install -e .
+}
+
+# StableTTS
+install_stabletts(){
+    install "https://github.com/lpscr/StableTTS.git" "fcbc737e5e0a369e83e5a8023ef12f1227db9773" "python3 webui_all.py"
+    cd $installation_path/StableTTS
+    sed -i 's/create_interface().launch(debug=True)/create_interface().launch(debug=True,server_name="0.0.0.0")/' "webui_all.py"
 }
 
 # TripoSR
@@ -1163,6 +1171,10 @@ while true; do
                     5)
                         # Zonos
                         install_zonos
+                        ;;
+                    6)
+                        # StableTTS
+                        install_stabletts
                         ;;
                     *)
                         first=false
