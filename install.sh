@@ -497,7 +497,7 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "31e54b7052bd65c151018950bd95473e3f9a9489" "python3 ./main.py --listen"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "31e54b7052bd65c151018950bd95473e3f9a9489" "python3 ./main.py --listen --use-split-cross-attention"
 
     pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
 
