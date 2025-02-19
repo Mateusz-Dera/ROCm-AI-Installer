@@ -174,9 +174,10 @@ sillytavern_restore() {
 }
 
 image_generation() {
-    whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 \
+    whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 \
     0 "Install ComfyUI" \
     1 "Install Artist" \
+    2 "Install Animagine XL 4.0" \
     2>&1 > /dev/tty
 }
 
@@ -187,9 +188,8 @@ video_generation() {
 }
 
 music_generation() {
-    whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 \
+    whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 \
     0 "Install AudioCraft" \
-    1 "Install YuEGP" \
     2>&1 > /dev/tty
 }
 
@@ -214,7 +214,6 @@ d3_generation() {
 tools() {
     whiptail --title "Tools" --menu "Choose an option:" 15 100 2 \
     0 "Install Fastfetch" \
-    1 "Genesis" \
     2>&1 > /dev/tty
 }
 ## INSTALLATIONS
@@ -416,19 +415,18 @@ download() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "7bcb7cbffaf1a19aebcc7759174bc2a5e7c23021" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "18f6f0de6eb33b93ae0e2a6f30909ff21be1f647" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "4d466d5c80eb83892b7dfb76fa4ab69efd6d6989" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    install "https://github.com/oobabooga/text-generation-webui.git" "7c883ef2f06b1971e43184d087afe83646fd1b50" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
-    pip install wheel==0.45.1 setuptools==75.6.0
-    pip install git+https://github.com/ROCm/bitsandbytes.git@4aad810bc1d93c38a5316ec54c822cd12b1f1cd2 --extra-index-url https://download.pytorch.org/whl/rocm6.1
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.1
-    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.6/exllamav2-0.2.6+rocm6.1.torch2.4.0-cp312-cp312-linux_x86_64.whl
+    pip install git+https://github.com/ROCm/bitsandbytes.git@e4fe8b5b281670512dfda3fc01731bacb9b509dd --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.8/exllamav2-0.2.8+rocm6.2.4.torch2.6.0-cp312-cp312-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -441,7 +439,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout cc010643ad4f8fb5bbcfe7d36c6108ff5729c396
+    git checkout a771dd54780fb2b3e84bb7f5f4a583c78c251735
 
     mv ./start.sh ./run.sh
 
@@ -461,7 +459,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout f865ea149d71ef883e3780fced8a20a1464eccf4
+    git checkout 5137da7b8c3eaa090476a632888ca178ba109f8a
 
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
@@ -482,18 +480,26 @@ EOF
 install_artist() {
     install "https://github.com/songrise/Artist.git" "dcc252adb81e7e57e1763758cf57b8c865dbe1bb" "python injection_main.py --mode app"
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
+    mv ./example_config.yaml ./config.yaml
+}
+
+# Animagine XL 4.0
+install_animagine() {
+    install "https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0" "bb4979668f5384f1b5a288c25f25f34ea6d520ab" "python app.py"
+    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=IS_COLAB, share=False, server_name="0.0.0.0")/' app.py
 }
 
 # Cinemo
 install_cinemo() {
-    install "https://huggingface.co/spaces/maxin-cn/Cinemo" "2bf400b88528c0ff3aedeaac064ca98b42acf2ca" "python demo.py"
-    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
+    install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
+    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "4f011b9a0041e4600de117679bf6c9870f66dcc9" "python3 ./main.py --listen"
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    install "https://github.com/comfyanonymous/ComfyUI.git" "31e54b7052bd65c151018950bd95473e3f9a9489" "python3 ./main.py --listen"
+
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
 
     local gguf=0
 
@@ -505,7 +511,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 445affd609e5fb6970de04de2b0d5020dbbc8bc5
+                git checkout a6cc392473b1157f82f3088b97593d07e680c636
                 ;;
             '"1"')
                 gguf=1
@@ -544,7 +550,7 @@ install_comfyui() {
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
-                download "city96/FLUX.1-schnell-gguf" "2ccb9cb781dfbafdf707e21b915c654c4fa6a07d" "Flex.1-alpha-Q8_0.gguf"
+                download "hum-ma/Flex.1-alpha-GGUF" "2ccb9cb781dfbafdf707e21b915c654c4fa6a07d" "Flex.1-alpha-Q8_0.gguf"
                 ;;
             *)
                 echo "Unknown option: $choice"
@@ -570,18 +576,7 @@ install_comfyui() {
 
 # AudioCraft
 install_audiocraft() {
-    install "https://github.com/facebookresearch/audiocraft.git" "f5931855b8e662462d0af8256d9c084ca04d6a94" "python -m demos.musicgen_app --listen 0.0.0.0"
-}
-
-# YuEGP
-install_yuegp() {
-    install "https://github.com/deepbeepmeep/YuEGP.git" "2d72ff734b7a127324353c0dcd0f95ca4cc0b797" "cd inference && TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python gradio_server.py --profile 1 --sdpa"
-    cd $installation_path/YuEGP/inference
-    git clone https://huggingface.co/m-a-p/xcodec_mini_infer
-    cd xcodec_mini_infer
-    git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
-    # pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-    # pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    install "https://github.com/facebookresearch/audiocraft.git" "e5fcc458a4dc1c6f7248cbceac9cfe471f2c92b8" "python -m demos.musicgen_app --listen 0.0.0.0"
 }
 
 # WhisperSpeech web UI
@@ -664,9 +659,7 @@ install_stabletts(){
 # TripoSR
 install_triposr(){
     install "https://github.com/VAST-AI-Research/TripoSR" "d26e33181947bbbc4c6fc0f5734e1ec6c080956e" "python3 gradio_app.py --listen"
-
-    # Additional requirements
-    pip install git+https://github.com/tatsy/torchmcubes.git@cb81cddece46a8a126b08f7fbb9742f8605eefab --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install git+https://github.com/tatsy/torchmcubes.git@3381600ddc3d2e4d74222f8495866be5fafbace4 --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
 }
 
 # Install fastfetch
@@ -771,11 +764,6 @@ install_fastfetch(){
 EOF
 
 echo "New Fastfetch config created"
-}
-
-# Genesis
-install_genesis(){
-    install "https://github.com/Genesis-Embodied-AI/Genesis" "806d0a8d84512ff1982330a684bad920ec4262fe" "python3 gradio_app.py --listen"
 }
 
 ## MAIN
@@ -1081,18 +1069,30 @@ while true; do
                 case $choice in
                     0)
                         # ComfyUI
-                        CHOICES=$(whiptail --checklist "Addons:" 17 50 7 \
+    #                     CHOICES=$(whiptail --checklist "Addons:" 17 50 7 \
+    # 0 "ComfyUI-Manager" ON \
+    # 1 "ComfyUI-GGUF" ON \
+    # 2 "ComfyUI-AuraSR" ON \
+    # 3 "AuraFlow-v0.3" ON \
+    # 4 "FLUX.1-schnell GGUF " ON \
+    # 5 "AnimePro FLUX GGUF" ON \
+    # 6 "Flex.1-alpha GGUF" 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+                        CHOICES=$(whiptail --checklist "Addons:" 17 50 8 \
     0 "ComfyUI-Manager" ON \
     1 "ComfyUI-GGUF" ON \
     2 "ComfyUI-AuraSR" ON \
     3 "AuraFlow-v0.3" ON \
-    4 "FLUX.1-schnell GGUF " ON \
+    4 "FLUX.1-schnell GGUF" ON \
     5 "AnimePro FLUX GGUF" ON \
-    6 "Flex.1-alpha GGUF" 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
+    6 "Flex.1-alpha GGUF" ON 3>&1 1>&2 2>&3) && install_comfyui $CHOICES
                         ;;
                     1)
                         # Artist
                         install_artist
+                        ;;
+                    2)
+                        # Animagine XL 4.0
+                        install_animagine
                         ;;
                     *)
                         first=false
@@ -1129,10 +1129,6 @@ while true; do
                     0)
                         # AudioCraft
                         install_audiocraft
-                        ;;
-                    1)
-                        # YuEGP
-                        install_yuegp
                         ;;
                     *)
                         first=false
@@ -1210,9 +1206,6 @@ while true; do
                 case $choice in
                     0)  # Neotech
                         install_fastfetch
-                        ;;
-                    1) # Genesis
-                        install_genesis
                         ;;
                     *)
                         first=false

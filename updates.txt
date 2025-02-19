@@ -1,6 +1,16 @@
-Drop ANIMAGINE XL 3.1 support
+Drop Added Animagine XL 3.1 support
 Replace APT Rust to Snap version
-Updated KoboldCPP
-Added Flex.1-alpha GGUF for ComfyUI
-Updated ComfyUI
 Added Genesis
+
+Updated KoboldCPP
+Updated Text generation web UI and PyTorch
+Updated SillyTavern
+Updated llama.cpp
+Updated ComfyUI + ComfyUI-Manager and PyTorch
+Updated Artist and PyTorch
+Updated Cinemo and PyTorch
+
+Updated TripoSR PyTorch
+
+Added Flex.1-alpha GGUF for ComfyUI
+Added Animagine XL 4.0

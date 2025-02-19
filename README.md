@@ -15,9 +15,9 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |CPU|AMD Ryzen 7900X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (3.08)|
-|OS|Ubuntu 24.04.1|
-|Kernel|6.8.0-51-generic|
+|Motherboard|ASRock B650E PG Riptide WiFi (3.18.AS02 Beta)|
+|OS|Ubuntu 24.04.2 LTS|
+|Kernel|6.11.0-17-generic|
 |ROCm|6.3.1|
 
 ###  Text generation
@@ -25,14 +25,15 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm|GGML and GGUF models.|
 |Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|ExLlamaV2 and Transformers models.|
-|SillyTavern (1.12.9)|Node|https://github.com/SillyTavern/SillyTavern||
+|SillyTavern (1.12.12)|Node|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|C++|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
 ###  Image generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI|1. Prepared workflows examples.|
+|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI|1. Workflows templates are in the workflows folder.|
 |Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
+|Animagine XL 4.0|Python 3.12 venv|https://huggingface.co/cagliostrolab/animagine-xl-4.0<br> https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0||
 
 #### ComfyUI Addons
 |Name|Link|Additional information|
@@ -49,13 +50,12 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Video generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|Cinemo|Python 3.12 venv|https://huggingface.co/spaces/maxin-cn/Cinemo<br>https://github.com/maxin-cn/Cinemo||
+|Cinemo|Python 3.12 venv|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
 
 ###  Music generation
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |AudioCraft|Python 3.12 venv|https://github.com/facebookresearch/audiocraft||
-|YuEGP|Python3.12 venv|https://github.com/deepbeepmeep/YuEGP <br>https://github.com/multimodal-art-projection/YuE||
 
 ###  Voice generation
 |Name|Enviroment|Links|Additional information|
@@ -76,8 +76,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Tools
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
-|Fastfetch|Shell|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.|
-|Genesis|Python3.12 venv|https://github.com/Genesis-Embodied-AI/Genesis||
+|Fastfetch|Shell|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.|
 
 ## Instalation:
 > [!Note]
