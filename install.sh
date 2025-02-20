@@ -491,6 +491,7 @@ install_animagine() {
 
 # Cinemo
 install_cinemo() {
+    #TODO
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
     sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
@@ -581,13 +582,14 @@ install_audiocraft() {
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
+    #TODO
     install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "93b1a9747c37595135781b64c163c53ab7d99349" "python3 webui.py --listen"
-    pip install -r requirements_rocm_6.2.txt
+    pip install -r requirements_rocm_6.2.4.txt
 }
 
 # MeloTTS
 install_melotts(){
-    install "https://github.com/myshell-ai/MeloTTS" "0cb37e8ed67018e3224a9d27263d1bc73e026036" "python melo/app.py -h 0.0.0.0"
+    install "https://github.com/myshell-ai/MeloTTS" "209145371cff8fc3bd60d7be902ea69cbdb7965a" "python melo/app.py -h 0.0.0.0"
     rm requirements.txt
     touch requirements.txt
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2

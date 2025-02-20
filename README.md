@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 [![Version](https://img.shields.io/badge/6.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04.1 is recommended. Version 6.x is not tested on older systems.
+> Ubuntu 24.04.2 LTS is recommended. Version 6.x is not tested on older systems.
 
 ### Test platform:
 |Name|Info|
