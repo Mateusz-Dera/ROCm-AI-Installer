@@ -9,6 +9,7 @@ Updated llama.cpp
 Updated ComfyUI + ComfyUI-Manager and PyTorch
 Updated Artist and PyTorch
 Updated Cinemo and PyTorch
+Updated WhisperSpeech web UI
 
 Updated TripoSR PyTorch
 
