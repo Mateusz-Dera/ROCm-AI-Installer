@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ROCM-AI-Installer
-# Copyright © 2023-2024 Mateusz Dera
+# Copyright © 2023-2025 Mateusz Dera
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -591,20 +591,20 @@ install_melotts(){
     install "https://github.com/myshell-ai/MeloTTS" "209145371cff8fc3bd60d7be902ea69cbdb7965a" "python melo/app.py -h 0.0.0.0"
     rm requirements.txt
     touch requirements.txt
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
     python -m unidic download
 }
 
 # MetaVoice
 install_metavoice(){
-    install "https://github.com/metavoiceio/metavoice-src.git" "e606e8af2b154db2ee7eb76f9ab4389fd8e52822" "ANONYMIZED_TELEMETRY=False python app.py"
+    install "https://github.com/metavoiceio/metavoice-src.git" "de3fa211ac4621e03a5f990651aeecc64da418f5" "ANONYMIZED_TELEMETRY=False python app.py"
 
     rm ./requirements.txt
     touch ./requirements.txt
 
     git clone https://github.com/facebookresearch/audiocraft.git
     cd audiocraft
-    git checkout adf0b04a4452f171970028fcf80f101dd5e26e19
+    git checkout e5fcc458a4dc1c6f7248cbceac9cfe471f2c92b8
     rm ./requirements.txt
     touch ./requirements.txt
     pip install -e .
@@ -620,11 +620,11 @@ install_metavoice(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "f062403353539607f9844ee055e62db3bbc8a922" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "d457c3e2450ee83a8a27b6f41808716c7763311b" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/ROCm/bitsandbytes.git@c336a2644c6590e16a1d64cc695a06523bb9824e --extra-index-url https://download.pytorch.org/whl/rocm6.2
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    pip install git+https://github.com/ROCm/bitsandbytes.git@e4fe8b5b281670512dfda3fc01731bacb9b509dd --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
 }
 
 # Matcha-TTS
@@ -652,9 +652,17 @@ install_zonos(){
 
 # StableTTS
 install_stabletts(){
-    install "https://github.com/lpscr/StableTTS.git" "fcbc737e5e0a369e83e5a8023ef12f1227db9773" "python3 webui_all.py"
+    install "https://github.com/lpscr/StableTTS.git" "71dfa4138c511df8e0aedf444df98c6baa44cad4" "python3 webui.py"
     cd $installation_path/StableTTS
-    sed -i 's/create_interface().launch(debug=True)/create_interface().launch(debug=True,server_name="0.0.0.0")/' "webui_all.py"
+    cd ./checkpoints
+    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "checkpoint_0.pt" "StableTTS"
+    cd $installation_path/StableTTS
+    cd ./vocoders/pretrained
+    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "firefly-gan-base-generator.ckpt" "vocoders"
+    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "vocos.pt" "vocoders"
+    mkdir ./temps
+    cd $installation_path/StableTTS
+    sed -i 's/demo.launch(debug=True, show_api=True)/demo.launch(debug=True,server_name="0.0.0.0")/' "webui.py"
 }
 
 # TripoSR

@@ -9,9 +9,12 @@ Updated llama.cpp
 Updated ComfyUI + ComfyUI-Manager and PyTorch
 Updated Artist and PyTorch
 Updated Cinemo and PyTorch
-Updated WhisperSpeech web UI
+Updated WhisperSpeech web UI and PyTorch
+Updated Matcha-TTS and PyTorch
 
 Updated TripoSR PyTorch
+Updated MetaVoice requrements
 
 Added Flex.1-alpha GGUF for ComfyUI
 Added Animagine XL 4.0
+Added StableTTS
