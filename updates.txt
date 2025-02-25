@@ -6,9 +6,9 @@ Updated KoboldCPP
 Updated Text generation web UI and PyTorch
 Updated SillyTavern
 Updated llama.cpp
+Updated Cinemo
 Updated ComfyUI + ComfyUI-Manager and PyTorch
 Updated Artist and PyTorch
-Updated Cinemo and PyTorch
 Updated WhisperSpeech web UI and PyTorch
 Updated Matcha-TTS and PyTorch
 

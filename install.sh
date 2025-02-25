@@ -194,14 +194,13 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
     4 "Install Matcha-TTS" \
-    5 "Install Zonos" \
-    6 "Install StableTTS" \
+    5 "Install StableTTS" \
     2>&1 > /dev/tty
 }
 
@@ -258,13 +257,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.3.1/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.3.3/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.3.1 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.3.3 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -317,7 +316,7 @@ EOF
 
     sudo snap install node --classic
 
-    sudo apt purge -y cargo rustc
+    sudo apt purge -y cargo rustc rustup
     sudo snap install rustup --classic
     rustup default stable
 }
@@ -491,9 +490,8 @@ install_animagine() {
 
 # Cinemo
 install_cinemo() {
-    #TODO
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
-    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
+    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=True, server_name="0.0.0.0")/' demo.py
 }
 
 # ComfyUI
@@ -640,16 +638,6 @@ install_matcha_tts(){
     pip install -e .
 }
 
-# Zonos
-install_zonos(){
-    install "https://github.com/Zyphra/Zonos.git" "16d29a013d70dbada248ffcf542a7dad8814572b" "python gradio_interface.py"
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-    git clone https://github.com/state-spaces/mamba.git
-    cd mamba 
-    git checkout 0cce0fa645f100f00620ddf2333c2b7712abfdec
-    pip install -e .
-}
-
 # StableTTS
 install_stabletts(){
     install "https://github.com/lpscr/StableTTS.git" "71dfa4138c511df8e0aedf444df98c6baa44cad4" "python3 webui.py"
@@ -660,8 +648,8 @@ install_stabletts(){
     cd ./vocoders/pretrained
     download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "firefly-gan-base-generator.ckpt" "vocoders"
     download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "vocos.pt" "vocoders"
-    mkdir ./temps
     cd $installation_path/StableTTS
+    mkdir ./temps
     sed -i 's/demo.launch(debug=True, show_api=True)/demo.launch(debug=True,server_name="0.0.0.0")/' "webui.py"
 }
 
@@ -1174,10 +1162,6 @@ while true; do
                         install_matcha_tts
                         ;;
                     5)
-                        # Zonos
-                        install_zonos
-                        ;;
-                    6)
                         # StableTTS
                         install_stabletts
                         ;;
