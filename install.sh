@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.3"
+version="6.4"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -415,7 +415,7 @@ download() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "18f6f0de6eb33b93ae0e2a6f30909ff21be1f647" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "b3ff29b5ce7a163e338af747ddff33807d1c62c8" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
@@ -439,7 +439,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout a771dd54780fb2b3e84bb7f5f4a583c78c251735
+    git checkout fef36bfc39b6dc636fe7eb0988a3bd4ec8f2ad72
 
     mv ./start.sh ./run.sh
 

@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/6.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/6.4-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 6.x is not tested on older systems.
@@ -25,7 +25,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |:---|:---|:---|:---|
 |KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm|GGML and GGUF models.|
 |Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|ExLlamaV2 and Transformers models.|
-|SillyTavern (1.12.12)|Node|https://github.com/SillyTavern/SillyTavern||
+|SillyTavern (1.12.13)|Node|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|C++|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
 ###  Image generation
