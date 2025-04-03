@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.2"
+version="6.3"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -205,8 +205,9 @@ voice_generation() {
 }
 
 d3_generation() {
-    whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 \
+    whiptail --title "3D generation" --menu "Choose an option:" 15 100 2 \
     0 "Install TripoSR" \
+    1 "Install TripoSG" \
     2>&1 > /dev/tty
 }
 
@@ -257,13 +258,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.3.3/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.3.4/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.3.3 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.3.4 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -657,6 +658,120 @@ install_stabletts(){
 install_triposr(){
     install "https://github.com/VAST-AI-Research/TripoSR" "d26e33181947bbbc4c6fc0f5734e1ec6c080956e" "python3 gradio_app.py --listen"
     pip install git+https://github.com/tatsy/torchmcubes.git@3381600ddc3d2e4d74222f8495866be5fafbace4 --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+}
+
+# TripoSG
+install_triposg(){
+    install "https://github.com/VAST-AI-Research/TripoSG" "b52f852283d2e61b74653f00dbffe01c258320e4" "python app.py"
+    pip install torch-cluster --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    tee --append app.py << EOF
+import gradio as gr
+import subprocess
+import os
+import glob
+import trimesh
+import shutil
+
+def run_triposg(image_input, output_format):
+    """Runs the TripoSR model with the given image input and converts to selected format."""
+    try:
+        # Create a temporary directory for output files
+        output_dir = "temp_output"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create public directory for serving files
+        public_dir = "public"
+        os.makedirs(public_dir, exist_ok=True)
+
+        # Construct the command
+        command = [
+            "python",
+            "-m",
+            "scripts.inference_triposg",
+            "--image-input",
+            image_input,
+            "--output-dir",
+            output_dir,
+        ]
+
+        # Execute the command and capture the output
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        # Check for errors
+        if process.returncode != 0:
+            return f"Error: {stderr.decode()}"
+
+        # Find the GLB file in the output directory
+        glb_files = [f for f in os.listdir(output_dir) if f.endswith(".glb")]
+        if not glb_files:
+            return "No .glb file generated."
+
+        glb_file_path = os.path.join(output_dir, glb_files[0])
+        base_name = os.path.splitext(glb_files[0])[0]
+        
+        # Load the mesh
+        mesh = trimesh.load(glb_file_path)
+        
+        # Convert to the selected format
+        if output_format == "glb":
+            output_file = os.path.join(public_dir, f"{base_name}.glb")
+            shutil.copy(glb_file_path, output_file)
+        elif output_format == "stl":
+            output_file = os.path.join(public_dir, f"{base_name}.stl")
+            mesh.export(output_file)
+        elif output_format == "obj":
+            output_file = os.path.join(public_dir, f"{base_name}.obj")
+            mesh.export(output_file)
+        else:
+            return "Invalid output format selected."
+        
+        # Return the path for display
+        return output_file
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+# Get example images
+example_dir = "assets/example_data/"
+example_images = glob.glob(os.path.join(example_dir, "*.png"))
+
+# Create a custom Gradio interface with 3D model display
+with gr.Blocks(title="TripoSR for ROCm") as iface:
+    gr.Markdown("# TripoSR Inference for ROCm")
+    gr.Markdown("Upload an image and generate a 3D model using TripoSR (Without textures). Choose your preferred output format.")
+    gr.Markdown("https://github.com/VAST-AI-Research/TripoSG<br>https://github.com/Mateusz-Dera/ROCm-AI-Installer")    
+    
+    with gr.Row():
+        with gr.Column(scale=1):
+            input_image = gr.Image(type="filepath", label="Input Image")
+            output_format = gr.Radio(
+                choices=["glb", "stl", "obj"], 
+                value="glb", 
+                label="Output Format",
+                info="Select the format for your 3D model"
+            )
+            submit_btn = gr.Button("Generate 3D Model")
+
+        with gr.Column(scale=1):
+            model_output = gr.Model3D(label="3D Model Output")
+    
+    # Example images
+    gr.Examples(
+        examples=example_images,
+        inputs=input_image
+    )
+    
+    # Set up the event handling for generating the model
+    submit_btn.click(
+        fn=run_triposg, 
+        inputs=[input_image, output_format], 
+        outputs=model_output
+    )
+
+if __name__ == "__main__":
+    iface.launch(share=False, server_name="0.0.0.0", allowed_paths=["public"])
+EOF
 }
 
 # Install fastfetch
@@ -1182,6 +1297,10 @@ while true; do
                     0)
                         # TripoSR
                         install_triposr
+                        ;;
+                    1)
+                        # TripoSG
+                        install_triposg
                         ;;
                     *)
                         first=false

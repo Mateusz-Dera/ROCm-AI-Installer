@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/6.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/6.3-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 6.x is not tested on older systems.
@@ -17,7 +17,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.18.AS02 Beta)|
 |OS|Ubuntu 24.04.2 LTS|
-|Kernel|6.11.0-17-generic|
+|Kernel|6.11.0-21-generic|
 |ROCm|6.3.3|
 
 ###  Text generation
@@ -71,6 +71,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Enviroment|Links|Additional information|
 |:---|:---|:---|:---|
 |TripoSR|Python3.12 venv|https://github.com/VAST-AI-Research/TripoSR|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
+|TripoSG|Python3.12 venv|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing the interface from the VS Code tunnel, preview of generated 3D files may not be available.|
 
 ###  Tools
 |Name|Enviroment|Links|Additional information|
