@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.4"
+version="6.4.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -459,10 +459,10 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 5137da7b8c3eaa090476a632888ca178ba109f8a
-
+    git checkout e391d3ee8ddae86be70c034de1082ad51c55e211
+    
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
-    cmake -S . -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
+    cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --config Release -- -j 16
 
     tee --append run.sh <<EOF
@@ -471,7 +471,7 @@ export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
-./build/bin/llama-server -m model.gguf --port 8080 --ctx-size 32768 --gpu-layers 1
+./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1
 EOF
     chmod +x run.sh
 }
