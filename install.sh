@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.4.1"
+version="6.5"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -36,6 +36,9 @@ installation_path="$default_installation_path"
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 # Requirements directory
 REQUIREMENTS_DIR="$SCRIPT_DIR/requirements"
+
+# Exit on error
+set -e
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
@@ -216,13 +219,17 @@ tools() {
     0 "Install Fastfetch" \
     2>&1 > /dev/tty
 }
-## INSTALLATIONS
+## INSTALLATIONSrocm
 
 # Remove old
 remove_old() {
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
     sudo apt purge -y nvidia*
+
+    if [ -d /opt/rocm* ]; then
+        sudo rm -r /opt/rocm*
+    fi
 
     if [ -f /etc/apt/keyrings/rocm.gpg ]; then
         sudo rm /etc/apt/keyrings/rocm.gpg
@@ -258,13 +265,13 @@ repo(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.3.4/ubuntu noble main' \
+    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.4/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
     sudo apt install -y amdgpu-dkms
 
     # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.3.4 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4 noble main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
