@@ -197,13 +197,14 @@ music_generation() {
 }
 
 voice_generation() {
-    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 \
+    whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 \
     0 "Install WhisperSpeech web UI" \
     1 "Install MeloTTS" \
     2 "Install MetaVoice" \
     3 "Install F5-TTS" \
     4 "Install Matcha-TTS" \
     5 "Install StableTTS" \
+    6 "Install Dia" \
     2>&1 > /dev/tty
 }
 
@@ -369,6 +370,11 @@ install() {
 
     # Checkout the commit
     git checkout $git_commit
+
+    # Remove venv if exist
+    if [ -d ".venv" ]; then
+        rm -rf ".venv"
+    fi
 
     # Create a virtual environment
     $python_version -m venv .venv --prompt $repo_name
@@ -659,6 +665,13 @@ install_stabletts(){
     cd $installation_path/StableTTS
     mkdir ./temps
     sed -i 's/demo.launch(debug=True, show_api=True)/demo.launch(debug=True,server_name="0.0.0.0")/' "webui.py"
+}
+
+# Dia
+install_dia(){
+    install "https://github.com/tralamazza/dia.git" "50c336c73b2358a98fb35f682951bbce8e96ef60" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    pip install uv==0.6.16
+    sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
 # TripoSR
@@ -1286,6 +1299,10 @@ while true; do
                     5)
                         # StableTTS
                         install_stabletts
+                        ;;
+                    6)
+                        # Dia
+                        install_dia
                         ;;
                     *)
                         first=false

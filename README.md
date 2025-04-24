@@ -66,6 +66,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |F5-TTS|Python 3.12 venv|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 |Matcha-TTS|Python 3.12 venv|https://github.com/shivammehta25/Matcha-TTS||
 |StableTTS|Python 3.12 venv|https://github.com/lpscr/StableTTS||
+|Dia|Python3.12 venv|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
 
 ###  3D generation
 |Name|Enviroment|Links|Additional information|
