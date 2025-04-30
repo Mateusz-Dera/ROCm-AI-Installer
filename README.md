@@ -21,19 +21,19 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |ROCm|6.4|
 
 ###  Text generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|KoboldCPP|Python 3.12 venv|https://github.com/YellowRoseCx/koboldcpp-rocm|GGML and GGUF models.|
-|Text generation web UI|Python 3.12 venv|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|ExLlamaV2 and Transformers models.|
-|SillyTavern (1.12.14)|Node|https://github.com/SillyTavern/SillyTavern||
-|llama.cpp|C++|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
+|Name|Links|Additional information|
+|:---|:---|:---|
+|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|1. Support GGML and GGUF models.|
+|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2 and Transformers models.|
+|SillyTavern (1.12.14)|https://github.com/SillyTavern/SillyTavern||
+|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
 ###  Image generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|ComfyUI|Python 3.12 venv|https://github.com/comfyanonymous/ComfyUI|1. Workflows templates are in the workflows folder.|
-|Artist|Python 3.12 venv|https://github.com/songrise/Artist/||
-|Animagine XL 4.0|Python 3.12 venv|https://huggingface.co/cagliostrolab/animagine-xl-4.0<br> https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0||
+|Name|Links|Additional information|
+|:---|:---|:---|
+|ComfyUI|https://github.com/comfyanonymous/ComfyUI|1. Workflows templates are in the workflows folder.|
+|Artist|https://github.com/songrise/Artist/||
+|Animagine XL 4.0|https://huggingface.co/cagliostrolab/animagine-xl-4.0<br> https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0||
 
 #### ComfyUI Addons
 |Name|Link|Additional information|
@@ -48,36 +48,36 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 
 
 ###  Video generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|Cinemo|Python 3.12 venv|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
+|Name|Links|Additional information|
+|:---|:---|:---|
+|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
 
 ###  Music generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|AudioCraft|Python 3.12 venv|https://github.com/facebookresearch/audiocraft||
+|Name|Links|Additional information|
+|:---|:---|:---|
+|AudioCraft|https://github.com/facebookresearch/audiocraft||
 
 ###  Voice generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|WhisperSpeech web UI|Python 3.12 venv|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
-|MeloTTS|Python 3.12 venv|https://github.com/myshell-ai/MeloTTS||
-|MetaVoice|Python 3.12 venv|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding fork by sidroopdaska.<br> 2. Telemetry is disabled by default|
-|F5-TTS|Python 3.12 venv|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
-|Matcha-TTS|Python 3.12 venv|https://github.com/shivammehta25/Matcha-TTS||
-|StableTTS|Python 3.12 venv|https://github.com/lpscr/StableTTS||
-|Dia|Python3.12 venv|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
+|Name|Links|Additional information|
+|:---|:---|:---|
+|WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
+|MeloTTS|https://github.com/myshell-ai/MeloTTS||
+|MetaVoice|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding fork by sidroopdaska.<br> 2. Telemetry is disabled by default|
+|F5-TTS|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
+|Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
+|StableTTS|https://github.com/lpscr/StableTTS||
+|Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
 
 ###  3D generation
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|TripoSR|Python3.12 venv|https://github.com/VAST-AI-Research/TripoSR|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
-|TripoSG|Python3.12 venv|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing the interface from the VS Code tunnel, preview of generated 3D files may not be available.|
+|Name|Links|Additional information|
+|:---|:---|:---|
+|TripoSR|https://github.com/VAST-AI-Research/TripoSR|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
+|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing the interface from the VS Code tunnel, preview of generated 3D files may not be available.|
 
 ###  Tools
-|Name|Enviroment|Links|Additional information|
-|:---|:---|:---|:---|
-|Fastfetch|Shell|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.|
+|Name|Links|Additional information|
+|:---|:---|:---|
+|Fastfetch|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.|
 
 ## Instalation:
 > [!Note]

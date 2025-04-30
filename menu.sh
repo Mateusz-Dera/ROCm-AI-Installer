@@ -195,6 +195,7 @@ text_generation_web_ui_backup() {
                 ;;
             '"3"')
                 backup_and_restore $installation_path/text-generation-webui/instruction-templates $installation_path/Backups/text-generation-webui/instruction-templates
+                ;;
             *)
                 echo "Invalid selection."
                 ;;
@@ -231,6 +232,7 @@ text_generation_web_ui_restore() {
                 ;;
             '"3"')
                 backup_and_restore $installation_path/Backups/text-generation-webui/instruction-templates $installation_path/text-generation-webui/instruction-templates
+                ;;
             *)
                 echo "Invalid selection."
                 ;;

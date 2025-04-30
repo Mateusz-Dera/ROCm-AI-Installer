@@ -313,6 +313,8 @@ backup_and_restore_file() {
 }
 
 # Main loop
-while true; do
-    show_menu
+while show_menu; do
+    :
 done
+
+exit 0
