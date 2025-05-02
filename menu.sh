@@ -81,6 +81,7 @@ show_menu() {
             tools
             ;;
         *)
+            exit 0
             ;;
     esac
 }
@@ -671,4 +672,36 @@ tools() {
             return 0
         fi
     done
+}
+
+backup_and_restore() {
+    # Check if folder exists
+    if ! [ -e "$1" ]; then
+        echo "Folder or file '$1' does not exist." && exit 1 
+    fi
+
+    if ! [ -d "$2" ]; then
+        # Create backup folder
+        mkdir -p "$2" || (echo "Failed to create folder '$2'." && exit 1)
+    else
+        rm -rf "$2" || (echo "Failed to remove old folder '$2'." && exit 1)
+    fi
+
+    # Copy the contents $1 to $2
+    rsync -av --progress --delete "$1/" "$2" || (echo "Failed to copy contents of '$1' to '$2'." && exit 1)
+}
+
+backup_and_restore_file() {
+    # Check if file exists
+    if ! [ -e "$1/$3" ]; then
+        echo "File '$1/$3' does not exist." && exit 1 
+    fi
+
+    if ! [ -d "$2" ]; then
+        # Create backup folder
+        mkdir -p "$2" || (echo "Failed to create folder '$2'." && exit 1)
+    fi
+
+    # Copy the contents $1 to $2
+    cp -f "$1/$3" "$2/$3" || (echo "Failed to copy contents of '$1$3' to '$2'." && exit 1)
 }
