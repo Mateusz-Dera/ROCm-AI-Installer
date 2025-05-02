@@ -281,6 +281,63 @@ sillytavern() {
 }
 
 
+backup_and_restore() {
+    local success=true
+    local error_message=""
+    
+    # Check if folder exists
+    if ! [ -e "$1" ]; then
+        echo "Folder or file '$1' does not exist."
+        return 1
+    fi
+
+    if ! [ -d "$2" ]; then
+        # Create backup folder
+        if ! mkdir -p "$2"; then
+            echo "Failed to create folder '$2'."
+            return 1
+        fi
+    else
+        if ! rm -rf "$2"; then
+            echo "Failed to remove old folder '$2'."
+            return 1
+        fi
+    fi
+
+    # Copy the contents $1 to $2
+    if ! rsync -av --progress --delete "$1/" "$2" 2>/dev/null; then
+        echo "Failed to copy contents of '$1' to '$2'."
+        return 1
+    fi
+    
+    return 0
+}
+
+backup_and_restore_file() {
+    # Check if file exists
+    if ! [ -e "$1/$3" ]; then
+        echo "File '$1/$3' does not exist."
+        return 1
+    fi
+
+    if ! [ -d "$2" ]; then
+        # Create backup folder
+        if ! mkdir -p "$2"; then
+            echo "Failed to create folder '$2'."
+            return 1
+        fi
+    fi
+
+    # Copy the contents $1 to $2
+    if ! cp -f "$1/$3" "$2/$3" 2>/dev/null; then
+        echo "Failed to copy contents of '$1/$3' to '$2'."
+        return 1
+    fi
+    
+    return 0
+}
+
+# Backup SillyTavern
 sillytavern_backup() {
     set +e
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
@@ -306,59 +363,158 @@ sillytavern_backup() {
         return 0
     fi
 
+    # Arrays to keep track of successes and failures
+    successful_backups=()
+    failed_backups=()
+
     for choice in $CHOICES; do
         echo $choice
         case $choice in
             '"0"')
-                backup_and_restore_file $installation_path/SillyTavern $installation_path/Backups/SillyTavern config.yaml
+                if backup_and_restore_file "$installation_path/SillyTavern" "$installation_path/Backups/SillyTavern" "config.yaml"; then
+                    successful_backups+=("config.yaml")
+                else
+                    failed_backups+=("config.yaml")
+                fi
                 ;;
             '"1"')
-                backup_and_restore_file $installation_path/SillyTavern/data/default-user $installation_path/Backups/SillyTavern/data/default-user settings.json
+                if backup_and_restore_file "$installation_path/SillyTavern/data/default-user" "$installation_path/Backups/SillyTavern/data/default-user" "settings.json"; then
+                    successful_backups+=("settings.json")
+                else
+                    failed_backups+=("settings.json")
+                fi
                 ;;
             '"2"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/characters $installation_path/Backups/SillyTavern/data/default-user/characters
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/characters" "$installation_path/Backups/SillyTavern/data/default-user/characters"; then
+                    successful_backups+=("characters folder")
+                else
+                    failed_backups+=("characters folder")
+                fi
                 ;;
             '"3"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/groups $installation_path/Backups/SillyTavern/data/default-user/groups
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/groups" "$installation_path/Backups/SillyTavern/data/default-user/groups"; then
+                    successful_backups+=("groups folder")
+                else
+                    failed_backups+=("groups folder")
+                fi
                 ;;
             '"4"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/worlds $installation_path/Backups/SillyTavern/data/default-user/worlds
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/worlds" "$installation_path/Backups/SillyTavern/data/default-user/worlds"; then
+                    successful_backups+=("worlds folder")
+                else
+                    failed_backups+=("worlds folder")
+                fi
                 ;;
             '"5"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/chats $installation_path/Backups/SillyTavern/data/default-user/chats
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/chats" "$installation_path/Backups/SillyTavern/data/default-user/chats"; then
+                    successful_backups+=("chats folder")
+                else
+                    failed_backups+=("chats folder")
+                fi
                 ;;
             '"6"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/group\ chats $installation_path/Backups/SillyTavern/data/default-user/group\ chats
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/group chats" "$installation_path/Backups/SillyTavern/data/default-user/group chats"; then
+                    successful_backups+=("group chats folder")
+                else
+                    failed_backups+=("group chats folder")
+                fi
                 ;;
             '"7"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/User\ Avatars $installation_path/Backups/SillyTavern/data/default-user/User\ Avatars
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/User Avatars" "$installation_path/Backups/SillyTavern/data/default-user/User Avatars"; then
+                    successful_backups+=("User Avatars folder")
+                else
+                    failed_backups+=("User Avatars folder")
+                fi
                 ;;
             '"8"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/backgrounds $installation_path/Backups/SillyTavern/data/default-user/backgrounds
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/backgrounds" "$installation_path/Backups/SillyTavern/data/default-user/backgrounds"; then
+                    successful_backups+=("backgrounds folder")
+                else
+                    failed_backups+=("backgrounds folder")
+                fi
                 ;;
             '"9"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/themes $installation_path/Backups/SillyTavern/data/default-user/themes
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/themes" "$installation_path/Backups/SillyTavern/data/default-user/themes"; then
+                    successful_backups+=("themes folder")
+                else
+                    failed_backups+=("themes folder")
+                fi
                 ;;
             '"10"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/TextGen\ Settings $installation_path/Backups/SillyTavern/data/default-user/TextGen\ Settings
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/TextGen Settings" "$installation_path/Backups/SillyTavern/data/default-user/TextGen Settings"; then
+                    successful_backups+=("TextGen Settings folder")
+                else
+                    failed_backups+=("TextGen Settings folder")
+                fi
                 ;;
             '"11"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/context $installation_path/Backups/SillyTavern/data/default-user/context
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/context" "$installation_path/Backups/SillyTavern/data/default-user/context"; then
+                    successful_backups+=("context folder")
+                else
+                    failed_backups+=("context folder")
+                fi
                 ;;
             '"12"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/instruct $installation_path/Backups/SillyTavern/data/default-user/instruct
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/instruct" "$installation_path/Backups/SillyTavern/data/default-user/instruct"; then
+                    successful_backups+=("instruct folder")
+                else
+                    failed_backups+=("instruct folder")
+                fi
                 ;;
             '"13"')
-                backup_and_restore $installation_path/SillyTavern/data/default-user/sysprompt $installation_path/Backups/SillyTavern/data/default-user/sysprompt
+                if backup_and_restore "$installation_path/SillyTavern/data/default-user/sysprompt" "$installation_path/Backups/SillyTavern/data/default-user/sysprompt"; then
+                    successful_backups+=("sysprompt folder")
+                else
+                    failed_backups+=("sysprompt folder")
+                fi
                 ;;
             *)
                 echo "Invalid selection."
                 ;;
         esac
     done
-    sillytavern
+
+    # Create summary message - put failures first
+    failure_msg=""
+    success_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        failure_msg="Failed to back up:\n"
+        for item in "${failed_backups[@]}"; do
+            failure_msg+="• $item\n"
+        done
+        failure_msg+="\n"
+    fi
+    
+    if [ ${#successful_backups[@]} -gt 0 ]; then
+        success_msg="Successfully backed up:\n"
+        for item in "${successful_backups[@]}"; do
+            success_msg+="• $item\n"
+        done
+    fi
+    
+    summary_title="Backup Summary"
+    
+    if [ ${#failed_backups[@]} -eq 0 ]; then
+        summary_title="Backup Summary - All Successful"
+    fi
+    
+    # Always show both failure and success messages (if any)
+    # Put failures first as they're more important for users to see immediately
+    summary_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        summary_msg+="${failure_msg}"
+    else
+        summary_msg+="No failures detected.\n\n"
+    fi
+    
+    summary_msg+="${success_msg}"
+    
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
 }
 
+# Restore SillyTavern
 sillytavern_restore() {
     set +e
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
@@ -384,57 +540,155 @@ sillytavern_restore() {
         return 0
     fi
 
+    # Arrays to keep track of successes and failures
+    successful_backups=()
+    failed_backups=()
+
     for choice in $CHOICES; do
         echo $choice
         case $choice in
             '"0"')
-                backup_and_restore_file $installation_path/Backups/SillyTavern $installation_path/SillyTavern config.yaml
+                if backup_and_restore_file "$installation_path/Backups/SillyTavern" "$installation_path/SillyTavern config.yaml"; then
+                    successful_backups+=("config.yaml")
+                else
+                    failed_backups+=("config.yaml")
+                fi
                 ;;
             '"1"')
-                backup_and_restore_file $installation_path/Backups/SillyTavern/data/default-user $installation_path/SillyTavern/data/default-user settings.json
+                if backup_and_restore_file "$installation_path/Backups/SillyTavern/data/default-user" "$installation_path/SillyTavern/data/default-user settings.json"; then
+                    successful_backups+=("settings.json")
+                else
+                    failed_backups+=("settings.json")
+                fi
                 ;;
             '"2"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/characters $installation_path/SillyTavern/data/default-user/characters
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/characters" "$installation_path/SillyTavern/data/default-user/characters"; then
+                    successful_backups+=("characters folder")
+                else
+                    failed_backups+=("characters folder")
+                fi
                 ;;
             '"3"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/groups $installation_path/SillyTavern/data/default-user/groups
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/groups" "$installation_path/SillyTavern/data/default-user/groups"; then
+                    successful_backups+=("groups folder")
+                else
+                    failed_backups+=("groups folder")
+                fi
                 ;;
             '"4"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/worlds $installation_path/SillyTavern/data/default-user/worlds
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/worlds" "$installation_path/SillyTavern/data/default-user/worlds"; then
+                    successful_backups+=("worlds folder")
+                else
+                    failed_backups+=("worlds folder")
+                fi
                 ;;
             '"5"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/chats $installation_path/SillyTavern/data/default-user/chats
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/chats" "$installation_path/SillyTavern/data/default-user/chats"; then
+                    successful_backups+=("chats folder")
+                else
+                    failed_backups+=("chats folder")
+                fi
                 ;;
             '"6"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/group\ chats $installation_path/SillyTavern/data/default-user/group\ chats
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/group chats" "$installation_path/SillyTavern/data/default-user/group chats"; then
+                    successful_backups+=("group chats folder")
+                else
+                    failed_backups+=("group chats folder")
+                fi
                 ;;
             '"7"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/User\ Avatars $installation_path/SillyTavern/data/default-user/User\ Avatars
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/User Avatars" "$installation_path/SillyTavern/data/default-user/User Avatars"; then
+                    successful_backups+=("User Avatars folder")
+                else
+                    failed_backups+=("User Avatars folder")
+                fi
                 ;;
             '"8"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/backgrounds $installation_path/SillyTavern/data/default-user/backgrounds
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/backgrounds" "$installation_path/SillyTavern/data/default-user/backgrounds"; then
+                    successful_backups+=("backgrounds folder")
+                else
+                    failed_backups+=("backgrounds folder")
+                fi
                 ;;
             '"9"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/themes $installation_path/SillyTavern/data/default-user/themes
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/themes" "$installation_path/SillyTavern/data/default-user/themes"; then
+                    successful_backups+=("themes folder")
+                else
+                    failed_backups+=("themes folder")
+                fi
                 ;;
             '"10"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/TextGen\ Settings $installation_path/SillyTavern/data/default-user/TextGen\ Settings
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/TextGen Settings" "$installation_path/SillyTavern/data/default-user/TextGen Settings"; then
+                    successful_backups+=("TextGen Settings folder")
+                else
+                    failed_backups+=("TextGen Settings folder")
+                fi
                 ;;
             '"11"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/context $installation_path/SillyTavern/data/default-user/context
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/context" "$installation_path/SillyTavern/data/default-user/context"; then
+                    successful_backups+=("context folder")
+                else
+                    failed_backups+=("context folder")
+                fi
                 ;;
             '"12"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/instruct $installation_path/SillyTavern/data/default-user/instruct
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/instruct" "$installation_path/SillyTavern/data/default-user/instruct"; then
+                    successful_backups+=("instruct folder")
+                else
+                    failed_backups+=("instruct folder")
+                fi
                 ;;
             '"13"')
-                backup_and_restore $installation_path/Backups/SillyTavern/data/default-user/sysprompt $installation_path/SillyTavern/data/default-user/sysprompt
+                if backup_and_restore "$installation_path/Backups/SillyTavern/data/default-user/sysprompt" "$installation_path/SillyTavern/data/default-user/sysprompt"; then
+                    successful_backups+=("sysprompt folder")
+                else
+                    failed_backups+=("sysprompt folder")
+                fi
                 ;;
             *)
                 echo "Invalid selection."
                 ;;
         esac
     done
-    sillytavern
+
+    # Create summary message - put failures first
+    failure_msg=""
+    success_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        failure_msg="Failed to restore:\n"
+        for item in "${failed_backups[@]}"; do
+            failure_msg+="• $item\n"
+        done
+        failure_msg+="\n"
+    fi
+    
+    if [ ${#successful_backups[@]} -gt 0 ]; then
+        success_msg="Successfully restored:\n"
+        for item in "${successful_backups[@]}"; do
+            success_msg+="• $item\n"
+        done
+    fi
+    
+    summary_title="Restore Summary"
+    
+    if [ ${#failed_backups[@]} -eq 0 ]; then
+        summary_title="Restore Summary - All Successful"
+    fi
+    
+    # Always show both failure and success messages (if any)
+    # Put failures first as they're more important for users to see immediately
+    summary_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        summary_msg+="${failure_msg}"
+    else
+        summary_msg+="No failures detected.\n\n"
+    fi
+    
+    summary_msg+="${success_msg}"
+    
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
 }
 
 image_generation() {
@@ -675,33 +929,57 @@ tools() {
 }
 
 backup_and_restore() {
+    local success=true
+    local error_message=""
+    
     # Check if folder exists
     if ! [ -e "$1" ]; then
-        echo "Folder or file '$1' does not exist." && exit 1 
+        echo "Folder or file '$1' does not exist."
+        return 1
     fi
 
     if ! [ -d "$2" ]; then
         # Create backup folder
-        mkdir -p "$2" || (echo "Failed to create folder '$2'." && exit 1)
+        if ! mkdir -p "$2"; then
+            echo "Failed to create folder '$2'."
+            return 1
+        fi
     else
-        rm -rf "$2" || (echo "Failed to remove old folder '$2'." && exit 1)
+        if ! rm -rf "$2"; then
+            echo "Failed to remove old folder '$2'."
+            return 1
+        fi
     fi
 
     # Copy the contents $1 to $2
-    rsync -av --progress --delete "$1/" "$2" || (echo "Failed to copy contents of '$1' to '$2'." && exit 1)
+    if ! rsync -av --progress --delete "$1/" "$2" 2>/dev/null; then
+        echo "Failed to copy contents of '$1' to '$2'."
+        return 1
+    fi
+    
+    return 0
 }
 
 backup_and_restore_file() {
     # Check if file exists
     if ! [ -e "$1/$3" ]; then
-        echo "File '$1/$3' does not exist." && exit 1 
+        echo "File '$1/$3' does not exist."
+        return 1
     fi
 
     if ! [ -d "$2" ]; then
         # Create backup folder
-        mkdir -p "$2" || (echo "Failed to create folder '$2'." && exit 1)
+        if ! mkdir -p "$2"; then
+            echo "Failed to create folder '$2'."
+            return 1
+        fi
     fi
 
     # Copy the contents $1 to $2
-    cp -f "$1/$3" "$2/$3" || (echo "Failed to copy contents of '$1$3' to '$2'." && exit 1)
+    if ! cp -f "$1/$3" "$2/$3" 2>/dev/null; then
+        echo "Failed to copy contents of '$1/$3' to '$2'."
+        return 1
+    fi
+    
+    return 0
 }
