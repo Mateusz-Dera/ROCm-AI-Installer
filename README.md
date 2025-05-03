@@ -17,7 +17,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (3.18.AS02 Beta)|
 |OS|Ubuntu 24.04.2 LTS|
-|Kernel|6.11.0-21-generic|
+|Kernel|6.11.0-25-generic|
 |ROCm|6.4|
 
 ###  Text generation

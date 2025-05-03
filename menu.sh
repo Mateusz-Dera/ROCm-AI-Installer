@@ -182,26 +182,85 @@ text_generation_web_ui_backup() {
         return 0
     fi
 
+    # Arrays to keep track of successes and failures
+    successful_backups=()
+    failed_backups=()
+
     for choice in $CHOICES; do
         echo $choice
         case $choice in
             '"0"')
-                backup_and_restore $installation_path/text-generation-webui/models $installation_path/Backups/text-generation-webui/models
+                if backup_and_restore "$installation_path/text-generation-webui/models" "$installation_path/Backups/text-generation-webui/models"; then
+                    successful_backups+=("models folder")
+                else
+                    failed_backups+=("models folder")
+                fi
                 ;;
             '"1"')
-                backup_and_restore $installation_path/text-generation-webui/characters $installation_path/Backups/text-generation-webui/characters
+                if backup_and_restore "$installation_path/text-generation-webui/characters" "$installation_path/Backups/text-generation-webui/characters"; then
+                    successful_backups+=("characters folder")
+                else
+                    failed_backups+=("characters folder")
+                fi
                 ;;
             '"2"')
-                backup_and_restore $installation_path/text-generation-webui/presets $installation_path/Backups/text-generation-webui/presets
+                if backup_and_restore "$installation_path/text-generation-webui/presets" "$installation_path/Backups/text-generation-webui/presets"; then
+                    successful_backups+=("presets folder")
+                else
+                    failed_backups+=("presets folder")
+                fi
                 ;;
             '"3"')
-                backup_and_restore $installation_path/text-generation-webui/instruction-templates $installation_path/Backups/text-generation-webui/instruction-templates
+                if backup_and_restore "$installation_path/text-generation-webui/instruction-templates" "$installation_path/Backups/text-generation-webui/instruction-templates"; then
+                    successful_backups+=("instruction-templates folder")
+                else
+                    failed_backups+=("instruction-templates folder")
+                fi
                 ;;
             *)
                 echo "Invalid selection."
                 ;;
         esac
     done
+
+    # Create summary message - put failures first
+    failure_msg=""
+    success_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        failure_msg="Failed to back up:\n"
+        for item in "${failed_backups[@]}"; do
+            failure_msg+="• $item\n"
+        done
+        failure_msg+="\n"
+    fi
+    
+    if [ ${#successful_backups[@]} -gt 0 ]; then
+        success_msg="Successfully backed up:\n"
+        for item in "${successful_backups[@]}"; do
+            success_msg+="• $item\n"
+        done
+    fi
+    
+    summary_title="Backup Summary"
+    
+    if [ ${#failed_backups[@]} -eq 0 ]; then
+        summary_title="Backup Summary - All Successful"
+    fi
+    
+    # Always show both failure and success messages (if any)
+    # Put failures first as they're more important for users to see immediately
+    summary_msg=""
+    
+    if [ ${#failed_backups[@]} -gt 0 ]; then
+        summary_msg+="${failure_msg}"
+    else
+        summary_msg+="No failures detected.\n\n"
+    fi
+    
+    summary_msg+="${success_msg}"
+    
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
 }
 
 text_generation_web_ui_restore() {
@@ -219,26 +278,85 @@ text_generation_web_ui_restore() {
         return 0
     fi
 
+    # Arrays to keep track of successes and failures
+    successful_restores=()
+    failed_restores=()
+
     for choice in $CHOICES; do
         echo $choice
         case $choice in
             '"0"')
-                backup_and_restore $installation_path/Backups/text-generation-webui/models $installation_path/text-generation-webui/models
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/models" "$installation_path/text-generation-webui/models"; then
+                    successful_restores+=("models folder")
+                else
+                    failed_restores+=("models folder")
+                fi
                 ;;
             '"1"')
-                backup_and_restore $installation_path/Backups/text-generation-webui/characters $installation_path/text-generation-webui/characters
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/characters" "$installation_path/text-generation-webui/characters"; then
+                    successful_restores+=("characters folder")
+                else
+                    failed_restores+=("characters folder")
+                fi
                 ;;
             '"2"')
-                backup_and_restore $installation_path/Backups/text-generation-webui/presets $installation_path/text-generation-webui/presets
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/presets" "$installation_path/text-generation-webui/presets"; then
+                    successful_restores+=("presets folder")
+                else
+                    failed_restores+=("presets folder")
+                fi
                 ;;
             '"3"')
-                backup_and_restore $installation_path/Backups/text-generation-webui/instruction-templates $installation_path/text-generation-webui/instruction-templates
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/instruction-templates" "$installation_path/text-generation-webui/instruction-templates"; then
+                    successful_restores+=("instruction-templates folder")
+                else
+                    failed_restores+=("instruction-templates folder")
+                fi
                 ;;
             *)
                 echo "Invalid selection."
                 ;;
         esac
     done
+
+    # Create summary message - put failures first
+    failure_msg=""
+    success_msg=""
+    
+    if [ ${#failed_restores[@]} -gt 0 ]; then
+        failure_msg="Failed to restore:\n"
+        for item in "${failed_restores[@]}"; do
+            failure_msg+="• $item\n"
+        done
+        failure_msg+="\n"
+    fi
+    
+    if [ ${#successful_restores[@]} -gt 0 ]; then
+        success_msg="Successfully restored:\n"
+        for item in "${successful_restores[@]}"; do
+            success_msg+="• $item\n"
+        done
+    fi
+    
+    summary_title="Restore Summary"
+    
+    if [ ${#failed_restores[@]} -eq 0 ]; then
+        summary_title="Restore Summary - All Successful"
+    fi
+    
+    # Always show both failure and success messages (if any)
+    # Put failures first as they're more important for users to see immediately
+    summary_msg=""
+    
+    if [ ${#failed_restores[@]} -gt 0 ]; then
+        summary_msg+="${failure_msg}"
+    else
+        summary_msg+="No failures detected.\n\n"
+    fi
+    
+    summary_msg+="${success_msg}"
+    
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
 }
 
 # SillyTavern
