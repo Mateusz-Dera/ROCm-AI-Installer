@@ -869,7 +869,7 @@ video_generation() {
     while $second; do
         set +e
         choice=$(whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
-            0 "Install AudioCraft" \
+            0 "Install Cinemo" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -899,12 +899,12 @@ music_generation() {
     while $second; do
         set +e
         choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
-            0 "Install AudioCraft" \
+            0 "Install ACE-Step" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
-                install_audiocraft
+                install_ace_step
                 ;;
             "")
                 echo "Previous menu..."

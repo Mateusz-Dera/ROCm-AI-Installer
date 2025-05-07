@@ -54,7 +54,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Music generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|AudioCraft|https://github.com/facebookresearch/audiocraft||
+|ACE-Step|https://github.com/ace-step/ACE-Step||
 
 ###  Voice generation
 |Name|Links|Additional information|

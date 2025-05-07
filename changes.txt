@@ -9,5 +9,8 @@ Updated llama.cpp
 Updated Artist
 Updated AudioCraft
 Updated ComfyUI and ComfyUI Addons
+Updated WhisperSpeech web UI
 Drop Animagine XL 4.0 support
+Drop AudioCraft support
 Added support for llama.cpp in Text generation web UI using Vulkan.
+Added ACE-Step

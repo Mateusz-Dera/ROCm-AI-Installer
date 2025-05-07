@@ -190,15 +190,15 @@ install_comfyui() {
     fi
 }
 
-# AudioCraft
+# ACE-Step
 install_audiocraft() {
-    install "https://github.com/facebookresearch/audiocraft.git" "896ec7c47f5e5d1e5aa1e4b260c4405328bf009d" "python -m demos.musicgen_app --listen 0.0.0.0"
+    install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
 }
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "5216da519486572a8c080c68213ece0f17653446" "python3 webui.py --listen"
-    pip install -r requirements_rocm_6.2.4.txt
+    install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "d4628117816293d8a068cb1dd653359540f0aa15" "python3 webui.py --listen"
+    pip install -r requirements_rocm_6.3.txt
 }
 
 # MeloTTS
