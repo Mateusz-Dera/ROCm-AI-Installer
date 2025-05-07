@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="6.4.1"
+version="6.4.2"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -492,7 +492,7 @@ install_animagine() {
 # Cinemo
 install_cinemo() {
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
-    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=True, server_name="0.0.0.0")/' demo.py
+    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 
 # ComfyUI
