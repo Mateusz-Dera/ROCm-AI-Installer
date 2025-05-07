@@ -813,10 +813,9 @@ image_generation() {
     second=true
     while $second; do
         set +e
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "Install ComfyUI" \
             1 "Install Artist" \
-            2 "Install Animagine XL 4.0" \
             2>&1 > /dev/tty)
         status=$?
         set -e
@@ -831,9 +830,6 @@ image_generation() {
                 ;;
             "1")
                 install_artist
-                ;;
-            "2")
-                install_animagine
                 ;;
             "")
                 echo "Previous menu..."

@@ -24,7 +24,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Links|Additional information|
 |:---|:---|:---|
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|1. Support GGML and GGUF models.|
-|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2 and Transformers models.|
+|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.|
 |SillyTavern (1.12.14)|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
@@ -33,7 +33,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|1. Workflows templates are in the workflows folder.|
 |Artist|https://github.com/songrise/Artist/||
-|Animagine XL 4.0|https://huggingface.co/cagliostrolab/animagine-xl-4.0<br> https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0||
 
 #### ComfyUI Addons
 |Name|Link|Additional information|
@@ -43,7 +42,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
-|AnimePro FLUX GGUF|https://civitai.com/models/934628?modelVersionId=1053818|Text to image model.|
+|AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
 
 

@@ -21,6 +21,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+# FlashAttention
+install_flash_attention() {
+    git clone https://github.com/Dao-AILab/flash-attention
+    cd flash-attention
+    git checkout fd2fc9d85c8e54e5c20436465bca709bc1a6c5a1
+    export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
+    python setup.py install
+}
+
 # KoboldCPP
 install_koboldcpp() {
     install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "ae89be8ce4d0c0139fd8345a41bc83696537a786" "python koboldcpp.py"
@@ -29,12 +38,13 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "6e6f9971a212328a5dc68adffb55da95eee1701d" "python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" "export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"\n python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
 
     # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@e4fe8b5b281670512dfda3fc01731bacb9b509dd --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.8/exllamav2-0.2.8+rocm6.2.4.torch2.6.0-cp312-cp312-linux_x86_64.whl
+    pip install git+https://github.com/ROCm/bitsandbytes.git@35266ead8b7669c55db26505115de941eed178de --extra-index-url https://download.pytorch.org/whl/rocm6.3
+    install_flash_attention
+    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.9/exllamav2-0.2.9+rocm6.3.torch2.7.0-cp312-cp312-linux_x86_64.whl
+    pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.9.0/llama_cpp_binaries-0.9.0+vulkan-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -67,7 +77,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 85f36e5e7173eef7c671c778db44c034e1d0ab19
+    git checkout 2f54e348ad2999c4e31b8777592247622b20420f
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
@@ -86,15 +96,9 @@ EOF
 
 # Artist
 install_artist() {
-    install "https://github.com/songrise/Artist.git" "dcc252adb81e7e57e1763758cf57b8c865dbe1bb" "python injection_main.py --mode app"
+    install "https://github.com/songrise/Artist.git" "a1b3a978b2cfcbb47201259a4ab60b58173d5bf7" "python injection_main.py --mode app"
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
     mv ./example_config.yaml ./config.yaml
-}
-
-# Animagine XL 4.0
-install_animagine() {
-    install "https://huggingface.co/spaces/cagliostrolab/animagine-xl-4.0" "bb4979668f5384f1b5a288c25f25f34ea6d520ab" "python app.py"
-    sed -i 's/demo.queue(max_size=20).launch(debug=IS_COLAB, share=IS_COLAB)/demo.queue(max_size=20).launch(debug=IS_COLAB, share=False, server_name="0.0.0.0")/' app.py
 }
 
 # Cinemo
@@ -105,31 +109,31 @@ install_cinemo() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "31e54b7052bd65c151018950bd95473e3f9a9489" "python3 ./main.py --listen --use-split-cross-attention"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "0cf2e46b1725a5d0d6cb7b177a524026ca00f5a4" "python3 ./main.py --listen --use-split-cross-attention"
 
-    pip install git+https://github.com/ROCm/flash-attention@b28f18350af92a68bec057875fd486f728c9f084 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    install_flash_attention
 
     local gguf=0
 
     # Process each selected choice
     for choice in $CHOICES; do
         case $choice in
-            "0")
+            '"0"')
                 # ComfyUI-Manager
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout a6cc392473b1157f82f3088b97593d07e680c636
+                git checkout e16e9d7a0ef80d094a513111febe4cb8d6e38a37
                 ;;
-            "1")
+            '"1"')
                 gguf=1
                 ;;
-            "2")
+            '"2"')
                 # AuraSR
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive
                 cd ComfyUI-AuraSR
-                git checkout 0b91286850acaa01d5170b9d472db02443fda6e7
+                git checkout fab70362f423dc63bd0e7980eb740b0d84605be7
 
                 cd $installation_path/ComfyUI/models/checkpoints
                 download "fal/AuraSR-v2" "ff452185a7c8b51206dd62c21c292e7baad5c3a3" "model.safetensors"
@@ -137,24 +141,25 @@ install_comfyui() {
                 
                 pip install aura-sr==0.0.4
                 ;;
-            "3")
+            '"3"')
                 # AuraFlow
                 cd $installation_path/ComfyUI/models/checkpoints
                 download "fal/AuraFlow-v0.3" "2cd8588f04c886002be4571697d84654a50e3af3" "aura_flow_0.3.safetensors"
                 ;;
-            "4")
+            '"4"')
                 gguf=1
                 # Flux
                 cd $installation_path/ComfyUI/models/unet
                 download "city96/FLUX.1-schnell-gguf" "f495746ed9c5efcf4661f53ef05401dceadc17d2" "flux1-schnell-Q8_0.gguf"
                 ;;
-            "5")
+            '"5"')
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
-                wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
+                #wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
+                download "advokat/AnimePro-FLUX" "be1cbbe8280e6d038836df868c79cdf7687ad39d" "animepro-Q5_K_M.gguf"
                 ;;
-            "6")
+            '"6"')
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
@@ -173,7 +178,7 @@ install_comfyui() {
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
-        git checkout 8e898fad4caab59bf4144e0cf11978b893de7e54
+        git checkout 3d673c5c098ecaa6e6027f834659ba8de534ca32
         pip install gguf==0.10.0
         cd $installation_path/ComfyUI/models/text_encoders
         download "city96/t5-v1_1-xxl-encoder-bf16" "1b9c856aadb864af93c1dcdc226c2774fa67bc86" "model.safetensors"
@@ -181,13 +186,13 @@ install_comfyui() {
         download "openai/clip-vit-large-patch14" "32bd64288804d66eefd0ccbe215aa642df71cc41" "model.safetensors"
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
         cd $installation_path/ComfyUI/models/vae
-        download "black-forest-labs/FLUX.1-schnell" "768d12a373ed5cc9ef9a9dea7504dc09fcc14842" "diffusion_pytorch_model.safetensors" "vae"
+        download "black-forest-labs/FLUX.1-schnell" "741f7c3ce8b383c54771c7003378a50191e9efe9" "diffusion_pytorch_model.safetensors" "vae"
     fi
 }
 
 # AudioCraft
 install_audiocraft() {
-    install "https://github.com/facebookresearch/audiocraft.git" "e5fcc458a4dc1c6f7248cbceac9cfe471f2c92b8" "python -m demos.musicgen_app --listen 0.0.0.0"
+    install "https://github.com/facebookresearch/audiocraft.git" "896ec7c47f5e5d1e5aa1e4b260c4405328bf009d" "python -m demos.musicgen_app --listen 0.0.0.0"
 }
 
 # WhisperSpeech web UI

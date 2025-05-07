@@ -174,6 +174,8 @@ EOF
     sudo apt install -y libmecab-dev
     sudo apt install -y python3-openssl
     sudo apt install -y espeak-ng
+    sudo apt install -y libomp-dev
+    sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
 
     sudo snap install node --classic
 

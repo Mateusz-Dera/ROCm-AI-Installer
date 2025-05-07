@@ -2,3 +2,12 @@ Updated menu
 Code fixes
 Better menu
 Updated ROCm to 6.4
+Updated Text generation web UI
+Updated KoboldCPP
+Updated SillyTavern
+Updated llama.cpp
+Updated Artist
+Updated AudioCraft
+Updated ComfyUI and ComfyUI Addons
+Drop Animagine XL 4.0 support
+Added support for llama.cpp in Text generation web UI using Vulkan.
