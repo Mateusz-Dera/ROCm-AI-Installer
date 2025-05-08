@@ -201,29 +201,6 @@ install_whisperspeech_web_ui(){
     pip install -r requirements_rocm_6.3.txt
 }
 
-# MetaVoice
-install_metavoice(){
-    install "https://github.com/metavoiceio/metavoice-src.git" "de3fa211ac4621e03a5f990651aeecc64da418f5" "ANONYMIZED_TELEMETRY=False python app.py"
-
-    rm ./requirements.txt
-    touch ./requirements.txt
-
-    git clone https://github.com/facebookresearch/audiocraft.git
-    cd audiocraft
-    git checkout e5fcc458a4dc1c6f7248cbceac9cfe471f2c92b8
-    rm ./requirements.txt
-    touch ./requirements.txt
-    pip install -e .
-
-    cd $installation_path/metavoice-src
-
-    pip install -e .
-    sed -i 's|TTS_MODEL = tyro\.cli(TTS, args=\["--telemetry_origin", "webapp"\])|TTS_MODEL = tyro.cli(TTS)|' app.py
-
-    sed -i '/logging\.basicConfig(level=logging\.INFO, handlers=\[logging\.StreamHandler(sys\.stdout), logging\.StreamHandler(sys\.stderr)\])/a def get_telemetry_status():\n    value = os.getenv("ANONYMIZED_TELEMETRY", "True")  # Default to "True"\n    return value.lower() in ("1", "true", "yes")' ./fam/telemetry/posthog.py
-    sed -i 's/if not os.getenv("ANONYMIZED_TELEMETRY", True) or "pytest" in sys.modules:/if not get_telemetry_status() or "pytest" in sys.modules:/g' ./fam/telemetry/posthog.py
-}
-
 # F5-TTS
 install_f5_tts(){
     install "https://github.com/SWivid/F5-TTS.git" "d457c3e2450ee83a8a27b6f41808716c7763311b" "f5-tts_infer-gradio --host 0.0.0.0"
