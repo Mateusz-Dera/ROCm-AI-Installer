@@ -12,10 +12,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ### Test platform:
 |Name|Info|
 |:---|:---|
-|CPU|AMD Ryzen 7900X3D (iGPU disabled in BIOS)|
+|CPU|AMD Ryzen 9950X3D|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (3.18.AS02 Beta)|
+|Motherboard|ASRock B650E PG Riptide WiFi (3.20)|
 |OS|Ubuntu 24.04.2 LTS|
 |Kernel|6.11.0-25-generic|
 |ROCm|6.4|
