@@ -928,14 +928,13 @@ voice_generation() {
     second=true
     while $second; do
         set +e
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             0 "Install WhisperSpeech web UI" \
-            1 "Install MeloTTS" \
-            2 "Install MetaVoice" \
-            3 "Install F5-TTS" \
-            4 "Install Matcha-TTS" \
-            5 "Install StableTTS" \
-            6 "Install Dia" \
+            1 "Install MetaVoice" \
+            2 "Install F5-TTS" \
+            3 "Install Matcha-TTS" \
+            4 "Install StableTTS" \
+            5 "Install Dia" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -943,21 +942,18 @@ voice_generation() {
                 install_whisperspeech_web_ui
                 ;;
             "1")
-                install_melotts
-                ;;
-            "2")
                 install_metavoice
                 ;;
-            "3")
+            "2")
                 install_f5_tts
                 ;;
-            "4")
+            "3")
                 install_matcha_tts
                 ;;
-            "5")
+            "4")
                 install_stabletts
                 ;;
-            "6")
+            "5")
                 install_dia
                 ;;
             "")

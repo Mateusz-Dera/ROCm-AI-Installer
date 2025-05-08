@@ -60,7 +60,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Links|Additional information|
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
-|MeloTTS|https://github.com/myshell-ai/MeloTTS||
 |MetaVoice|https://github.com/metavoiceio/metavoice-src<br> https://github.com/metavoiceio/metavoice-src/tree/sidroopdaska/faster_decoding|1. Script uses the faster_decoding fork by sidroopdaska.<br> 2. Telemetry is disabled by default|
 |F5-TTS|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||

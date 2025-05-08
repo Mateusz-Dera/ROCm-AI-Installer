@@ -201,15 +201,6 @@ install_whisperspeech_web_ui(){
     pip install -r requirements_rocm_6.3.txt
 }
 
-# MeloTTS
-install_melotts(){
-    install "https://github.com/myshell-ai/MeloTTS" "209145371cff8fc3bd60d7be902ea69cbdb7965a" "python melo/app.py -h 0.0.0.0"
-    rm requirements.txt
-    touch requirements.txt
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-    python -m unidic download
-}
-
 # MetaVoice
 install_metavoice(){
     install "https://github.com/metavoiceio/metavoice-src.git" "de3fa211ac4621e03a5f990651aeecc64da418f5" "ANONYMIZED_TELEMETRY=False python app.py"
