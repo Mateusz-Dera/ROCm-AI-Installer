@@ -221,24 +221,9 @@ install_matcha_tts(){
     pip install -e .
 }
 
-# StableTTS
-install_stabletts(){
-    install "https://github.com/lpscr/StableTTS.git" "71dfa4138c511df8e0aedf444df98c6baa44cad4" "python3 webui.py"
-    cd $installation_path/StableTTS
-    cd ./checkpoints
-    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "checkpoint_0.pt" "StableTTS"
-    cd $installation_path/StableTTS
-    cd ./vocoders/pretrained
-    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "firefly-gan-base-generator.ckpt" "vocoders"
-    download "KdaiP/StableTTS1.1" "ce2a21a5fad05fc46573b084320e721da72caf95" "vocos.pt" "vocoders"
-    cd $installation_path/StableTTS
-    mkdir ./temps
-    sed -i 's/demo.launch(debug=True, show_api=True)/demo.launch(debug=True,server_name="0.0.0.0")/' "webui.py"
-}
-
 # Dia
 install_dia(){
-    install "https://github.com/tralamazza/dia.git" "50c336c73b2358a98fb35f682951bbce8e96ef60" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    install "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
     pip install uv==0.6.16
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }

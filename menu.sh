@@ -932,8 +932,7 @@ voice_generation() {
             0 "Install WhisperSpeech web UI" \
             1 "Install F5-TTS" \
             2 "Install Matcha-TTS" \
-            3 "Install StableTTS" \
-            4 "Install Dia" \
+            3 "Install Dia" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -947,9 +946,6 @@ voice_generation() {
                 install_matcha_tts
                 ;;
             "3")
-                install_stabletts
-                ;;
-            "4")
                 install_dia
                 ;;
             "")

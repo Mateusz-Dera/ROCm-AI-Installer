@@ -13,10 +13,12 @@ Updated ComfyUI and ComfyUI Addons
 Updated WhisperSpeech web UI
 Updated F5-TTS
 Updated Matcha-TTS PyTorch
+Updated Dia
 Drop Animagine XL 4.0 support
 Drop AudioCraft support
 Drop MeloTTS support
 Drop MetaVoice support
+Drop StableTTS support
 Fastfetch now support multiple graphic cards
 Added support for llama.cpp in Text generation web UI using Vulkan.
 Added ACE-Step
