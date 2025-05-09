@@ -74,7 +74,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Tools
 |Name|Links|Additional information|
 |:---|:---|:---|
-|Fastfetch|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.<br> 2. Script supports not only AMD but also NVIDIA graphics cards:<br> ```sudo apt-get install intel-gpu-tools```<br> 3. If you change the number or order of graphics cards you must run the installer again.|
+|Fastfetch|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.<br> 2. Script supports not only AMD but also NVIDIA graphics cards (nvidia-smi needed).<br> 3. If you change the number or order of graphics cards you must run the installer again.|
 
 ## Instalation:
 > [!Note]
