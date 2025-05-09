@@ -432,7 +432,8 @@ install_fastfetch(){
         rm "$HOME/.config/fastfetch/config.jsonc"
     fi
 
-    tee --append "$HOME/.config/fastfetch/config.jsonc" << 'EOF'
+    # Create the base config with placeholders for dynamic GPU VRAM modules
+    tee "$HOME/.config/fastfetch/config.jsonc" << 'EOF'
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "modules": [
@@ -449,11 +450,7 @@ install_fastfetch(){
     "memory",
     "swap",
     "gpu",
-    {
-        "type": "command",
-        "text": "get-gpu-vram",
-        "key": "VRAM"
-    },
+    __GPU_VRAM_MODULES__
     "disk",
     "localip",
     "battery",
@@ -468,7 +465,7 @@ EOF
         sudo rm "/usr/bin/get-gpu-vram"
     fi
 
-    sudo tee --append "/usr/bin/get-gpu-vram" << 'EOF'
+    sudo tee "/usr/bin/get-gpu-vram" << 'EOF'
 #!/bin/bash
 
 # Function to count AMD GPUs
@@ -518,7 +515,7 @@ if [ "$amd_count" -gt 0 ]; then
             total_mem_bytes=$(rocm-smi --showmeminfo vram -d $gpu | grep 'Total Memory' | awk '{print $NF}')
             used_mem_mb=$(echo "$used_mem_bytes / 1048576" | bc)
             total_mem_mb=$(echo "$total_mem_bytes / 1048576" | bc)
-            echo "AMD GPU $gpu VRAM: $used_mem_mb/$total_mem_mb MB"
+            echo "$used_mem_mb/$total_mem_mb MB"
         done
     else
         echo "rocm-smi not found. Skipping AMD GPU memory info."
@@ -534,7 +531,7 @@ if [ "$nvidia_count" -gt 0 ]; then
             index=$(echo "$line" | awk -F ', ' '{print $1}')
             used=$(echo "$line" | awk -F ', ' '{print $2}')
             total=$(echo "$line" | awk -F ', ' '{print $3}')
-            echo "NVIDIA GPU $index VRAM: $used/$total MB"
+            echo "$used/$total MB"
         done
     else
         echo "nvidia-smi not found. Skipping NVIDIA GPU memory info."
@@ -548,20 +545,48 @@ EOF
         sudo rm "/usr/bin/dynamic-gpu-vram"
     fi
 
-    tee --append "/usr/bin/dynamic-gpu-vram" << 'EOF'
+    sudo tee "/usr/bin/dynamic-gpu-vram" << 'EOF'
 #!/bin/bash
-# Run the get-gpu-vram command and split output into individual lines
+
+# Run the get-gpu-vram command and capture output
 output=$(get-gpu-vram)
 
-# Iterate over each line of the output
+# Exit if no output
+if [ -z "$output" ]; then
+    echo ""
+    exit 0
+fi
+
+# Initialize JSON modules array
+modules=""
 i=1
+
+# Process each line of output
 while IFS= read -r line; do
-  # Print a new module for each line of output, with a dynamic key
-  echo "{\"type\": \"command\", \"text\": \"${line}\", \"key\": \"VRAM${i}\"}"
-  ((i++))
+    # Create a JSON module for this GPU
+    if [ -n "$modules" ]; then
+        modules="${modules},"
+    fi
+    modules="${modules}{\"type\": \"command\", \"text\": \"echo '$line'\", \"key\": \"GPU ${i} VRAM\"}"
+    ((i++))
 done <<< "$output"
 
-    echo "New Fastfetch config created"
+# Output the JSON
+echo "$modules"
 EOF
 
+    sudo chmod +x /usr/bin/dynamic-gpu-vram
+
+    # Now, update the config.jsonc with the dynamic GPU VRAM modules
+    # First, get the dynamic modules
+    gpu_modules=$(dynamic-gpu-vram)
+    
+    # Replace the placeholder with the actual modules or empty if no GPUs found
+    if [ -n "$gpu_modules" ]; then
+        sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules,|" "$HOME/.config/fastfetch/config.jsonc"
+    else
+        sed -i "s|__GPU_VRAM_MODULES__||" "$HOME/.config/fastfetch/config.jsonc"
+    fi
+
+    echo "New Fastfetch config created with dynamic GPU VRAM modules"
 }
