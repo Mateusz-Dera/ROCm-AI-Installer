@@ -78,7 +78,7 @@ set_installation_path() {
 remove_old() {
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
-    sudo apt purge -y nvidia*
+    # sudo apt purge -y nvidia*
 
     if [ -d /opt/rocm* ]; then
         sudo rm -r /opt/rocm*

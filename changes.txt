@@ -1,6 +1,7 @@
 Updated menu
 Code fixes
 Better menu
+Script no longer removes NVIDIA drivers by default
 Updated ROCm to 6.4
 Updated Text generation web UI
 Updated KoboldCPP
