@@ -12,6 +12,7 @@ Updated AudioCraft
 Updated ComfyUI and ComfyUI Addons
 Updated WhisperSpeech web UI
 Updated F5-TTS
+Updated Matcha-TTS PyTorch
 Drop Animagine XL 4.0 support
 Drop AudioCraft support
 Drop MeloTTS support
