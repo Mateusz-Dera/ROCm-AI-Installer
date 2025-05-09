@@ -436,27 +436,51 @@ install_fastfetch(){
     tee "$HOME/.config/fastfetch/config.jsonc" << 'EOF'
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "none",
+    "padding": {
+    "top": 2
+    },
+  },
   "modules": [
+    "break",
+    "separator",
     "title",
     "separator",
+    "break",
     "os",
+    "localip",
     "host",
     "kernel",
     "uptime",
     "packages",
     "shell",
     "de",
-    "cpu",
-    "memory",
-    "swap",
+    "break",
+    "disk",
+    "break",
+    {
+      "type": "cpu",
+      "key": "CPU",
+      "showPeCoreCount": true,
+      "temp": true,
+      "format": "{name} ({core-types}) {freq-max}"
+    },
+    {
+      "type": "memory",
+      "key": "RAM",
+      "format": "{used} / {total})"
+    },
+    {
+      "type": "swap",
+      "key": "SWAP",
+      "format": "{used} / {total}"
+    },
     "gpu",
     __GPU_VRAM_MODULES__
-    "disk",
-    "localip",
-    "battery",
-    "poweradapter",
     "break",
-    "colors"
+    "colors",
+    "break"
   ]
 }
 EOF
