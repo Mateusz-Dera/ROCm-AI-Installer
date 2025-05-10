@@ -21,6 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+# Exit on error
+set -e
+
 # FlashAttention
 install_flash_attention() {
     git clone https://github.com/Dao-AILab/flash-attention
@@ -228,12 +231,6 @@ install_dia(){
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
-# TripoSR
-install_triposr(){
-    install "https://github.com/VAST-AI-Research/TripoSR" "d26e33181947bbbc4c6fc0f5734e1ec6c080956e" "python3 gradio_app.py --listen"
-    pip install git+https://github.com/tatsy/torchmcubes.git@3381600ddc3d2e4d74222f8495866be5fafbace4 --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
-}
-
 # TripoSG
 install_triposg(){
     install "https://github.com/VAST-AI-Research/TripoSG" "b52f852283d2e61b74653f00dbffe01c258320e4" "python app.py"
@@ -428,7 +425,6 @@ install_fastfetch(){
     },
   },
   "modules": [
-    "break",
     "separator",
     "title",
     "separator",
@@ -465,7 +461,6 @@ install_fastfetch(){
     __GPU_VRAM_MODULES__
     "break",
     "colors",
-    "break"
   ]
 }
 EOF

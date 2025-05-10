@@ -928,7 +928,7 @@ voice_generation() {
     second=true
     while $second; do
         set +e
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "Install WhisperSpeech web UI" \
             1 "Install F5-TTS" \
             2 "Install Matcha-TTS" \
@@ -970,16 +970,12 @@ d3_generation() {
     second=true
     while $second; do
         set +e
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
-            0 "Install TripoSR" \
-            1 "Install TripoSG" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            0 "Install TripoSG" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
-                install_triposr
-                ;;
-            "1")
                 install_triposg
                 ;;
             "")

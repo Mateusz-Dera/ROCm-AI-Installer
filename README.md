@@ -62,14 +62,12 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
 |F5-TTS|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
-|StableTTS|https://github.com/lpscr/StableTTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
 
 ###  3D generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|TripoSR|https://github.com/VAST-AI-Research/TripoSR|1. It uses PyTorch ROCm, but torchmcubes is built for the CPU. This method is still faster than using just PyTorch CPU-only version.|
-|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing the interface from the VS Code tunnel, preview of generated 3D files may not be available.|
+|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing through the VS Code tunnel, the preview of generated 3D files may not be available, it is recommended to access through localhost or local network.|
 
 ###  Tools
 |Name|Links|Additional information|
