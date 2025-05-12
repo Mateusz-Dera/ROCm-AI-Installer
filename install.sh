@@ -21,9 +21,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Exit on error
-set -e
-
 # GPU Variables
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
@@ -53,10 +50,9 @@ source ./interfaces.sh
 # Installation path
 set_installation_path() {
     # Prompt for installation path, using the default if the user leaves it blank
-    set +e
+
     new_installation_path=$(whiptail --inputbox "Enter the installation path (default: $default_installation_path):" 10 150 "$installation_path" --cancel-button "Back" 3>&1 1>&2 2>&3)
     status=$?
-    set -e
 
     if [ $status -ne 0 ]; then
         return 0
@@ -255,29 +251,6 @@ export TORCH_BLAS_PREFER_HIPBLASLT=0
 $start_command
 EOF
     chmod +x run.sh
-}
-
-# Download
-download() {
-    local repo=$1
-    local commit=$2
-    local file=$3
-    local subdir=${4:-""}  # Use empty string if no subdirectory provided
-    
-    # Construct the repository URL
-    local repo_url="https://huggingface.co/$repo/resolve/$commit"
-    
-    # Add subdirectory to path if provided
-    if [ -n "$subdir" ]; then
-        repo_url="$repo_url/$subdir"
-    fi
-
-    echo "Downloading $file from ${subdir:+$subdir/}..."
-    
-    wget "$repo_url/$file" -O "$file" || {
-        echo "Error downloading $file"
-        exit 1
-    }
 }
 
 ## MAIN

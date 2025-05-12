@@ -21,9 +21,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Exit on error
-set -e
-
 # FlashAttention
 install_flash_attention() {
     git clone https://github.com/Dao-AILab/flash-attention
@@ -139,34 +136,35 @@ install_comfyui() {
                 git checkout fab70362f423dc63bd0e7980eb740b0d84605be7
 
                 cd $installation_path/ComfyUI/models/checkpoints
-                download "fal/AuraSR-v2" "ff452185a7c8b51206dd62c21c292e7baad5c3a3" "model.safetensors"
-                download "fal/AuraSR" "87da2f52b29b6351391f71c74de581c393fc19f5" "model.safetensors"
-                
+                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision f452185a7c8b51206dd62c21c292e7baad5c3a3
+                mv ./model.safetensors ./aura_sr_v2.safetensors
+                huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5
+                mv ./model.safetensors ./aura_sr.safetensors
+
                 pip install aura-sr==0.0.4
                 ;;
             '"3"')
                 # AuraFlow
                 cd $installation_path/ComfyUI/models/checkpoints
-                download "fal/AuraFlow-v0.3" "2cd8588f04c886002be4571697d84654a50e3af3" "aura_flow_0.3.safetensors"
+                huggingface-cli download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3
                 ;;
             '"4"')
                 gguf=1
                 # Flux
                 cd $installation_path/ComfyUI/models/unet
-                download "city96/FLUX.1-schnell-gguf" "f495746ed9c5efcf4661f53ef05401dceadc17d2" "flux1-schnell-Q8_0.gguf"
+                huggingface-cli download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2
                 ;;
             '"5"')
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
-                #wget "https://civitai.com/api/download/models/1053818?type=Model&format=GGUF&size=full&fp=bf16" -O "animepro-flux-Q5_0.gguf"
-                download "advokat/AnimePro-FLUX" "be1cbbe8280e6d038836df868c79cdf7687ad39d" "animepro-Q5_K_M.gguf"
+                huggingface-cli download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d
                 ;;
             '"6"')
                 gguf=1
                 # AnimePro FLUX
                 cd $installation_path/ComfyUI/models/unet
-                download "hum-ma/Flex.1-alpha-GGUF" "2ccb9cb781dfbafdf707e21b915c654c4fa6a07d" "Flex.1-alpha-Q8_0.gguf"
+                huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d
                 ;;
             "")
                 break
@@ -182,16 +180,17 @@ install_comfyui() {
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
         git checkout a2b75978fd50c0227a58316619b79d525b88e570
+        
         cd $installation_path/ComfyUI/models/text_encoders
-        download "city96/t5-v1_1-xxl-encoder-bf16" "1b9c856aadb864af93c1dcdc226c2774fa67bc86" "model.safetensors"
+        huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86
         mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
-        download "openai/clip-vit-large-patch14" "32bd64288804d66eefd0ccbe215aa642df71cc41" "model.safetensors"
+        huggingface-cli download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
         
         huggingface
 
         cd $installation_path/ComfyUI/models/vae
-        download "black-forest-labs/FLUX.1-schnell" "741f7c3ce8b383c54771c7003378a50191e9efe9" "diffusion_pytorch_model.safetensors" "vae"
+        huggingface-cli download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9
     fi
 }
 
