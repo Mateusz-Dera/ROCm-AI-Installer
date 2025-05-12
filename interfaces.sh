@@ -233,8 +233,7 @@ install_dia(){
 
 # TripoSG
 install_triposg(){
-    install "https://github.com/VAST-AI-Research/TripoSG" "b52f852283d2e61b74653f00dbffe01c258320e4" "python app.py"
-    pip install torch-cluster --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.2.4
+    install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
     tee --append app.py << EOF
 import gradio as gr
 import subprocess
@@ -425,9 +424,7 @@ install_fastfetch(){
     },
   },
   "modules": [
-    "separator",
     "title",
-    "separator",
     "break",
     "os",
     "localip",
@@ -436,7 +433,6 @@ install_fastfetch(){
     "uptime",
     "packages",
     "shell",
-    "de",
     "break",
     "disk",
     "break",
@@ -459,8 +455,6 @@ install_fastfetch(){
     },
     "gpu",
     __GPU_VRAM_MODULES__
-    "break",
-    "colors",
   ]
 }
 EOF

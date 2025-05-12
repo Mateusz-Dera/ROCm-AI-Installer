@@ -67,7 +67,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  3D generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI. 2. When accessing through the VS Code tunnel, the preview of generated 3D files may not be available, it is recommended to access through localhost or local network.|
+|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI.<br> 2. Sometimes there are probelms with the preview, but the model should still be available for download.|
 
 ###  Tools
 |Name|Links|Additional information|
