@@ -38,10 +38,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 
 > [!Important]
 > For GGUF models:<br>
-> 1\. HugginFace token is required during installation.
-
-> [!Important]
-> For GGUF models, you must accept accept the conditions to access its files and content on HugginFace website
+> 1\. HugginFace token is required during installation.<br>
+> 2\. Accept accept the conditions to access its files and content on HugginFace website:<br>
 > https://huggingface.co/black-forest-labs/FLUX.1-schnell
 
 |Name|Link|Additional information|
