@@ -1,4 +1,6 @@
 {
+  "id": "84867806-5b5a-4874-a36b-08fccef235aa",
+  "revision": 0,
   "last_node_id": 14,
   "last_link_id": 13,
   "nodes": [
@@ -24,7 +26,10 @@
         }
       ],
       "outputs": [],
-      "properties": {},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32"
+      },
       "widgets_values": [
         "ComfyUI"
       ]
@@ -54,13 +59,15 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             6
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
@@ -86,13 +93,15 @@
         {
           "name": "LATENT",
           "type": "LATENT",
+          "slot_index": 0,
           "links": [
             2
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
@@ -131,48 +140,18 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "slot_index": 0,
           "links": [
             9
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "VAEDecode"
       },
       "widgets_values": []
-    },
-    {
-      "id": 14,
-      "type": "VAELoader",
-      "pos": [
-        862.1978759765625,
-        499.3028869628906
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            13
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "diffusion_pytorch_model.safetensors"
-      ]
     },
     {
       "id": 3,
@@ -214,17 +193,19 @@
         {
           "name": "LATENT",
           "type": "LATENT",
+          "slot_index": 0,
           "links": [
             7
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        466728426345548,
+        337968258283276,
         "randomize",
         35,
         1,
@@ -242,30 +223,33 @@
       ],
       "size": [
         315,
-        106
+        130
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
           "type": "CLIP",
+          "slot_index": 0,
           "links": [
             10,
             11
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "DualCLIPLoader"
       },
       "widgets_values": [
         "clip-vit-large-patch14.safetensors",
         "t5-v1_1-xxl-encoder-bf16.safetensors",
-        "flux"
+        "flux",
+        "default"
       ]
     },
     {
@@ -280,20 +264,22 @@
         58
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
+          "slot_index": 0,
           "links": [
             12
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "ComfyUI-GGUF",
+        "ver": "a2b75978fd50c0227a58316619b79d525b88e570",
         "Node name for S&R": "UnetLoaderGGUF"
       },
       "widgets_values": [
@@ -325,17 +311,53 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             4
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
         "Beautiful scenery nature glass bottle landscape. Purple galaxy bottle."
+      ]
+    },
+    {
+      "id": 14,
+      "type": "VAELoader",
+      "pos": [
+        862.1978759765625,
+        499.3028869628906
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "slot_index": 0,
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.32",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "vae/diffusion_pytorch_model.safetensors"
       ]
     }
   ],
@@ -422,7 +444,8 @@
         460.4373260859851,
         300.7624927594419
       ]
-    }
+    },
+    "frontendVersion": "1.18.9"
   },
   "version": 0.4
 }

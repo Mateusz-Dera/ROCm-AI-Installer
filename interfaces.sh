@@ -136,35 +136,31 @@ install_comfyui() {
                 git checkout fab70362f423dc63bd0e7980eb740b0d84605be7
 
                 cd $installation_path/ComfyUI/models/checkpoints
-                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision f452185a7c8b51206dd62c21c292e7baad5c3a3
+                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision f452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr_v2.safetensors
-                huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5
+                huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr.safetensors
 
                 pip install aura-sr==0.0.4
                 ;;
             '"3"')
                 # AuraFlow
-                cd $installation_path/ComfyUI/models/checkpoints
-                huggingface-cli download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3
+                huggingface-cli download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir $installation_path/ComfyUI/models/checkpoints
                 ;;
             '"4"')
                 gguf=1
                 # Flux
-                cd $installation_path/ComfyUI/models/unet
-                huggingface-cli download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2
+                huggingface-cli download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2 --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"5"')
                 gguf=1
                 # AnimePro FLUX
-                cd $installation_path/ComfyUI/models/unet
-                huggingface-cli download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d
+                huggingface-cli download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"6"')
                 gguf=1
                 # AnimePro FLUX
-                cd $installation_path/ComfyUI/models/unet
-                huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d
+                huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             "")
                 break
@@ -182,15 +178,15 @@ install_comfyui() {
         git checkout a2b75978fd50c0227a58316619b79d525b88e570
         
         cd $installation_path/ComfyUI/models/text_encoders
-        huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86
+        huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
-        huggingface-cli download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41
+        huggingface-cli download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
         
         huggingface
 
         cd $installation_path/ComfyUI/models/vae
-        huggingface-cli download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9
+        huggingface-cli download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9 --local-dir $installation_path/ComfyUI/models/vae
     fi
 }
 
@@ -347,7 +343,6 @@ EOF
 
 # Login to HuggingFace
 huggingface() {
-    clear
     read -sp "Enter your Hugging Face access token: " HF_TOKEN
         
     if [ -z "$HF_TOKEN" ]; then
