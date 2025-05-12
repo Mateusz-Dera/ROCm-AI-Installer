@@ -35,6 +35,14 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Artist|https://github.com/songrise/Artist/||
 
 #### ComfyUI Addons
+
+> [!Important]
+> For GGUF models, a HugginFace token is required during installation.
+
+> [!Important]
+> For GGUF models, you must accept accept the conditions to access its files and content on HugginFace website.
+> https://huggingface.co/black-forest-labs/FLUX.1-schnell
+
 |Name|Link|Additional information|
 |:---|:---|:---|
 |ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager| Manage nodes of ComfyUI.|
@@ -44,7 +52,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
-
 
 ###  Video generation
 |Name|Links|Additional information|

@@ -181,13 +181,15 @@ install_comfyui() {
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
-        git checkout 3d673c5c098ecaa6e6027f834659ba8de534ca32
-        pip install gguf==0.10.0
+        git checkout a2b75978fd50c0227a58316619b79d525b88e570
         cd $installation_path/ComfyUI/models/text_encoders
         download "city96/t5-v1_1-xxl-encoder-bf16" "1b9c856aadb864af93c1dcdc226c2774fa67bc86" "model.safetensors"
         mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
         download "openai/clip-vit-large-patch14" "32bd64288804d66eefd0ccbe215aa642df71cc41" "model.safetensors"
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
+        
+        huggingface
+
         cd $installation_path/ComfyUI/models/vae
         download "black-forest-labs/FLUX.1-schnell" "741f7c3ce8b383c54771c7003378a50191e9efe9" "diffusion_pytorch_model.safetensors" "vae"
     fi
@@ -342,6 +344,29 @@ with gr.Blocks(title="TripoSR for ROCm") as iface:
 if __name__ == "__main__":
     iface.launch(share=False, server_name="0.0.0.0", allowed_paths=["public"])
 EOF
+}
+
+# Login to HuggingFace
+huggingface() {
+    clear
+    read -sp "Enter your Hugging Face access token: " HF_TOKEN
+        
+    if [ -z "$HF_TOKEN" ]; then
+        echo -e "\nError: No token provided. Exiting."
+        exit 1
+    fi
+        
+    # Login to Hugging Face
+    echo -e "\nLogging into Hugging Face..."
+    huggingface-cli login --token "$HF_TOKEN"
+
+    # Check login status
+    if [ $? -eq 0 ]; then
+        echo "Successfully logged into Hugging Face!"
+    else
+        echo "Login failed. Please check your token and try again."
+        exit 1
+    fi
 }
 
 # Install fastfetch
