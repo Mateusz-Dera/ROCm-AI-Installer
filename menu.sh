@@ -169,7 +169,7 @@ text_generation_web_ui() {
 
 text_generation_web_ui_backup() {
     
-    CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Backup:" 14 50 4 --cancel-button "Back" \
         0 "Backup models" ON \
         1 "Backup characters" ON \
         2 "Backup presets" ON \
@@ -260,12 +260,12 @@ text_generation_web_ui_backup() {
     
     summary_msg+="${success_msg}"
     
-    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 14 70
 }
 
 text_generation_web_ui_restore() {
     
-    CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Restore:" 14 50 4 --cancel-button "Back" \
         0 "Restore models" ON \
         1 "Restore characters" ON \
         2 "Restore presets" ON \
@@ -356,7 +356,7 @@ text_generation_web_ui_restore() {
     
     summary_msg+="${success_msg}"
     
-    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 14 70
 }
 
 # SillyTavern
@@ -458,7 +458,7 @@ backup_and_restore_file() {
 # Backup SillyTavern
 sillytavern_backup() {
     
-    CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Backup:" 21 50 14 --cancel-button "Back" \
         0 "Backup config.yaml" ON \
         1 "Backup settings.json" ON \
         2 "Backup characters" ON \
@@ -629,13 +629,13 @@ sillytavern_backup() {
     
     summary_msg+="${success_msg}"
     
-    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 22 70
 }
 
 # Restore SillyTavern
 sillytavern_restore() {
     
-    CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Restore:" 21 50 14 --cancel-button "Back" \
         0 "Restore config.yaml" ON \
         1 "Restore settings.json" ON \
         2 "Restore characters" ON \
@@ -806,7 +806,7 @@ sillytavern_restore() {
     
     summary_msg+="${success_msg}"
     
-    whiptail --title "$summary_title" --msgbox "$summary_msg" 30 70
+    whiptail --title "$summary_title" --msgbox "$summary_msg" 22 70
 }
 
 image_generation() {
