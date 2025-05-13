@@ -191,7 +191,7 @@ install_comfyui() {
 }
 
 # ACE-Step
-install_audiocraft() {
+install_ace_step() {
     install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
 }
 

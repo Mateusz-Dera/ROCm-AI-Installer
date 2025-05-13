@@ -90,7 +90,7 @@ show_menu() {
 text_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "Install KoboldCPP" \
             1 "Text generation web UI" \
@@ -98,7 +98,7 @@ text_generation() {
             3 "Install llama.cpp" \
             2>&1 > /dev/tty)
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -133,13 +133,13 @@ text_generation() {
 text_generation_web_ui() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "Backup" \
             1 "Install" \
             2 "Restore" \
             2>&1 > /dev/tty)
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -168,7 +168,7 @@ text_generation_web_ui() {
 }
 
 text_generation_web_ui_backup() {
-    set +e
+    
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
         0 "Backup models" ON \
         1 "Backup characters" ON \
@@ -176,7 +176,7 @@ text_generation_web_ui_backup() {
         3 "Backup instruction-templates" ON 3>&1 1>&2 2>&3)
 
     status=$?
-    set -e
+    
 
     if [ $status -ne 0 ]; then
         return 0
@@ -264,7 +264,7 @@ text_generation_web_ui_backup() {
 }
 
 text_generation_web_ui_restore() {
-    set +e
+    
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
         0 "Restore models" ON \
         1 "Restore characters" ON \
@@ -272,7 +272,7 @@ text_generation_web_ui_restore() {
         3 "Restore instruction-templates" ON 3>&1 1>&2 2>&3)
 
     status=$?
-    set -e
+    
 
     if [ $status -ne 0 ]; then
         return 0
@@ -363,14 +363,14 @@ text_generation_web_ui_restore() {
 sillytavern() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "SillyTavern" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
             0 "Backup" \
             1 "Install" \
             2 "Restore" \
             2>&1 > /dev/tty)
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -457,7 +457,7 @@ backup_and_restore_file() {
 
 # Backup SillyTavern
 sillytavern_backup() {
-    set +e
+    
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
         0 "Backup config.yaml" ON \
         1 "Backup settings.json" ON \
@@ -475,7 +475,7 @@ sillytavern_backup() {
         13 "Backup sysprompt" ON 3>&1 1>&2 2>&3)
 
     status=$?
-    set -e
+    
 
     if [ $status -ne 0 ]; then
         return 0
@@ -634,7 +634,7 @@ sillytavern_backup() {
 
 # Restore SillyTavern
 sillytavern_restore() {
-    set +e
+    
     CHOICES=$(whiptail --checklist "Addons:" 20 50 14 --cancel-button "Back" \
         0 "Restore config.yaml" ON \
         1 "Restore settings.json" ON \
@@ -652,7 +652,7 @@ sillytavern_restore() {
         13 "Restore sysprompt" ON 3>&1 1>&2 2>&3)
 
     status=$?
-    set -e
+    
 
     if [ $status -ne 0 ]; then
         return 0
@@ -812,13 +812,13 @@ sillytavern_restore() {
 image_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "Install ComfyUI" \
             1 "Install Artist" \
             2>&1 > /dev/tty)
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -844,7 +844,7 @@ image_generation() {
 }
 
 comfyui_addons(){
-    set +e
+    
     CHOICES=$(whiptail --checklist "Addons:" 17 50 7 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
@@ -855,7 +855,7 @@ comfyui_addons(){
         6 "Flex.1-alpha GGUF" ON 3>&1 1>&2 2>&3)
 
     status=$?
-    set -e
+    
 
     if [ $status -ne 0 ]; then
         return 0
@@ -867,7 +867,7 @@ comfyui_addons(){
 video_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install Cinemo" \
             2>&1 > /dev/tty)
@@ -886,7 +886,7 @@ video_generation() {
                 ;;
         esac
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -897,7 +897,7 @@ video_generation() {
 music_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install ACE-Step" \
             2>&1 > /dev/tty)
@@ -916,7 +916,7 @@ music_generation() {
                 ;;
         esac
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -927,7 +927,7 @@ music_generation() {
 voice_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "Install WhisperSpeech web UI" \
             1 "Install F5-TTS" \
@@ -958,7 +958,7 @@ voice_generation() {
                 ;;
         esac
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -969,7 +969,7 @@ voice_generation() {
 d3_generation() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install TripoSG" \
             2>&1 > /dev/tty)
@@ -988,7 +988,7 @@ d3_generation() {
                 ;;
         esac
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
@@ -999,7 +999,7 @@ d3_generation() {
 tools() {
     second=true
     while $second; do
-        set +e
+        
         choice=$(whiptail --title "Tools" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install Fastfetch" \
             2>&1 > /dev/tty)
@@ -1018,7 +1018,7 @@ tools() {
                 ;;
         esac
         status=$?
-        set -e
+        
 
         if [ $status -ne 0 ]; then
             return 0
