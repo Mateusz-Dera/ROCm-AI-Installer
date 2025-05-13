@@ -190,28 +190,28 @@ text_generation_web_ui_backup() {
         echo $choice
         case $choice in
             '"0"')
-                if backup_and_restore "$installation_path/text-generation-webui/models" "$installation_path/Backups/text-generation-webui/models"; then
+                if backup_and_restore "$installation_path/text-generation-webui/user_data/models" "$installation_path/Backups/text-generation-webui/user_data/models"; then
                     successful_backups+=("models folder")
                 else
                     failed_backups+=("models folder")
                 fi
                 ;;
             '"1"')
-                if backup_and_restore "$installation_path/text-generation-webui/characters" "$installation_path/Backups/text-generation-webui/characters"; then
+                if backup_and_restore "$installation_path/text-generation-webui/user_data/characters" "$installation_path/Backups/text-generation-webui/user_data/characters"; then
                     successful_backups+=("characters folder")
                 else
                     failed_backups+=("characters folder")
                 fi
                 ;;
             '"2"')
-                if backup_and_restore "$installation_path/text-generation-webui/presets" "$installation_path/Backups/text-generation-webui/presets"; then
+                if backup_and_restore "$installation_path/text-generation-webui/user_data/presets" "$installation_path/Backups/text-generation-webui/user_data/presets"; then
                     successful_backups+=("presets folder")
                 else
                     failed_backups+=("presets folder")
                 fi
                 ;;
             '"3"')
-                if backup_and_restore "$installation_path/text-generation-webui/instruction-templates" "$installation_path/Backups/text-generation-webui/instruction-templates"; then
+                if backup_and_restore "$installation_path/text-generation-webui/user_data/instruction-templates" "$installation_path/Backups/text-generation-webui/user_data/instruction-templates"; then
                     successful_backups+=("instruction-templates folder")
                 else
                     failed_backups+=("instruction-templates folder")
@@ -286,28 +286,28 @@ text_generation_web_ui_restore() {
         echo $choice
         case $choice in
             '"0"')
-                if backup_and_restore "$installation_path/Backups/text-generation-webui/models" "$installation_path/text-generation-webui/models"; then
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/user_data/models" "$installation_path/text-generation-webui/user_data/models"; then
                     successful_restores+=("models folder")
                 else
                     failed_restores+=("models folder")
                 fi
                 ;;
             '"1"')
-                if backup_and_restore "$installation_path/Backups/text-generation-webui/characters" "$installation_path/text-generation-webui/characters"; then
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/user_data/characters" "$installation_path/text-generation-webui/user_data/characters"; then
                     successful_restores+=("characters folder")
                 else
                     failed_restores+=("characters folder")
                 fi
                 ;;
             '"2"')
-                if backup_and_restore "$installation_path/Backups/text-generation-webui/presets" "$installation_path/text-generation-webui/presets"; then
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/user_data/presets" "$installation_path/text-generation-webui/user_data/presets"; then
                     successful_restores+=("presets folder")
                 else
                     failed_restores+=("presets folder")
                 fi
                 ;;
             '"3"')
-                if backup_and_restore "$installation_path/Backups/text-generation-webui/instruction-templates" "$installation_path/text-generation-webui/instruction-templates"; then
+                if backup_and_restore "$installation_path/Backups/text-generation-webui/user_data/instruction-templates" "$installation_path/text-generation-webui/user_data/instruction-templates"; then
                     successful_restores+=("instruction-templates folder")
                 else
                     failed_restores+=("instruction-templates folder")
