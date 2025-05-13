@@ -38,7 +38,7 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" "export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"\n python server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" 'export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE" && python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # Additional requirements
     pip install git+https://github.com/ROCm/bitsandbytes.git@35266ead8b7669c55db26505115de941eed178de --extra-index-url https://download.pytorch.org/whl/rocm6.3
