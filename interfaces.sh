@@ -228,6 +228,29 @@ install_dia(){
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
+# Orpheus-TTS
+install_orpheus_tts(){
+    install "https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS" "e45257580188c1f3232781a9ec98089303c2be22" 'export HIP_VISIBLE_DEVICES=0 && export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE" && python3 app.py'
+
+    install_flash_attention
+
+    cp -r /opt/rocm/share/amd_smi ./
+    cd ./amd_smi
+    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
+
+    git clone https://github.com/vllm-project/vllm.git
+    cd ./vllm
+    git checkout ed6e9075d31e32c8548b480a47d1ffb77da1f54c
+    export PYTORCH_ROCM_ARCH="gfx1100"
+    export VLLM_TARGET_DEVICE="rocm"
+    pip install  --no-build-isolation --verbose .
+
+    pip install orpheus-speech==0.1.0 --no-deps
+
+    cd $installation_path/Orpheus-TTS
+    sed -i 's/demo.queue().launch(share=False, ssr_mode=False)/demo.queue().launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
+}
+
 # TripoSG
 install_triposg(){
     install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
