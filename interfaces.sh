@@ -243,6 +243,7 @@ install_orpheus_tts(){
     git checkout ed6e9075d31e32c8548b480a47d1ffb77da1f54c
     export PYTORCH_ROCM_ARCH="gfx1100"
     export VLLM_TARGET_DEVICE="rocm"
+    export VLLM_USE_TRITON_FLASH_ATTN=0
     pip install  --no-build-isolation --verbose .
 
     pip install orpheus-speech==0.1.0 --no-deps
