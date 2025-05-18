@@ -666,14 +666,14 @@ sillytavern_restore() {
         echo $choice
         case $choice in
             '"0"')
-                if backup_and_restore_file "$installation_path/Backups/SillyTavern" "$installation_path/SillyTavern config.yaml"; then
+                if backup_and_restore_file "$installation_path/Backups/SillyTavern" "$installation_path/SillyTavern" "config.yaml"; then
                     successful_backups+=("config.yaml")
                 else
                     failed_backups+=("config.yaml")
                 fi
                 ;;
             '"1"')
-                if backup_and_restore_file "$installation_path/Backups/SillyTavern/data/default-user" "$installation_path/SillyTavern/data/default-user settings.json"; then
+                if backup_and_restore_file "$installation_path/Backups/SillyTavern/data/default-user" "$installation_path/SillyTavern/data/default-user" "settings.json"; then
                     successful_backups+=("settings.json")
                 else
                     failed_backups+=("settings.json")
