@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/7.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/7.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
@@ -12,10 +12,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ### Test platform:
 |Name|Info|
 |:---|:---|
-|CPU|AMD Ryzen 9950X3D|
+|CPU|AMD Ryzen 9950X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (3.20)|
+|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.20)|
 |OS|Ubuntu 24.04.2 LTS|
 |Kernel|6.11.0-25-generic|
 |ROCm|6.4|
@@ -55,7 +55,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Video generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
+|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|1. Interface PyTorch uses PyTorch 2.4.0|
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -70,6 +70,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
 |Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|1. If GPU is not detected change HIP_VISIBLE_DEVICES value.|
+|IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|1. PyTorch 2.7.0 slowed down performance, so the interface uses version 2.4.0|
 
 ###  3D generation
 |Name|Links|Additional information|

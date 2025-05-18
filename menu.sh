@@ -928,12 +928,13 @@ voice_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             0 "Install WhisperSpeech web UI" \
             1 "Install F5-TTS" \
             2 "Install Matcha-TTS" \
             3 "Install Dia" \
             4 "Install Orpheus-TTS" \
+            5 "Install IMS-Toucan" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -951,6 +952,9 @@ voice_generation() {
                 ;;
             "4")
                 install_orpheus_tts
+                ;;
+            "5")
+                install_ims_toucan
                 ;;
             "")
                 echo "Previous menu..."

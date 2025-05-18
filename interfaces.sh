@@ -252,6 +252,14 @@ install_orpheus_tts(){
     sed -i 's/demo.queue().launch(share=False, ssr_mode=False)/demo.queue().launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
 }
 
+# IMS-Toucan
+install_ims_toucan(){
+    install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "bbda44ed1314eedba2d739b69660cb93b14eebd3" "python3 run_simple_GUI_demo.py"
+    # self.iface.launch()
+    sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
+}
+
+
 # TripoSG
 install_triposg(){
     install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
