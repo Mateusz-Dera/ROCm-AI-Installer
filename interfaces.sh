@@ -487,15 +487,7 @@ EOF
 
     sudo chmod +x /usr/bin/dynamic-fastfetch
 
-    if ! grep -Fxq "$fastfetch_LINE" "$CONFIG_FILE"; then
-        sed -i '/echo && fastfetch && echo/d' "$CONFIG_FILE"
-        echo -e "\n# Dynamic fastfetch that refreshes GPU VRAM info" >> "$CONFIG_FILE"
-        echo "$fastfetch_LINE" >> "$CONFIG_FILE"
-        echo "echo && dynamic-fastfetch" >> "$CONFIG_FILE"
-        echo "Dynamic fastfetch configured in $CONFIG_FILE"
-    else
-        echo "Dynamic fastfetch already configured in $CONFIG_FILE"
-    fi
+    echo "dynamic-fastfetch" >> "$CONFIG_FILE"
 
     if [ -d "$HOME/.config/fastfetch" ]; then
         echo "Fastfetch config already exists"
@@ -709,6 +701,4 @@ echo "$modules"
 EOF
 
     sudo chmod +x /usr/bin/dynamic-gpu-vram
-
-    echo "Konfiguracja dynamicznego fastfetch zakończona. Uruchom ponownie terminal lub użyj komendy 'source $CONFIG_FILE' aby zastosować zmiany."
 }
