@@ -433,7 +433,8 @@ install_fastfetch(){
         fi
     }
 
-    fastfetch_LINE="echo && fastfetch && echo"
+    # Zmieniam wywołanie fastfetch na skrypt-wrapper
+    fastfetch_LINE="alias fastfetch='dynamic-fastfetch'"
     CONFIG_FILE=$(detect_shell_config)
 
     if [ -z "$CONFIG_FILE" ]; then
@@ -446,11 +447,56 @@ install_fastfetch(){
         touch "$CONFIG_FILE"
     fi
 
+    # Dodaję skrypt dynamic-fastfetch
+    if [ -f "/usr/bin/dynamic-fastfetch" ]; then
+        sudo rm "/usr/bin/dynamic-fastfetch"
+    fi
+
+    sudo tee "/usr/bin/dynamic-fastfetch" << 'EOF'
+#!/bin/bash
+# Dynamic fastfetch wrapper that ensures VRAM information is always up-to-date
+
+# Generate temporary config file with current GPU VRAM info
+TMP_CONFIG="$HOME/.config/fastfetch/tmp_config.jsonc"
+BASE_CONFIG="$HOME/.config/fastfetch/base_config.jsonc"
+
+# Copy base config to temp
+cp "$BASE_CONFIG" "$TMP_CONFIG"
+
+# Get dynamic GPU modules
+gpu_modules=$(dynamic-gpu-vram)
+
+# Insert GPU modules into temp config
+if [ -n "$gpu_modules" ]; then
+    # Replace placeholder with actual modules
+    sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules,|" "$TMP_CONFIG"
+else
+    # Remove placeholder if no GPU data
+    sed -i "s|__GPU_VRAM_MODULES__||" "$TMP_CONFIG"
+fi
+
+# Run fastfetch with the temporary config
+echo
+/usr/bin/fastfetch --config "$TMP_CONFIG"
+echo
+
+# Clean up temp file
+rm "$TMP_CONFIG"
+EOF
+
+    sudo chmod +x /usr/bin/dynamic-fastfetch
+
+    # Dodaję wywołanie dynamic-fastfetch przy starcie
     if ! grep -Fxq "$fastfetch_LINE" "$CONFIG_FILE"; then
+        # Sprawdzam, czy stare wywołanie istnieje i usuwam je
+        sed -i '/echo && fastfetch && echo/d' "$CONFIG_FILE"
+        # Dodaję nowe wywołanie
+        echo -e "\n# Dynamic fastfetch that refreshes GPU VRAM info" >> "$CONFIG_FILE"
         echo "$fastfetch_LINE" >> "$CONFIG_FILE"
-        echo "Fastfetch line added to $CONFIG_FILE"
+        echo "echo && dynamic-fastfetch" >> "$CONFIG_FILE"
+        echo "Dynamic fastfetch configured in $CONFIG_FILE"
     else
-        echo "fastfetch line already exists in $CONFIG_FILE"
+        echo "Dynamic fastfetch already configured in $CONFIG_FILE"
     fi
 
     if [ -d "$HOME/.config/fastfetch" ]; then
@@ -460,12 +506,13 @@ install_fastfetch(){
         echo "Fastfetch config created"
     fi
 
+    # Zmieniam nazwę podstawowego pliku konfiguracyjnego - będzie używany jako szablon
     if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
         rm "$HOME/.config/fastfetch/config.jsonc"
     fi
 
     # Create the base config with placeholders for dynamic GPU VRAM modules
-    tee "$HOME/.config/fastfetch/config.jsonc" << 'EOF'
+    tee "$HOME/.config/fastfetch/base_config.jsonc" << 'EOF'
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
@@ -610,13 +657,27 @@ fi
 modules=""
 i=1
 
+# Count total number of GPUs (lines in output)
+total_gpus=$(echo "$output" | wc -l)
+
 # Process each line of output
 while IFS= read -r line; do
+    # Escape any quotes in the line
+    escaped_line=$(echo "$line" | sed 's/"/\\"/g')
+    
     # Create a JSON module for this GPU
     if [ -n "$modules" ]; then
         modules="${modules},"
+        # Jeśli to kolejna karta, numeruj je
+        modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"GPU ${i} VRAM\"}"
+    else
+        # Dla pierwszej karty, jeśli jest tylko jedna, nazwij ją po prostu VRAM
+        if [ "$total_gpus" -eq 1 ]; then
+            modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"VRAM\"}"
+        else
+            modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"GPU ${i} VRAM\"}"
+        fi
     fi
-    modules="${modules}{\"type\": \"command\", \"text\": \"echo '$line'\", \"key\": \"GPU ${i} VRAM\"}"
     ((i++))
 done <<< "$output"
 
@@ -626,16 +687,5 @@ EOF
 
     sudo chmod +x /usr/bin/dynamic-gpu-vram
 
-    # Now, update the config.jsonc with the dynamic GPU VRAM modules
-    # First, get the dynamic modules
-    gpu_modules=$(dynamic-gpu-vram)
-    
-    # Replace the placeholder with the actual modules or empty if no GPUs found
-    if [ -n "$gpu_modules" ]; then
-        sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules,|" "$HOME/.config/fastfetch/config.jsonc"
-    else
-        sed -i "s|__GPU_VRAM_MODULES__||" "$HOME/.config/fastfetch/config.jsonc"
-    fi
-
-    echo "New Fastfetch config created with dynamic GPU VRAM modules"
+    echo "Konfiguracja dynamicznego fastfetch zakończona. Uruchom ponownie terminal lub użyj komendy 'source $CONFIG_FILE' aby zastosować zmiany."
 }

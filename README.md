@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/7.2.1-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/7.2.2-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
@@ -23,15 +23,15 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Text generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|1. Support GGML and GGUF models.|
-|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.|
+|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
+|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
 ###  Image generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|ComfyUI|https://github.com/comfyanonymous/ComfyUI|1. Workflows templates are in the workflows folder.|
+|ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
 |Artist|https://github.com/songrise/Artist/||
 
 #### ComfyUI Addons
@@ -55,7 +55,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Video generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|1. Interface PyTorch uses PyTorch 2.4.0|
+|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|Interface PyTorch uses PyTorch 2.4.0|
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -66,21 +66,21 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Links|Additional information|
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
-|F5-TTS|https://github.com/SWivid/F5-TTS|1. Remember to select the voice file when using the interface.|
+|F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
-|Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|1. Script uses the optional-rocm-cuda fork by tralamazza.|
-|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|1. If GPU is not detected change HIP_VISIBLE_DEVICES value.|
-|IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|1. PyTorch 2.7.0 slowed down performance, so the interface uses version 2.4.0|
+|Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
+|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.|
+|IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|PyTorch 2.7.0 slowed down performance, so the interface uses version 2.4.0|
 
 ###  3D generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|TripoSG|https://github.com/VAST-AI-Research/TripoSG|1. Added custom simple UI.<br> 2. Sometimes there are probelms with the preview, but the model should still be available for download.|
+|TripoSG|https://github.com/VAST-AI-Research/TripoSG|Added custom simple UI.<br> Sometimes there are probelms with the preview, but the model should still be available for download.|
 
 ###  Tools
 |Name|Links|Additional information|
 |:---|:---|:---|
-|Fastfetch|https://github.com/fastfetch-cli/fastfetch|1. Custom Fastfetch configuration with GPU memory info.<br> 2. Script supports not only AMD but also NVIDIA graphics cards (nvidia-smi needed).<br> 3. If you change the number or order of graphics cards you must run the installer again.|
+|Fastfetch|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.<br> Script supports not only AMD but also NVIDIA graphics cards (nvidia-smi needed).<br> If you change the number or order of graphics cards you must run the installer again.|
 
 ## Instalation:
 > [!Note]
