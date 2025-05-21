@@ -417,12 +417,15 @@ install_fastfetch(){
             case "$SHELL" in
                 */zsh)
                     echo "$HOME/.zshrc"
+                    sed '/fastfetch/d' "$HOME/.zshrc" > "$HOME/.zshrc.tmp" && mv "$HOME/.zshrc.tmp" "$HOME/.zshrc"
                     ;;
                 */bash)
                     echo "$HOME/.bashrc"
+                    sed '/fastfetch/d' "$HOME/.bashrc" > "$HOME/.bashrc.tmp" && mv "$HOME/.bashrc.tmp" "$HOME/.bashrc"
                     ;;
                 */fish)
                     echo "$HOME/.config/fish/config.fish"
+                    sed '/fastfetch/d' "$HOME/.config/fish/config.fish" > "$HOME/.config/fish/config.fish.tmp" && mv "$HOME/.config/fish/config.fish.tmp" "$HOME/.config/fish/config.fish"
                     ;;
                 *)
                     echo ""
@@ -433,7 +436,6 @@ install_fastfetch(){
         fi
     }
 
-    # Zmieniam wywołanie fastfetch na skrypt-wrapper
     fastfetch_LINE="alias fastfetch='dynamic-fastfetch'"
     CONFIG_FILE=$(detect_shell_config)
 
@@ -447,7 +449,6 @@ install_fastfetch(){
         touch "$CONFIG_FILE"
     fi
 
-    # Dodaję skrypt dynamic-fastfetch
     if [ -f "/usr/bin/dynamic-fastfetch" ]; then
         sudo rm "/usr/bin/dynamic-fastfetch"
     fi
@@ -486,11 +487,8 @@ EOF
 
     sudo chmod +x /usr/bin/dynamic-fastfetch
 
-    # Dodaję wywołanie dynamic-fastfetch przy starcie
     if ! grep -Fxq "$fastfetch_LINE" "$CONFIG_FILE"; then
-        # Sprawdzam, czy stare wywołanie istnieje i usuwam je
         sed -i '/echo && fastfetch && echo/d' "$CONFIG_FILE"
-        # Dodaję nowe wywołanie
         echo -e "\n# Dynamic fastfetch that refreshes GPU VRAM info" >> "$CONFIG_FILE"
         echo "$fastfetch_LINE" >> "$CONFIG_FILE"
         echo "echo && dynamic-fastfetch" >> "$CONFIG_FILE"
@@ -506,7 +504,6 @@ EOF
         echo "Fastfetch config created"
     fi
 
-    # Zmieniam nazwę podstawowego pliku konfiguracyjnego - będzie używany jako szablon
     if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
         rm "$HOME/.config/fastfetch/config.jsonc"
     fi
