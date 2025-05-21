@@ -518,7 +518,7 @@ EOF
   "logo": {
     "type": "none",
     "padding": {
-    "top": 2
+    "top": 0
     },
   },
   "modules": [
@@ -552,6 +552,7 @@ EOF
       "format": "{used} / {total}"
     },
     "gpu",
+    "break",
     __GPU_VRAM_MODULES__
   ]
 }
@@ -563,6 +564,11 @@ EOF
 
     sudo tee "/usr/bin/get-gpu-vram" << 'EOF'
 #!/bin/bash
+
+# Function to get AMD GPU names and count
+get_amd_gpus() {
+    lspci -nn | grep -i "VGA" | grep -i "AMD" | sed 's/.*\[AMD\/ATI\] //; s/ \[.*\]//'
+}
 
 # Function to count AMD GPUs
 count_amd_gpus() {
@@ -594,7 +600,20 @@ fi
 amd_count=$(count_amd_gpus)
 nvidia_count=$(count_nvidia_gpus)
 
-# echo "Found $amd_count AMD GPU(s) and $nvidia_count NVIDIA GPU(s)"
+# Get GPU names
+amd_names=()
+if [ "$amd_count" -gt 0 ]; then
+    while IFS= read -r line; do
+        amd_names+=("$line")
+    done < <(get_amd_gpus)
+fi
+
+nvidia_names=()
+if [ "$nvidia_count" -gt 0 ] && $has_nvidia_smi; then
+    while IFS= read -r line; do
+        nvidia_names+=("$line")
+    done < <(nvidia-smi --query-gpu=name --format=csv,noheader)
+fi
 
 # Check if any GPUs are found
 if [ "$amd_count" -le 0 ] && [ "$nvidia_count" -le 0 ]; then
@@ -604,33 +623,48 @@ fi
 # Process AMD GPUs if found
 if [ "$amd_count" -gt 0 ]; then
     if $has_rocm_smi; then
-        # echo "=== AMD GPU Memory Usage ==="
         # Loop through each AMD GPU index
         for ((gpu=0; gpu<amd_count; gpu++)); do
             used_mem_bytes=$(rocm-smi --showmeminfo vram -d $gpu | grep 'Used Memory' | awk '{print $NF}')
             total_mem_bytes=$(rocm-smi --showmeminfo vram -d $gpu | grep 'Total Memory' | awk '{print $NF}')
             used_mem_mb=$(echo "$used_mem_bytes / 1048576" | bc)
             total_mem_mb=$(echo "$total_mem_bytes / 1048576" | bc)
-            echo "$used_mem_mb/$total_mem_mb MB"
+            
+            # Output format: GPU_NAME||VRAM_INFO
+            gpu_name=$(rocm-smi --showproductname -d 0 | grep 'Card Series' | awk -F: '{print $NF}' | xargs)
+            echo "$gpu_name||$used_mem_mb/$total_mem_mb MB"
         done
     else
-        echo "rocm-smi not found. Skipping AMD GPU memory info."
+        # If no rocm-smi, just output the names
+        for ((gpu=0; gpu<amd_count; gpu++)); do
+            gpu_name="${amd_names[$gpu]:-AMD GPU $gpu}"
+            echo "$gpu_name||Memory info unavailable"
+        done
     fi
 fi
 
 # Process NVIDIA GPUs if found
 if [ "$nvidia_count" -gt 0 ]; then
     if $has_nvidia_smi; then
-        # echo "=== NVIDIA GPU Memory Usage ==="
         # Get memory usage for all NVIDIA GPUs
+        nvidia_index=0
         nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv,noheader,nounits | while read -r line; do
             index=$(echo "$line" | awk -F ', ' '{print $1}')
             used=$(echo "$line" | awk -F ', ' '{print $2}')
             total=$(echo "$line" | awk -F ', ' '{print $3}')
-            echo "$used/$total MB"
+            
+            # Output format: GPU_NAME||VRAM_INFO
+            gpu_name="${nvidia_names[$nvidia_index]:-NVIDIA GPU $index}"
+            echo "$gpu_name||$used/$total MB"
+            
+            nvidia_index=$((nvidia_index + 1))
         done
     else
-        echo "nvidia-smi not found. Skipping NVIDIA GPU memory info."
+        # If no nvidia-smi, just output the model names if available
+        for ((gpu=0; gpu<nvidia_count; gpu++)); do
+            gpu_name="${nvidia_names[$gpu]:-NVIDIA GPU $gpu}"
+            echo "$gpu_name||Memory info unavailable"
+        done
     fi
 fi
 EOF
@@ -655,30 +689,22 @@ fi
 
 # Initialize JSON modules array
 modules=""
-i=1
-
-# Count total number of GPUs (lines in output)
-total_gpus=$(echo "$output" | wc -l)
 
 # Process each line of output
 while IFS= read -r line; do
+    # Split by the || delimiter to get name and info
+    gpu_name=$(echo "$line" | cut -d'|' -f1)
+    vram_info=$(echo "$line" | cut -d'|' -f3-)  # Allows for cases where || might appear in the vram_info
+    
     # Escape any quotes in the line
-    escaped_line=$(echo "$line" | sed 's/"/\\"/g')
+    escaped_vram_info=$(echo "$vram_info" | sed 's/"/\\"/g')
+    escaped_gpu_name=$(echo "$gpu_name" | sed 's/"/\\"/g')
     
     # Create a JSON module for this GPU
     if [ -n "$modules" ]; then
         modules="${modules},"
-        # Jeśli to kolejna karta, numeruj je
-        modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"GPU ${i} VRAM\"}"
-    else
-        # Dla pierwszej karty, jeśli jest tylko jedna, nazwij ją po prostu VRAM
-        if [ "$total_gpus" -eq 1 ]; then
-            modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"VRAM\"}"
-        else
-            modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_line'\", \"key\": \"GPU ${i} VRAM\"}"
-        fi
     fi
-    ((i++))
+    modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_vram_info'\", \"key\": \"$escaped_gpu_name\"}"
 done <<< "$output"
 
 # Output the JSON
