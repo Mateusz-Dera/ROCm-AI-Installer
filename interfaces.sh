@@ -162,6 +162,52 @@ install_comfyui() {
                 # AnimePro FLUX
                 huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
+            '"7"')
+                # ComfyUI IPAdapter plus
+                cd $installation_path/ComfyUI/custom_nodes
+                git clone https://github.com/cubiq/ComfyUI_IPAdapter_plus
+                git checkout a0f451a5113cf9becb0847b92884cb10cbdec0ef
+
+                # clip_vision
+                cd $installation_path/ComfyUI/models/clip_vision
+                huggingface-cli download h94/IP-Adapter sdxl_models/image_encoder/model.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/clip_vision
+                mv ./model.safetensors ./CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors
+
+                huggingface-cli download h94/IP-Adapter sdxl_models/image_encoder/model.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/clip_vision
+                mv ./model.safetensors ./CLIP-ViT-bigG-14-laion2B-39B-b160k.safetensors
+
+                huggingface-cli download Kwai-Kolors/Kolors-IP-Adapter-Plus image_encoder/pytorch_model.bin --revision 4bfeac623f33f572ea22b903d4c7944dc0788f5c --local-dir $installation_path/ComfyUI/models/clip_vision
+                mv ./pytorch_model.bin ./clip-vit-large-patch14-336.bin
+
+                # ipadapter
+                cd $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter_sd15.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter_sd15_light_v11.bin --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter-plus_sd15.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter-plus-face_sd15.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter-full-face_sd15.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter_sd15_vit-G.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter_sdxl_vit-h.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter-plus_sdxl_vit-h.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter-plus-face_sdxl_vit-h.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter models/ip-adapter_sdxl.safetensors --revision 018e402774aeeddd60609b4ecdb7e298259dc729 --local-dir $installation_path/ComfyUI/models/ipadapter
+
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid_sd15.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-plusv2_sd15.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-portrait-v11_sd15.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid_sdxl.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-plusv2_sdxl.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-portrait_sdxl.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-portrait_sdxl_unnorm.bin --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/ipadapter
+
+                # loras
+                cd $installation_path/ComfyUI/models/loras
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid_sd15_lora.safetensors --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/loras
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-plusv2_sd15_lora.safetensors --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/loras
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid_sdxl_lora.safetensors --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/loras
+                huggingface-cli download h94/IP-Adapter-FaceID ip-adapter-faceid-plusv2_sdxl_lora.safetensors --revision 43907e6f44d079bf1a9102d9a6e56aef7a219bae --local-dir $installation_path/ComfyUI/models/loras
+
+                ;;
             "")
                 break
                 ;;
