@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.4"
+version="8.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -73,6 +73,7 @@ set_installation_path() {
 # Remove old
 remove_old() {
     sudo apt purge -y rocm*
+    sudo apt purge -y amdgpu*
     sudo apt purge -y hip*
     # sudo apt purge -y nvidia*
 
@@ -117,7 +118,7 @@ repo(){
     echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.4.1/ubuntu noble main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
     sudo apt update -y
-    sudo apt install -y amdgpu-dkms
+    # sudo apt install -y amdgpu-dkms
 
     # ROCm
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.1 noble main" \
@@ -164,7 +165,7 @@ EOF
     sudo apt install -y libstdc++-12-dev
     sudo apt install -y libtcmalloc-minimal4
     sudo apt install -y git git-lfs
-    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
+    sudo apt install -y python3.13 python3.13-venv python3.13-dev python3.13-tk
     sudo apt install -y libgl1
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
@@ -185,7 +186,7 @@ install() {
     local git_repo=$1
     local git_commit=$2
     local start_command=$3
-    local python_version=${4:-python3.12}
+    local python_version=${4:-python3.13}
 
     # Check if git repo and commit are provided
     if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then

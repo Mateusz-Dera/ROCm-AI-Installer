@@ -4,10 +4,10 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/7.4-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/8.0-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 25.04 LTS is recommended. Version 7.4 is not tested on older systems.
+> Ubuntu 25.04 LTS is recommended. Version 8.x is not tested on older systems.
 
 ### Test platform:
 |Name|Info|
@@ -104,6 +104,9 @@ sudo apt install mainline
 
 > [!Important]
 > This script does not download any models. If the interface does not have defaults, download your own.
+
+> [!Caution]
+> Make sure the installation directory exists!
 
 > [!Caution]
 > If you update, back up your settings and models. Reinstallation deletes the previous directories.
