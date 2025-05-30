@@ -702,3 +702,19 @@ EOF
 
     sudo chmod +x /usr/bin/dynamic-gpu-vram
 }
+
+install_openrgb() {
+    flatpak install flathub org.openrgb.OpenRGB
+    cd /tmp
+    if [ -f "openrgb-udev-install.sh" ]; then
+        rm openrgb-udev-install.sh
+    fi
+    cd /etc/udev/rules.d
+    if [ -f "60-openrgb.rules" ]; then
+        sudo rm 60-openrgb.rules
+    fi
+    sudo wget https://openrgb.org/releases/release_0.9/60-openrgb.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    sudo flatpak override --device=all org.openrgb.OpenRGB
+}

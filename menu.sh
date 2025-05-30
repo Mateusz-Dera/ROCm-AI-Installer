@@ -1008,13 +1008,17 @@ tools() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Tools" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+        choice=$(whiptail --title "Tools" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "Install Fastfetch" \
+            1 "Install OpenRGB" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
                 install_fastfetch
+                ;;
+            "1")
+                install_openrgb
                 ;;
             "")
                 echo "Previous menu..."
