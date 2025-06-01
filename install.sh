@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.3"
+version="7.4"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -171,6 +171,7 @@ EOF
     sudo apt install -y python3-openssl
     sudo apt install -y espeak-ng
     sudo apt install -y libomp-dev
+    sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
     sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
 
     sudo snap install node --classic

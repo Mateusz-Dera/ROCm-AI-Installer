@@ -259,6 +259,11 @@ install_ims_toucan(){
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
+# Chatterbox
+install_chatterbox(){
+    install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "bf4bbc30226326884e0d57b1e45ec0550683300f" "python app.py"
+        sed -i 's/demo.launch()/demo.launch(server_name="0.0.0.0")/' "app.py"
+}
 
 # TripoSG
 install_triposg(){
@@ -620,7 +625,8 @@ if [ "$amd_count" -gt 0 ]; then
             total_mem_mb=$(echo "$total_mem_bytes / 1048576" | bc)
             
             # Output format: GPU_NAME||VRAM_INFO
-            gpu_name=$(rocm-smi --showproductname -d 0 | grep 'Card Series' | awk -F: '{print $NF}' | xargs)
+            # FIX: Use $gpu instead of 0 to get the correct GPU name
+            gpu_name=$(rocm-smi --showproductname -d $gpu | grep 'Card Series' | awk -F: '{print $NF}' | xargs)
             echo "$gpu_name||$used_mem_mb/$total_mem_mb MB"
         done
     else
