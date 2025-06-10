@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.4.1"
+version="7.5"
 
 # Default installation path
 default_installation_path="$HOME/AI"

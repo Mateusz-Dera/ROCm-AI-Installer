@@ -32,7 +32,7 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "ae89be8ce4d0c0139fd8345a41bc83696537a786" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "ca1805a3671f40e0e0e43f680cf4fa501f5f6eaa" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
@@ -57,7 +57,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 2c7f2e2014aa54f1cd1272bc48f6bf1156e4ce1b
+    git checkout f12c523fcd66caa6f632c5e5a04b94a8a7f05407
 
     mv ./start.sh ./run.sh
 
@@ -77,7 +77,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 2f54e348ad2999c4e31b8777592247622b20420f
+    git checkout 2bb0467043258bdc58dbaefb33786f1731b38937
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
