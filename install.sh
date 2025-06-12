@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.5"
+version="8.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -98,6 +98,142 @@ remove_old() {
 
     sudo apt autoremove -y
 }
+
+# MAGMA
+magma(){
+    set -eou pipefail
+
+    # Use CUDA 11.8 as default if no parameter provided
+    cuda_version=${1:-"11.8"}
+    cuda_version_nodot=${cuda_version/./}
+
+    # Check if we're in a virtual environment
+    if [[ -z "${VIRTUAL_ENV:-}" ]]; then
+        echo "Error: No virtual environment detected. Please activate your venv first."
+        echo "Run: source /path/to/your/venv/bin/activate"
+        exit 1
+    fi
+
+    # Use VIRTUAL_ENV as the base directory for installation
+    venv_dir="${VIRTUAL_ENV}"
+    MAGMA_VERSION="2.6.1"
+    magma_archive="magma-cuda${cuda_version_nodot}-${MAGMA_VERSION}-1.tar.bz2"
+
+    echo "Installing MAGMA (CUDA ${cuda_version}) to virtual environment: ${venv_dir}"
+
+    (
+        set -x
+        tmp_dir=$(mktemp -d)
+        pushd ${tmp_dir}
+        curl -OLs https://ossci-linux.s3.us-east-1.amazonaws.com/${magma_archive}
+        tar -xvf "${magma_archive}"
+        
+        # Create directories if they don't exist
+        mkdir -p "${venv_dir}/include"
+        mkdir -p "${venv_dir}/lib"
+        
+        # Move files to virtual environment
+        mv include/* "${venv_dir}/include/"
+        mv lib/* "${venv_dir}/lib/"
+        popd
+        rm -rf ${tmp_dir}
+    )
+
+    echo "MAGMA installation completed successfully!"
+    echo "Headers installed to: ${venv_dir}/include"
+    echo "Libraries installed to: ${venv_dir}/lib"
+}
+
+# ZLUDA
+install_zluda(){
+   cd $installation_path
+    if [ -d ZLUDA ]; then
+        rm -rf ZLUDA
+    fi
+    git clone https://github.com/lshqqytiger/ZLUDA
+    cd ZLUDA
+
+    git checkout 5e717459179dc272b7d7d23391f0fad66c7459cf
+    git submodule update --init --recursive
+
+    cargo xtask --release
+    
+    uv venv --python 3.10
+    source .venv/bin/activate
+    export CMAKE_PREFIX_PATH="/home/mdera/AI/ZLUDA/.venv"
+    export TORCH_CUDA_ARCH_LIST="6.1+PTX"
+    export CUDAARCHS=61
+    export CMAKE_CUDA_ARCHITECTURES=61
+    export USE_SYSTEM_NCCL=1
+    export USE_NCCL=0
+    export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
+    export DISABLE_ADDMM_CUDA_LT=1
+    export USE_ROCM=OFF
+    export LD_LIBRARY_PATH="/home/mdera/AI/ZLUDA/target/release"
+    # export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    
+    git clone https://github.com/pytorch/pytorch
+    cd pytorch
+    git checkout ee1b6804381c57161c477caa380a840a84167676
+
+    git submodule sync
+    git submodule update --init --recursive
+    uv pip install -U pip
+    uv pip install setuptools wheel
+    uv pip install cmake ninja
+    uv pip install mkl-static mkl-include
+    uv pip install -r requirements.txt
+    magma
+
+    CMAKE_POLICY_VERSION_MINIMUM=3.5 USE_CUDA=1 python3 setup.py develop
+}
+
+# SCALE
+# scale() {
+#     sudo rm -rf /opt/scale
+
+#     cd /tmp
+
+#     if [ -f scale-free-1.3.1-amd64.tar.xz ]; then
+#         rm scale-free-1.3.1-amd64.tar.xz
+#     fi
+#     wget https://pkgs.scale-lang.com/tar/scale-free-1.3.1-amd64.tar.xz
+
+#     if [ -d scale-free-1.3.1-amd64 ]; then
+#         rm -rf scale-free-1.3.1-Linux 
+#     fi
+#     tar -xf scale-free-1.3.1-amd64.tar.xz
+
+#     sudo mv scale-free-1.3.1-Linux  /opt/scale
+
+#     sudo chown -R root:root /opt/scale
+#     sudo find /opt/scale -type d -exec chmod 755 {} \;
+#     sudo find /opt/scale -type f -exec chmod 755 {} \;
+
+#     source /opt/scale/bin/scaleenv $GFX
+#     export SCALE_DIR="/opt/scale"
+#     export LD_LIBRARY_PATH="$SCALE_DIR/lib"
+#     export USE_ROCM=OFF
+#     export CUDAARCHS=61
+#     export CMAKE_CUDA_ARCHITEC
+#     export USE_SYSTEM_NCCL=1
+#     export USE_NCCL=0
+#     export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
+#     export DISABLE_ADDMM_CUDA_LT=1
+
+#     cd $installation_path
+#     git clone --recursive https://github.com/pytorch/pytorch
+#     cd pytorch
+#     git submodule sync
+#     git submodule update --init --recursive
+#     pip install -U pip
+#     pip install setuptools wheel
+#     pip install cmake ninja
+#     pip install -r requirements.txt
+#     export CMAKE_ARGS="-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON"
+#     python3 setup.py develop
+
+# }
 
 # Repositories
 repo(){
