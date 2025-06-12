@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/7.5-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/7.6-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
@@ -15,7 +15,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |CPU|AMD Ryzen 9950X3D (iGPU disabled in BIOS)|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.20)|
+|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.25)|
 |OS|Ubuntu 24.04.2 LTS|
 |Kernel|6.11.0-26-generic|
 |ROCm|6.4.1|
