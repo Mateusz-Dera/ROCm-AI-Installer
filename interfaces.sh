@@ -265,6 +265,12 @@ install_chatterbox(){
         sed -i 's/demo.launch()/demo.launch(server_name="0.0.0.0")/' "app.py"
 }
 
+# HierSpeech++
+install_hierspeech(){
+    install "http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS" "365f5cfe0da9e7b3589ca6650c35d38df6d979f5" "python app.py"
+    sed -i 's/demo_play.launch()/demo_play.launch(server_name="0.0.0.0")/' "app.py"
+}
+
 # TripoSG
 install_triposg(){
     install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
