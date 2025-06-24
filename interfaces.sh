@@ -57,7 +57,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout f12c523fcd66caa6f632c5e5a04b94a8a7f05407
+    git checkout a2efd8792c1cd0791c63bf6fa39ab03dada5d4bd
 
     mv ./start.sh ./run.sh
 
@@ -161,6 +161,31 @@ install_comfyui() {
                 gguf=1
                 # AnimePro FLUX
                 huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
+                ;;
+            '"7"')
+                # Wan 2.1
+                # Create a temporary download directory
+                temp_dir=$(mktemp -d)
+
+                # Download files to temp directory
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/vae/wan_2.1_vae.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+                huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/diffusion_models/wan2.1_i2v_720p_14B_fp8_e4m3fn.safetensors --revision 2e4159342ce420623203f82b52356e6c43da1c62 --local-dir "$temp_dir"
+
+                # Move safetensors files to their correct locations
+                mv "$temp_dir"/split_files/text_encoders/*.safetensors "$installation_path/ComfyUI/models/text_encoders/"
+                mv "$temp_dir"/split_files/vae/*.safetensors "$installation_path/ComfyUI/models/vae/"
+                mv "$temp_dir"/split_files/clip_vision/*.safetensors "$installation_path/ComfyUI/models/clip_vision/"
+                mv "$temp_dir"/split_files/diffusion_models/*.safetensors "$installation_path/ComfyUI/models/diffusion_models/"
+
+                # Clean up temporary directory
+                rm -rf "$temp_dir"
                 ;;
             "")
                 break

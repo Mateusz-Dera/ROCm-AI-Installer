@@ -43,12 +43,11 @@ show_menu() {
     0 "Installation path ($installation_path)" \
     1 "Install ROCm and required packages" \
     2 "Text generation" \
-    3 "Image generation" \
-    4 "Video generation" \
-    5 "Music generation" \
-    6 "Voice generation" \
-    7 "3D models generation" \
-    8 "Tools" \
+    3 "Image & video generation" \
+    4 "Music generation" \
+    5 "Voice generation" \
+    6 "3D models generation" \
+    7 "Tools" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -65,19 +64,16 @@ show_menu() {
         3)
             image_generation
             ;;
-         4)
-            video_generation
-            ;;
-        5)
+        4)
             music_generation
             ;;
-        6)
+        5)
             voice_generation
             ;;
-        7)
+        6)
             d3_generation
             ;;
-        8)
+        7)
             tools
             ;;
         *)
@@ -813,9 +809,10 @@ image_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
-            0 "Install ComfyUI" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+            0 "ComfyUI" \
             1 "Install Artist" \
+            2 "Install Cinemo" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -831,6 +828,9 @@ image_generation() {
             "1")
                 install_artist
                 ;;
+            "2")
+                install_cinemo
+                ;;
             "")
                 echo "Previous menu..."
                 second=false
@@ -845,14 +845,15 @@ image_generation() {
 
 comfyui_addons(){
     
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 7 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 8 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
         2 "ComfyUI-AuraSR" ON \
         3 "AuraFlow-v0.3" ON \
         4 "FLUX.1-schnell GGUF" ON \
         5 "AnimePro FLUX GGUF" ON \
-        6 "Flex.1-alpha GGUF" ON 3>&1 1>&2 2>&3)
+        6 "Flex.1-alpha GGUF" ON \
+        7 "Wan 2.1" ON 3>&1 1>&2 2>&3)
 
     status=$?
     
@@ -862,36 +863,6 @@ comfyui_addons(){
     fi
 
     install_comfyui $CHOICES
-}
-
-video_generation() {
-    second=true
-    while $second; do
-        
-        choice=$(whiptail --title "Video generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
-            0 "Install Cinemo" \
-            2>&1 > /dev/tty)
-
-        case "$choice" in
-            "0")
-                install_cinemo
-                ;;
-            "")
-                echo "Previous menu..."
-                second=false
-                ;;
-            *)
-                echo "Invalid selection."
-                second=false
-                ;;
-        esac
-        status=$?
-        
-
-        if [ $status -ne 0 ]; then
-            return 0
-        fi
-    done
 }
 
 music_generation() {

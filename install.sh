@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.7"
+version="7.8"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -242,6 +242,78 @@ install() {
     # Install requirements
     if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
         pip install -r $REQUIREMENTS_DIR/$repo_name.txt
+    fi
+
+    # Create run.sh
+    tee --append run.sh <<EOF
+#!/bin/bash
+source $installation_path/$repo_name/.venv/bin/activate
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export CUDA_VISIBLE_DEVICES=0
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+export TORCH_BLAS_PREFER_HIPBLASLT=0
+$start_command
+EOF
+    chmod +x run.sh
+}
+
+uv_install(){
+    local git_repo=$1
+    local git_commit=$2
+    local start_command=$3
+    local python_version=${4:-3.12}
+
+    # Check if git repo and commit are provided
+    if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
+        echo "Error: git repo, git commit, and start command must be provided"
+        exit 1
+    fi
+
+    # Get the repository name
+    local repo_name=$(basename "$git_repo" .git)
+
+    # Check if uv version is installed
+    if ! command -v uv &> /dev/null; then
+        echo "Install uv first"
+        exit 1
+    fi
+
+    # Create installation path
+    if [ ! -d "$installation_path" ]; then
+        mkdir -p $installation_path
+    fi
+    
+    cd $installation_path
+    
+    # Clone the repository
+    if [ -d "$repo_name" ]; then
+        rm -rf $repo_name
+    fi
+
+    git clone $git_repo
+
+    cd $repo_name || exit 1
+
+    # Checkout the commit
+    git checkout $git_commit
+
+    # Remove venv if exist
+    if [ -d ".venv" ]; then
+        rm -rf ".venv"
+    fi
+
+    # Create a virtual environment
+    uv venv --python $python_version
+
+    # Activate the virtual environment
+    source .venv/bin/activate
+
+    # Upgrade pip
+    uv pip install --upgrade pip
+
+    # Install requirements
+    if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
+        uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt
     fi
 
     # Create run.sh

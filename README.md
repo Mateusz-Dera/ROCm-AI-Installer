@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/7.7-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/7.8-version-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
@@ -28,11 +28,12 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
-###  Image generation
+###  Image & video generation
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
 |Artist|https://github.com/songrise/Artist/||
+|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|Interface PyTorch uses PyTorch 2.4.0|
 
 #### ComfyUI Addons
 
@@ -51,11 +52,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
-
-###  Video generation
-|Name|Links|Additional information|
-|:---|:---|:---|
-|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|Interface PyTorch uses PyTorch 2.4.0|
+|Wan 2.1|https://github.com/Wan-Video/Wan2.1<br> https://comfyanonymous.github.io/ComfyUI_examples/wan/<br> https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged|Text to video model.<br> Image to video model.|
 
 ###  Music generation
 |Name|Links|Additional information|
