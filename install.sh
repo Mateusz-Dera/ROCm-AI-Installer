@@ -262,6 +262,7 @@ uv_install(){
     local git_commit=$2
     local start_command=$3
     local python_version=${4:-3.12}
+    local pytorch_version=${5:-rocm6.3}
 
     # Check if git repo and commit are provided
     if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
@@ -313,7 +314,7 @@ uv_install(){
 
     # Install requirements
     if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
-        uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt
+        uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$pytorch_version --index-strategy unsafe-best-match
     fi
 
     # Create run.sh

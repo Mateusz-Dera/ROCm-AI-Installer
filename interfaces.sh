@@ -27,7 +27,7 @@ install_flash_attention() {
     cd flash-attention
     git checkout fd2fc9d85c8e54e5c20436465bca709bc1a6c5a1
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    python setup.py install
+    python3 setup.py install
 }
 
 # KoboldCPP
@@ -222,8 +222,7 @@ install_ace_step() {
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "d4628117816293d8a068cb1dd653359540f0aa15" "python3 webui.py --listen"
-    pip install -r requirements_rocm_6.3.txt
+    uv_install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "dcccc05b91209085f04265aa2120691161c16da6" "uv run --extra rocm webui.py --listen"
 }
 
 # F5-TTS

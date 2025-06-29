@@ -1,2 +1,3 @@
 Updated SillyTavern
-ComfyUI Wan 2.1
+Updated WhisperSpeech web UI
+Added Wan 2.1 to COmfyUI
