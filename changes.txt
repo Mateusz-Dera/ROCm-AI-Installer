@@ -1,3 +1,0 @@
-Updated SillyTavern
-Updated WhisperSpeech web UI
-Added Wan 2.1 to COmfyUI
