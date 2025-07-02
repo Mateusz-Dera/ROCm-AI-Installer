@@ -809,10 +809,11 @@ image_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "ComfyUI" \
             1 "Install Artist" \
             2 "Install Cinemo" \
+            3 "Install Ovis-U1-3B" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -830,6 +831,9 @@ image_generation() {
                 ;;
             "2")
                 install_cinemo
+                ;;
+            "3")
+                install_ovis
                 ;;
             "")
                 echo "Previous menu..."

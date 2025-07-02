@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.8"
+version="7.9"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -164,7 +164,7 @@ EOF
     sudo apt install -y libstdc++-12-dev
     sudo apt install -y libtcmalloc-minimal4
     sudo apt install -y git git-lfs
-    sudo apt install -y python3.12 python3.12-venv python3.12-dev python3.12-tk
+    sudo apt install -y python3.12 python3.12-full python3.12-dev python3.12-venv python3.12-dev python3.12-tk
     sudo apt install -y libgl1
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
@@ -252,6 +252,8 @@ export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
+export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
+#export HIP_VISIBLE_DEVICES=0
 $start_command
 EOF
     chmod +x run.sh
@@ -325,6 +327,8 @@ export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
+export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
+#export HIP_VISIBLE_DEVICES=0
 $start_command
 EOF
     chmod +x run.sh

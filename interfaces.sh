@@ -25,7 +25,8 @@
 install_flash_attention() {
     git clone https://github.com/Dao-AILab/flash-attention
     cd flash-attention
-    git checkout fd2fc9d85c8e54e5c20436465bca709bc1a6c5a1
+    git checkout 7661781d001e0900121c000a0aaf21b3f94337d6
+    export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
     python3 setup.py install
 }
@@ -38,7 +39,7 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" 'export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE" && python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" 'python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # Additional requirements
     pip install git+https://github.com/ROCm/bitsandbytes.git@35266ead8b7669c55db26505115de941eed178de --extra-index-url https://download.pytorch.org/whl/rocm6.3
@@ -105,6 +106,14 @@ install_artist() {
 install_cinemo() {
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
+}
+
+# Ovis-U1
+install_ovis() {
+    install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cf4c13a1689d15c28dba4b8e1a5e7e739045dae5" "python3 app.py"
+    sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
+    sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
+    install_flash_attention
 }
 
 # ComfyUI
@@ -254,7 +263,7 @@ install_dia(){
 
 # Orpheus-TTS
 install_orpheus_tts(){
-    install "https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS" "e45257580188c1f3232781a9ec98089303c2be22" 'export HIP_VISIBLE_DEVICES=0 && export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE" && python3 app.py'
+    install "https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS" "e45257580188c1f3232781a9ec98089303c2be22" "python3 app.py"
 
     install_flash_attention
 
