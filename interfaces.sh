@@ -307,6 +307,7 @@ install_hierspeech(){
 # TripoSG
 install_triposg(){
     install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
+    pip install torch_cluster==1.6.3 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.3
     tee --append app.py << EOF
 import gradio as gr
 import subprocess
