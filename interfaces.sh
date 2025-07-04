@@ -33,7 +33,7 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "ca1805a3671f40e0e0e43f680cf4fa501f5f6eaa" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "cdda9d16e0bb7ca5239bb8d5eed2fb070f7480ad" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
@@ -58,7 +58,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout a2efd8792c1cd0791c63bf6fa39ab03dada5d4bd
+    git checkout 31e7c653977cb11cb634d31339b6484a44bc6299
 
     mv ./start.sh ./run.sh
 
