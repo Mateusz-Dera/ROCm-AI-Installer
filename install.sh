@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.9"
+version="8.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -92,6 +92,10 @@ remove_old() {
         sudo rm /etc/apt/sources.list.d/rocm.list
     fi
 
+    if [ -f /etc/apt/sources.list.d/rocm-graphics.list ]; then
+        sudo rm /etc/apt/sources.list.d/rocm-graphics.list
+    fi
+
     if [ -f /etc/apt/preferences.d/rocm-pin-600 ]; then
         sudo rm /etc/apt/preferences.d/rocm-pin-600
     fi
@@ -99,33 +103,22 @@ remove_old() {
     sudo apt autoremove -y
 }
 
-# Repositories
-repo(){
-    # Update
-    sudo apt update -y && sudo apt upgrade -y
-    
-    # Wget
-    sudo apt install -y wget
-
-    # AMDGPU
-    sudo apt-add-repository -y -s -s
-    sudo apt install -y "linux-headers-$(uname -r)" \
-	"linux-modules-extra-$(uname -r)"
+# ROCm
+rocm_install(){
     sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.4.1/ubuntu noble main' \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-    sudo apt update -y
-    sudo apt install -y amdgpu-dkms
+    
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-    # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.1 noble main" \
-    | sudo tee --append /etc/apt/sources.list.d/rocm.list
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-    | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    sudo apt update -y
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0_alpha noble main" | sudo tee /etc/apt/sources.list.d/rocm.list
+
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0_alpha/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rocm-graphics.list
+
+    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | sudo tee /etc/apt/preferences.d/rocm-pin-600
+    
+    sudo apt update
+
+    sudo apt install -y rocm 
+    #rocm-dev rocm-libs rocm-hip-sdk rocm-libs
 }
 
 profile(){
@@ -148,23 +141,18 @@ profile(){
 # Function to install ROCm and basic packages
 install_rocm() {
     sudo apt update -y
+    
     remove_old
 
-    repo
+    sudo apt upgrade -y
 
-    sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
-/opt/rocm/lib
-/opt/rocm/lib64
-EOF
-    sudo ldconfig
-
-    profile
-
+    sudo apt install -y wget
     sudo apt install -y git git-lfs
     sudo apt install -y libstdc++-12-dev
     sudo apt install -y libtcmalloc-minimal4
     sudo apt install -y git git-lfs
     sudo apt install -y python3.12 python3.12-full python3.12-dev python3.12-venv python3.12-dev python3.12-tk
+    sudo apt install -y python3-setuptools python3-wheel
     sudo apt install -y libgl1
     sudo apt install -y ffmpeg
     sudo apt install -y libmecab-dev
@@ -182,6 +170,16 @@ EOF
     sudo apt purge -y cargo rustc rustup
     sudo snap install rustup --classic
     rustup default stable
+
+    rocm_install
+
+    sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
+/opt/rocm/lib
+/opt/rocm/lib64
+EOF
+    sudo ldconfig
+
+    profile
 }
 
 # Universal function

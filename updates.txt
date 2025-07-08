@@ -1,4 +1,9 @@
+Updated ROCm to 7.0 Alpha
+Updated Text generation web UI
+
 Fixed TripoSG
+Added Ovis-U1-3B
 Updated KoboldCPP
 Updated llama.cpp
 Updated SillyTavern
+Drop IMS-Toucan support

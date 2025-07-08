@@ -72,7 +72,7 @@ Pygments==2.19.1
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-multipart==0.0.20
-pytorch-triton-rocm==3.3.0
+pytorch-triton-rocm==3.3.1
 pytz==2025.2
 PyYAML==6.0.2
 referencing==0.36.2
@@ -100,12 +100,12 @@ tensorboard-data-server==0.7.2
 tiktoken==0.9.0
 tokenizers==0.21.1
 tomlkit==0.12.0
-torch==2.7.0+rocm6.3
-torchaudio==2.7.0+rocm6.3
-torchvision==0.22.0+rocm6.3
+torch==2.7.1+rocm6.3
+torchaudio==2.7.1+rocm6.3
+torchvision==0.22.1+rocm6.3
 tqdm==4.67.1
 transformers==4.51.3
-triton==3.3.0
+triton==3.3.1
 typer==0.15.3
 typing_extensions==4.13.2
 tzdata==2025.2

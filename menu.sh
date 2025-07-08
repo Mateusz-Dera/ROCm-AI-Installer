@@ -909,9 +909,8 @@ voice_generation() {
             2 "Install Matcha-TTS" \
             3 "Install Dia" \
             4 "Install Orpheus-TTS" \
-            5 "Install IMS-Toucan" \
-            6 "Install Chatterbox" \
-            7 "HierSpeech++" \
+            5 "Install Chatterbox" \
+            6 "HierSpeech++" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -931,12 +930,9 @@ voice_generation() {
                 install_orpheus_tts
                 ;;
             "5")
-                install_ims_toucan
-                ;;
-            "6")
                 install_chatterbox
                 ;;
-            "7")
+            "6")
                 install_hierspeech
                 ;;
             "")
