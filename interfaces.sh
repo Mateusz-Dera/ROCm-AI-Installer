@@ -33,19 +33,19 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "cdda9d16e0bb7ca5239bb8d5eed2fb070f7480ad" "python koboldcpp.py"
+    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "7ae1d4621b81628cf4d290ec5283492c0b475e6a" "python koboldcpp.py"
     make LLAMA_HIPBLAS=1 -j4
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "ace8afb825c80925ed21ab26dbf66b538ab06285" 'python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    install "https://github.com/oobabooga/text-generation-webui.git" "b7d59829448870a0acd6aaef48917703c70cb3fa" 'python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@35266ead8b7669c55db26505115de941eed178de --extra-index-url https://download.pytorch.org/whl/rocm6.3
+    pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31 --extra-index-url https://download.pytorch.org/whl/rocm6.3
     install_flash_attention
-    pip install https://github.com/turboderp/exllamav2/releases/download/v0.2.9/exllamav2-0.2.9+rocm6.3.torch2.7.0-cp312-cp312-linux_x86_64.whl
-    pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.9.0/llama_cpp_binaries-0.9.0+vulkan-py3-none-linux_x86_64.whl
+    pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.3.1/exllamav2-0.3.1+rocm6.3.torch2.7.0-cp312-cp312-linux_x86_64.whl
+    pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.24.0/llama_cpp_binaries-0.24.0+vulkan-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -78,7 +78,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 7d516443dd7766569110b38e6374649bee6eb1c4
+    git checkout 17a1f0d2d407040ee242e18dd79be8bb212cfcef
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
