@@ -48,7 +48,7 @@ Pygments==2.18.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-multipart==0.0.9
-pytorch-triton-rocm==3.3.0
+pytorch-triton-rocm==3.3.1
 pytz==2024.1
 PyYAML==6.0.2
 regex==2024.7.24
@@ -65,10 +65,12 @@ starlette==0.37.2
 sympy==1.13.3
 tokenizers==0.20.3
 tomlkit==0.12.0
-torch==2.7.0+rocm6.3
-torchvision==0.22.0+rocm6.3
+torch==2.7.1+rocm6.3
+torchaudio==2.7.1+rocm6.3
+torchvision==0.22.1+rocm6.3
 tqdm==4.66.5
 transformers==4.46.0
+triton==3.3.1
 typer==0.12.3
 typing_extensions==4.12.2
 tzdata==2024.1

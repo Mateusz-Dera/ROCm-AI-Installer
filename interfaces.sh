@@ -98,7 +98,7 @@ EOF
 
 # Artist
 install_artist() {
-    install "https://github.com/songrise/Artist.git" "a1b3a978b2cfcbb47201259a4ab60b58173d5bf7" "python injection_main.py --mode app"
+    install "https://github.com/songrise/Artist.git" "d244220702d4e7800b68f148d84cf95dd88ec8f0" "python injection_main.py --mode app"
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
     mv ./example_config.yaml ./config.yaml
 }
@@ -111,7 +111,7 @@ install_cinemo() {
 
 # Ovis-U1
 install_ovis() {
-    install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cf4c13a1689d15c28dba4b8e1a5e7e739045dae5" "python3 app.py"
+    install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "python3 app.py"
     sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
     sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
     install_flash_attention
@@ -239,7 +239,7 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "c47687487c34dbff1d9c58ad420e705bd046b283" "f5-tts_infer-gradio --host 0.0.0.0"
+    install "https://github.com/SWivid/F5-TTS.git" "a275798a2fba6accbb4730cc5530bdaabd3a5efd" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
     pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
 }
@@ -290,15 +290,15 @@ install_orpheus_tts(){
 
 # IMS-Toucan
 install_ims_toucan(){
-    install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "bbda44ed1314eedba2d739b69660cb93b14eebd3" "python3 run_simple_GUI_demo.py"
+    install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py"
     # self.iface.launch()
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox
 install_chatterbox(){
-    install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "bf4bbc30226326884e0d57b1e45ec0550683300f" "python app.py"
-        sed -i 's/demo.launch()/demo.launch(server_name="0.0.0.0")/' "app.py"
+    install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "python app.py"
+        sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
 }
 
 # HierSpeech++

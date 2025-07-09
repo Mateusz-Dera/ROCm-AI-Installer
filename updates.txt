@@ -6,4 +6,7 @@ Updated SillyTavern
 Updated ComfyUI
 Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
+Updated Artist
 Updated ACE-Step
+Updated IMS-Toucan
+Updated Chatterbox
