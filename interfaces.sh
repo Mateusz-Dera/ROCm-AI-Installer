@@ -29,6 +29,7 @@ install_flash_attention() {
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
     python3 setup.py install
+    cd ..
 }
 
 # KoboldCPP
@@ -118,7 +119,7 @@ install_ovis() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "0cf2e46b1725a5d0d6cb7b177a524026ca00f5a4" "python3 ./main.py --listen --use-split-cross-attention"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "5612670ee48ce500aab98e362b3372ab06d1d659" "python3 ./main.py --listen --use-split-cross-attention"
 
     install_flash_attention
 
@@ -132,7 +133,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout e16e9d7a0ef80d094a513111febe4cb8d6e38a37
+                git checkout 546db08ec4deadc2fec4451c50493cffff20dfcd
                 ;;
             '"1"')
                 gguf=1
@@ -209,7 +210,7 @@ install_comfyui() {
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
-        git checkout a2b75978fd50c0227a58316619b79d525b88e570
+        git checkout b3ec875a68d94b758914fd48d30571d953bb7a54
         
         cd $installation_path/ComfyUI/models/text_encoders
         huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
@@ -226,7 +227,9 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-    install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
+    install "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "python app.py --server_name 0.0.0.0"
+    install_flash_attention
+    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.3
 }
 
 # WhisperSpeech web UI

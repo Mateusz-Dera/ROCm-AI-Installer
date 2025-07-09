@@ -3,3 +3,7 @@ Updated KoboldCPP
 Updated Text generation web UI
 Updated llama.cpp
 Updated SillyTavern
+Updated ComfyUI
+Updated ComfyUI-Manager
+Updated ComfyUI-GGUF
+Updated ACE-Step
