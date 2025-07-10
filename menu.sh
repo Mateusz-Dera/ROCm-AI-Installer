@@ -990,9 +990,10 @@ d3_generation() {
 tools() {
     second=true
     while $second; do
-        
+        echo "Tools menu is under construction."
+
         choice=$(whiptail --title "Tools" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
-            0 "Install Fastfetch"
+            0 "Install Fastfetch" \
             2>&1 > /dev/tty)
 
         case "$choice" in
