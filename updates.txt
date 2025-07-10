@@ -10,3 +10,5 @@ Updated Artist
 Updated ACE-Step
 Updated IMS-Toucan
 Updated Chatterbox
+Updated Custom TripoSG interface
+Updated TripoSG PyTorch

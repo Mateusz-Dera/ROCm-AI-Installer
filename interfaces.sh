@@ -318,8 +318,11 @@ import os
 import glob
 import trimesh
 import shutil
+import threading
+import time
+from queue import Queue
 
-def run_triposg(image_input, output_format):
+def run_triposg(image_input, output_format, progress=gr.Progress()):
     """Runs the TripoSR model with the given image input and converts to selected format."""
     try:
         # Create a temporary directory for output files
@@ -341,13 +344,46 @@ def run_triposg(image_input, output_format):
             output_dir,
         ]
 
-        # Execute the command and capture the output
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+        progress(0.1, desc="Starting TripoSR inference...")
 
+        # Execute the command with real-time output
+        process = subprocess.Popen(
+            command, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1
+        )
+
+        # Monitor process output in real-time
+        output_lines = []
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                output_lines.append(output.strip())
+                print(output.strip())  # Print to console for debugging
+                
+                # Update progress based on output keywords
+                if "Loading model" in output:
+                    progress(0.2, desc="Loading TripoSR model...")
+                elif "Processing image" in output:
+                    progress(0.4, desc="Processing input image...")
+                elif "Generating mesh" in output:
+                    progress(0.6, desc="Generating 3D mesh...")
+                elif "Saving" in output:
+                    progress(0.8, desc="Saving 3D model...")
+
+        # Wait for process to complete
+        return_code = process.poll()
+        
         # Check for errors
-        if process.returncode != 0:
-            return f"Error: {stderr.decode()}"
+        if return_code != 0:
+            error_msg = '\n'.join(output_lines[-10:])  # Show last 10 lines
+            return f"Error (code {return_code}): {error_msg}"
+
+        progress(0.9, desc="Converting output format...")
 
         # Find the GLB file in the output directory
         glb_files = [f for f in os.listdir(output_dir) if f.endswith(".glb")]
@@ -373,11 +409,31 @@ def run_triposg(image_input, output_format):
         else:
             return "Invalid output format selected."
         
+        progress(1.0, desc="3D model generation complete!")
+        
         # Return the path for display
         return output_file
 
     except Exception as e:
         return f"An error occurred: {str(e)}"
+
+def run_triposg_with_status(image_input, output_format):
+    """Wrapper function that provides status updates during processing."""
+    if not image_input:
+        return None, "Please upload an image first."
+    
+    # Create a status message
+    status_msg = "🔄 Processing... This may take a few minutes."
+    
+    # Run the actual processing
+    result = run_triposg(image_input, output_format)
+    
+    if isinstance(result, str) and result.startswith("Error"):
+        return None, result
+    elif isinstance(result, str) and result.startswith("No .glb"):
+        return None, result
+    else:
+        return result, "✅ 3D model generated successfully!"
 
 # Get example images
 example_dir = "assets/example_data/"
@@ -398,22 +454,31 @@ with gr.Blocks(title="TripoSR for ROCm") as iface:
                 label="Output Format",
                 info="Select the format for your 3D model"
             )
-            submit_btn = gr.Button("Generate 3D Model")
+            submit_btn = gr.Button("Generate 3D Model", variant="primary")
+            
+            # Add status display
+            status_text = gr.Textbox(
+                label="Status", 
+                interactive=False,
+                placeholder="Ready to generate 3D model..."
+            )
 
         with gr.Column(scale=1):
             model_output = gr.Model3D(label="3D Model Output")
     
     # Example images
-    gr.Examples(
-        examples=example_images,
-        inputs=input_image
-    )
+    if example_images:
+        gr.Examples(
+            examples=example_images,
+            inputs=input_image
+        )
     
     # Set up the event handling for generating the model
     submit_btn.click(
-        fn=run_triposg, 
+        fn=run_triposg_with_status, 
         inputs=[input_image, output_format], 
-        outputs=model_output
+        outputs=[model_output, status_text],
+        show_progress=True
     )
 
 if __name__ == "__main__":
