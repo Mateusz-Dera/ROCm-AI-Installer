@@ -26,6 +26,7 @@ decorator==5.2.1
 diffusers==0.34.0
 dill==0.3.8
 docopt==0.6.2
+einops==0.8.1
 fastapi==0.115.12
 ffmpy==0.5.0
 filelock==3.18.0

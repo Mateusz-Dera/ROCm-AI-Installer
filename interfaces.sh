@@ -227,9 +227,8 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-    install "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "python app.py --server_name 0.0.0.0"
-    install_flash_attention
-    pip install -e . --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.3
+        install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
+        install_flash_attention
 }
 
 # WhisperSpeech web UI

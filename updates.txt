@@ -7,8 +7,8 @@ Updated ComfyUI
 Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
 Updated Artist
-Updated ACE-Step
 Updated IMS-Toucan
 Updated Chatterbox
 Updated Custom TripoSG interface
 Updated TripoSG PyTorch
+Updated ACE-Step PyTorch
