@@ -53,7 +53,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
-|Wan 2.1|https://github.com/Wan-Video/Wan2.1<br> https://comfyanonymous.github.io/ComfyUI_examples/wan/<br> https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged|Text to video model.<br> Image to video model.|
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -67,7 +66,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
-|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.|
+|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.<br> Examples may show errors.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox|https://github.com/resemble-ai/chatterbox<br> https://huggingface.co/spaces/ResembleAI/Chatterbox||
 |HierSpeech++|https://github.com/sh-lee-prml/HierSpeechpp<br> http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS|Interface PyTorch uses PyTorch 2.4.0|
