@@ -360,10 +360,11 @@ sillytavern() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "SillyTavern" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+        choice=$(whiptail --title "SillyTavern" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "Backup" \
             1 "Install" \
-            2 "Restore" \
+            2 "Install WhisperSpeech web UI extension" \
+            3 "Restore" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -380,6 +381,9 @@ sillytavern() {
                 install_sillytavern
                 ;;
             "2")
+                install_sillytavern_whisperspeech_web_ui
+                ;;
+            "3")
                 sillytavern_restore
                 ;;
             "")

@@ -59,7 +59,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 31e7c653977cb11cb634d31339b6484a44bc6299
+    git checkout 8f2a194617fab4d1aae5ef27430cb6a2f9a7fcfe
 
     mv ./start.sh ./run.sh
 
@@ -68,6 +68,27 @@ install_sillytavern() {
     sed -i 's/listen: false/listen: true/' config.yaml
     sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
     sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
+}
+
+# SillyTavern WhisperSpeech web UI
+install_sillytavern_whisperspeech_web_ui() {
+    if [ ! -d "$installation_path/SillyTavern" ]; then
+        echo "SillyTavern is not installed. Please install SillyTavern first."
+        return 1
+    fi
+
+    cd $installation_path/SillyTavern/public/scripts/extensions/third-party
+    if [ -d "whisperspeech-webui" ]; then
+        rm -rf whisperspeech-webui
+    fi
+
+    git clone https://github.com/Mateusz-Dera/whisperspeech-webui
+    mv ./whisperspeech-webui ./whisperspeech-webui-temp
+    cd whisperspeech-webui-temp
+    git checkout 06aa5f064f6e742f33178214bc883883a5ed0c40
+    mv ./whisperspeech-webui ../
+    cd ..
+    rm -rf whisperspeech-webui-temp
 }
 
 # llama.cpp
@@ -208,7 +229,7 @@ install_ace_step() {
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    uv_install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "dcccc05b91209085f04265aa2120691161c16da6" "uv run --extra rocm webui.py --listen"
+    uv_install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "06aa5f064f6e742f33178214bc883883a5ed0c40" "uv run --extra rocm webui.py --listen --api"
 }
 
 # F5-TTS
