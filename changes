@@ -1,5 +1,7 @@
 Added PartCrafter
+Added WhisperSpeech web UI extension to SillyTavern
 Updated ROCm to 6.4.2
+Updated WhisperSpeech web UI
 TripoSG now uses a modified PyTorch Cluster for ROCm
 Minor changes to the TripoSG web interface
 Code cleanup

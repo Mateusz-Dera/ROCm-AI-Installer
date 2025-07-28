@@ -28,6 +28,11 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
 
+#### SillyTavern Extensions
+|Name|Link|Additional information|
+|:---|:---|:---|
+|WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui|Install and run WhisperSpeech web UI first.|
+
 ###  Image & video generation
 |Name|Links|Additional information|
 |:---|:---|:---|
