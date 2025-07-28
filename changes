@@ -1,3 +1,5 @@
+Added PartCrafter
+Updated ROCm to 6.4.2
 TripoSG now uses a modified PyTorch Cluster for ROCm
 Minor changes to the TripoSG web interface
 Code cleanup
