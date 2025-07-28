@@ -964,13 +964,17 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "Install TripoSG" \
+            1 "Install PartCrafter" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
                 install_triposg
+                ;;
+            "1")
+                install_partcrafter
                 ;;
             "")
                 echo "Previous menu..."

@@ -304,181 +304,25 @@ install_hierspeech(){
 
 # TripoSG
 install_triposg(){
-    install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python app.py"
-    pip install torch_cluster==1.6.3 --no-build-isolation --extra-index-url https://download.pytorch.org/whl/rocm6.3
-    tee --append app.py << EOF
-import gradio as gr
-import subprocess
-import os
-import glob
-import trimesh
-import shutil
-import threading
-import time
-from queue import Queue
+    install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python triposg_webui.py"
+    cp $CUSTOM_FILES_DIR/triposg_webui.py ./
+    install_flash_attention
+    git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
+    cd ./pytorch_cluster_rocm
+    git checkout edd4d4aa407ff97fcdb57398beee95072d3c67de
+    pip install .
+}
 
-def run_triposg(image_input, output_format, progress=gr.Progress()):
-    """Runs the TripoSR model with the given image input and converts to selected format."""
-    try:
-        # Create a temporary directory for output files
-        output_dir = "temp_output"
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Create public directory for serving files
-        public_dir = "public"
-        os.makedirs(public_dir, exist_ok=True)
-
-        # Construct the command
-        command = [
-            "python",
-            "-m",
-            "scripts.inference_triposg",
-            "--image-input",
-            image_input,
-            "--output-dir",
-            output_dir,
-        ]
-
-        progress(0.1, desc="Starting TripoSR inference...")
-
-        # Execute the command with real-time output
-        process = subprocess.Popen(
-            command, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            bufsize=1
-        )
-
-        # Monitor process output in real-time
-        output_lines = []
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                output_lines.append(output.strip())
-                print(output.strip())  # Print to console for debugging
-                
-                # Update progress based on output keywords
-                if "Loading model" in output:
-                    progress(0.2, desc="Loading TripoSR model...")
-                elif "Processing image" in output:
-                    progress(0.4, desc="Processing input image...")
-                elif "Generating mesh" in output:
-                    progress(0.6, desc="Generating 3D mesh...")
-                elif "Saving" in output:
-                    progress(0.8, desc="Saving 3D model...")
-
-        # Wait for process to complete
-        return_code = process.poll()
-        
-        # Check for errors
-        if return_code != 0:
-            error_msg = '\n'.join(output_lines[-10:])  # Show last 10 lines
-            return f"Error (code {return_code}): {error_msg}"
-
-        progress(0.9, desc="Converting output format...")
-
-        # Find the GLB file in the output directory
-        glb_files = [f for f in os.listdir(output_dir) if f.endswith(".glb")]
-        if not glb_files:
-            return "No .glb file generated."
-
-        glb_file_path = os.path.join(output_dir, glb_files[0])
-        base_name = os.path.splitext(glb_files[0])[0]
-        
-        # Load the mesh
-        mesh = trimesh.load(glb_file_path)
-        
-        # Convert to the selected format
-        if output_format == "glb":
-            output_file = os.path.join(public_dir, f"{base_name}.glb")
-            shutil.copy(glb_file_path, output_file)
-        elif output_format == "stl":
-            output_file = os.path.join(public_dir, f"{base_name}.stl")
-            mesh.export(output_file)
-        elif output_format == "obj":
-            output_file = os.path.join(public_dir, f"{base_name}.obj")
-            mesh.export(output_file)
-        else:
-            return "Invalid output format selected."
-        
-        progress(1.0, desc="3D model generation complete!")
-        
-        # Return the path for display
-        return output_file
-
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-def run_triposg_with_status(image_input, output_format):
-    """Wrapper function that provides status updates during processing."""
-    if not image_input:
-        return None, "Please upload an image first."
-    
-    # Create a status message
-    status_msg = "🔄 Processing... This may take a few minutes."
-    
-    # Run the actual processing
-    result = run_triposg(image_input, output_format)
-    
-    if isinstance(result, str) and result.startswith("Error"):
-        return None, result
-    elif isinstance(result, str) and result.startswith("No .glb"):
-        return None, result
-    else:
-        return result, "✅ 3D model generated successfully!"
-
-# Get example images
-example_dir = "assets/example_data/"
-example_images = glob.glob(os.path.join(example_dir, "*.png"))
-
-# Create a custom Gradio interface with 3D model display
-with gr.Blocks(title="TripoSR for ROCm") as iface:
-    gr.Markdown("# TripoSR Inference for ROCm")
-    gr.Markdown("Upload an image and generate a 3D model using TripoSR (Without textures). Choose your preferred output format.")
-    gr.Markdown("https://github.com/VAST-AI-Research/TripoSG<br>https://github.com/Mateusz-Dera/ROCm-AI-Installer")    
-    
-    with gr.Row():
-        with gr.Column(scale=1):
-            input_image = gr.Image(type="filepath", label="Input Image")
-            output_format = gr.Radio(
-                choices=["glb", "stl", "obj"], 
-                value="glb", 
-                label="Output Format",
-                info="Select the format for your 3D model"
-            )
-            submit_btn = gr.Button("Generate 3D Model", variant="primary")
-            
-            # Add status display
-            status_text = gr.Textbox(
-                label="Status", 
-                interactive=False,
-                placeholder="Ready to generate 3D model..."
-            )
-
-        with gr.Column(scale=1):
-            model_output = gr.Model3D(label="3D Model Output")
-    
-    # Example images
-    if example_images:
-        gr.Examples(
-            examples=example_images,
-            inputs=input_image
-        )
-    
-    # Set up the event handling for generating the model
-    submit_btn.click(
-        fn=run_triposg_with_status, 
-        inputs=[input_image, output_format], 
-        outputs=[model_output, status_text],
-        show_progress=True
-    )
-
-if __name__ == "__main__":
-    iface.launch(share=False, server_name="0.0.0.0", allowed_paths=["public"])
-EOF
+install_partcrafter(){
+    install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "python partcrafter_webui.py"
+    cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
+    cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
+    cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
+    install_flash_attention
+    git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
+    cd ./pytorch_cluster_rocm
+    git checkout edd4d4aa407ff97fcdb57398beee95072d3c67de
+    pip install .
 }
 
 # Login to HuggingFace

@@ -37,6 +37,7 @@ installation_path="$default_installation_path"
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 # Requirements directory
 REQUIREMENTS_DIR="$SCRIPT_DIR/requirements"
+CUSTOM_FILES_DIR="$SCRIPT_DIR/custom_files"
 
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
@@ -173,6 +174,7 @@ EOF
     sudo apt install -y libomp-dev
     sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
     sudo apt install -y cmake
+    sudo apt install -y libegl1 libegl1-mesa libgl1-mesa-dev
     sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
 
     sudo snap install node --classic

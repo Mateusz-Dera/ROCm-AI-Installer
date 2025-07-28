@@ -15,10 +15,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |CPU|AMD Ryzen 9950X3D|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.25)|
+|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Ubuntu 24.04.2 LTS|
-|Kernel|6.11.0-29-generic|
-|ROCm|6.4.1|
+|Kernel|6.14.0-24-generic|
+|ROCm|6.4.2|
 
 ###  Text generation
 |Name|Links|Additional information|
@@ -74,7 +74,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  3D generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|TripoSG|https://github.com/VAST-AI-Research/TripoSG|Added custom simple UI.<br> Sometimes there are probelms with the preview, but the model should still be available for download.|
+|TripoSG|https://github.com/VAST-AI-Research/TripoSG|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.<br> Sometimes there are probelms with the preview, but the model should still be available for download.|
+|PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
 
 ###  Tools
 |Name|Links|Additional information|
