@@ -71,9 +71,6 @@ if __name__ == "__main__":
         torch.cuda.empty_cache()
         if hasattr(torch.cuda, 'set_per_process_memory_fraction'):
             torch.cuda.set_per_process_memory_fraction(0.8)
-        # Enable ROCm optimizations
-        os.environ['PYTORCH_ROCM_ARCH'] = 'gfx90a;gfx906;gfx908;gfx1030;gfx1100'
-        os.environ['HSA_OVERRIDE_GFX_VERSION'] = '11.0.0'
     else:
         device = "cpu"
     dtype = torch.float16
