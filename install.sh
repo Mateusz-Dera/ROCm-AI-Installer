@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.10"
+version="7.10.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -174,7 +174,7 @@ EOF
     sudo apt install -y libomp-dev
     sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
     sudo apt install -y cmake
-    sudo apt install -y libegl1 libegl1-mesa libgl1-mesa-dev
+    sudo apt install -y libegl1 libgl1-mesa-dev
     sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
 
     sudo snap install node --classic

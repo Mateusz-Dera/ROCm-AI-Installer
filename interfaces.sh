@@ -377,7 +377,8 @@ install_triposg(){
     install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout edd4d4aa407ff97fcdb57398beee95072d3c67de
+    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
+    pip cache purge
     pip install .
 }
 
@@ -389,7 +390,8 @@ install_partcrafter(){
     install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout edd4d4aa407ff97fcdb57398beee95072d3c67de
+    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
+    pip cache purge
     pip install .
 }
 
