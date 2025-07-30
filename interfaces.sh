@@ -70,6 +70,74 @@ install_sillytavern() {
     sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
 }
 
+# Ollama
+uninstall_ollama(){
+    # Stop and disable ollama service
+    sudo systemctl stop ollama
+    sudo systemctl disable ollama
+
+    # Remove service file
+    sudo rm -f /etc/systemd/system/ollama.service
+
+    # Reload systemd after removing service file
+    sudo systemctl daemon-reload
+
+    # Remove ollama binary
+    sudo rm -f $(which ollama)
+
+    # Remove ollama directory
+    sudo rm -rf /usr/share/ollama
+
+    # Remove all users from ollama group first
+    if getent group ollama > /dev/null 2>&1; then
+        # Get list of users in ollama group
+        OLLAMA_USERS=$(getent group ollama | cut -d: -f4 | tr ',' ' ')
+        
+        # Remove each user from ollama group
+        for user in $OLLAMA_USERS; do
+            if [ -n "$user" ]; then
+                echo "Removing user $user from ollama group"
+                sudo gpasswd -d "$user" ollama
+            fi
+        done
+    fi
+
+    # Delete ollama user (this will also remove the group if it's the user's primary group)
+    if id "ollama" &>/dev/null; then
+        sudo userdel ollama
+    fi
+
+    # Force remove ollama group if it still exists
+    if getent group ollama > /dev/null 2>&1; then
+        sudo groupdel ollama
+    fi
+
+    echo "Ollama uninstallation completed."
+}
+
+install_ollama() {
+    uninstall_ollama
+    cd /tmp
+    curl -fsSL https://ollama.com/install.sh | sh
+
+    sudo mkdir -p /etc/systemd/system/ollama.service.d/
+    echo '[Service]
+Environment="OLLAMA_HOST=0.0.0.0"' | sudo tee /etc/systemd/system/ollama.service.d/override.conf
+
+    sudo systemctl daemon-reload
+    sudo systemctl restart ollama
+
+    if [ -d "$installation_path/Ollama" ]; then
+        rm -rf "$installation_path/Ollama"
+    fi
+
+    mkdir "$installation_path/Ollama"
+    cd "$installation_path/Ollama"
+
+    cp $CUSTOM_FILES_DIR/ollama_custom.sh ./run.sh
+    chmod +x ./run.sh
+}
+
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
     if [ ! -d "$installation_path/SillyTavern" ]; then
@@ -85,7 +153,7 @@ install_sillytavern_whisperspeech_web_ui() {
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui
     mv ./whisperspeech-webui ./whisperspeech-webui-temp
     cd whisperspeech-webui-temp
-    git checkout 06aa5f064f6e742f33178214bc883883a5ed0c40
+    git checkout 9a191c41e8b8fa7d203974c0b0debdfe1146a7a0
     mv ./whisperspeech-webui ../
     cd ..
     rm -rf whisperspeech-webui-temp

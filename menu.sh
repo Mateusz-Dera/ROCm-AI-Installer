@@ -87,11 +87,12 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
             0 "Install KoboldCPP" \
             1 "Text generation web UI" \
             2 "SillyTavern" \
             3 "Install llama.cpp" \
+            4 "Ollama" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -112,6 +113,43 @@ text_generation() {
                 ;;
             "3")
                 install_llama_cpp
+                ;;
+            "4")
+                ollama
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
+# Ollama
+ollama() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "Ollama" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+            0 "Install" \
+            1 "Uninstall" \
+            2>&1 > /dev/tty)
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "0")
+                install_ollama
+                ;;
+            "1")
+                uninstall_ollama
                 ;;
             "")
                 echo "Previous menu..."

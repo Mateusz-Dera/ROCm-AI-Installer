@@ -26,7 +26,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
 |Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.<br> 2. Do not check option use_flash_attention_2 using Transformers.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
-|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. Change context size in run.sh file (Default: 32768).<br> 3. Set GPU offload layers in run.sh file (Default: 1)|
+|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
+|Ollama|https://github.com/ollama/ollama|You can use standard Ollama commands in terminal or run GGUF model.<br>1. Put model.gguf into Ollama folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. In run.sh file, customize model parameters.|
 
 #### SillyTavern Extensions
 |Name|Link|Additional information|
