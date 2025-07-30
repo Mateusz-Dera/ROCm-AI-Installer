@@ -59,7 +59,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 8f2a194617fab4d1aae5ef27430cb6a2f9a7fcfe
+    git checkout 9a191c41e8b8fa7d203974c0b0debdfe1146a7a0
 
     mv ./start.sh ./run.sh
 
@@ -68,6 +68,27 @@ install_sillytavern() {
     sed -i 's/listen: false/listen: true/' config.yaml
     sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml
     sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml
+}
+
+# SillyTavern WhisperSpeech web UI
+install_sillytavern_whisperspeech_web_ui() {
+    if [ ! -d "$installation_path/SillyTavern" ]; then
+        echo "SillyTavern is not installed. Please install SillyTavern first."
+        return 1
+    fi
+
+    cd $installation_path/SillyTavern/public/scripts/extensions/third-party
+    if [ -d "whisperspeech-webui" ]; then
+        rm -rf whisperspeech-webui
+    fi
+
+    git clone https://github.com/Mateusz-Dera/whisperspeech-webui
+    mv ./whisperspeech-webui ./whisperspeech-webui-temp
+    cd whisperspeech-webui-temp
+    git checkout 06aa5f064f6e742f33178214bc883883a5ed0c40
+    mv ./whisperspeech-webui ../
+    cd ..
+    rm -rf whisperspeech-webui-temp
 }
 
 # Ollama
@@ -136,27 +157,6 @@ Environment="OLLAMA_HOST=0.0.0.0"' | sudo tee /etc/systemd/system/ollama.service
 
     cp $CUSTOM_FILES_DIR/ollama_custom.sh ./run.sh
     chmod +x ./run.sh
-}
-
-# SillyTavern WhisperSpeech web UI
-install_sillytavern_whisperspeech_web_ui() {
-    if [ ! -d "$installation_path/SillyTavern" ]; then
-        echo "SillyTavern is not installed. Please install SillyTavern first."
-        return 1
-    fi
-
-    cd $installation_path/SillyTavern/public/scripts/extensions/third-party
-    if [ -d "whisperspeech-webui" ]; then
-        rm -rf whisperspeech-webui
-    fi
-
-    git clone https://github.com/Mateusz-Dera/whisperspeech-webui
-    mv ./whisperspeech-webui ./whisperspeech-webui-temp
-    cd whisperspeech-webui-temp
-    git checkout 9a191c41e8b8fa7d203974c0b0debdfe1146a7a0
-    mv ./whisperspeech-webui ../
-    cd ..
-    rm -rf whisperspeech-webui-temp
 }
 
 # llama.cpp
