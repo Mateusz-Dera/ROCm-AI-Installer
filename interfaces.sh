@@ -208,11 +208,12 @@ install_ovis() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "5612670ee48ce500aab98e362b3372ab06d1d659" "python3 ./main.py --listen --use-split-cross-attention"
+    install "https://github.com/comfyanonymous/ComfyUI.git" "37d620a6b85f61b824363ed8170db373726ca45a" "python3 ./main.py --listen --use-split-cross-attention"
 
     install_flash_attention
 
     local gguf=0
+    local flux=0
 
     # Process each selected choice
     for choice in $CHOICES; do
@@ -222,7 +223,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 546db08ec4deadc2fec4451c50493cffff20dfcd
+                git checkout 205044ca667e97b8da4417cf21835d713d22bd23
                 ;;
             '"1"')
                 gguf=1
@@ -248,18 +249,32 @@ install_comfyui() {
                 ;;
             '"4"')
                 gguf=1
+                flux=1
                 # Flux
                 huggingface-cli download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2 --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"5"')
                 gguf=1
+                flux=1
                 # AnimePro FLUX
                 huggingface-cli download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"6"')
                 gguf=1
-                # AnimePro FLUX
+                flux=1
+                # Flex.1-alpha 
                 huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
+                ;;
+            '"7"')
+                gguf=1
+                # Qwen-Image
+                huggingface-cli download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir $installation_path/ComfyUI/models/diffusion_models
+
+                huggingface-cli download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q6_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
+            
+                huggingface-cli download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
+                mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
+                rm -rf $installation_path/ComfyUI/models/vae/split_files
                 ;;
             "")
                 break
@@ -274,14 +289,16 @@ install_comfyui() {
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
-        git checkout b3ec875a68d94b758914fd48d30571d953bb7a54
-        
+        git checkout cf0573351ac260d629d460d97f09b09ac17d3726
+    fi
+    
+    if [ $flux -eq 1 ]; then
         cd $installation_path/ComfyUI/models/text_encoders
         huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
         huggingface-cli download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
-        
+
         huggingface
 
         cd $installation_path/ComfyUI/models/vae

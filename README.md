@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/version-7.10.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-7.11-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
@@ -45,7 +45,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 #### ComfyUI Addons
 
 > [!Important]
-> For GGUF models:<br>
+> For GGUF Flux and Flux based models:<br>
 > 1\. Accept accept the conditions to access its files and content on HugginFace website:<br>
 > https://huggingface.co/black-forest-labs/FLUX.1-schnell <br>
 > 2\. HugginFace token is required during installation.
@@ -56,9 +56,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://huggingface.co/city96/t5-v1_1-xxl-encoder-bf16<br> https://huggingface.co/openai/clip-vit-large-patch14<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell|GGUF models loader.|
 |ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
-|FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.|
-|AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.|
-|Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.|
+|FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.<br> Model quant: <b>Q8_0</b>|
+|AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.<br> Flux based.<br> Model quant: <b>Q5_K_M</b>|
+|Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
+|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/city96/Qwen-Image-gguf/tree/main<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q6_K_XL</b>|
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -72,7 +73,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
-|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS/tree/main<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.<br> Examples may show errors.|
+|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.<br> Examples may show errors.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox|https://github.com/resemble-ai/chatterbox<br> https://huggingface.co/spaces/ResembleAI/Chatterbox||
 |HierSpeech++|https://github.com/sh-lee-prml/HierSpeechpp<br> http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS|Interface PyTorch uses PyTorch 2.4.0|
