@@ -9,6 +9,10 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 > [!Note]
 > Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
 
+> [!Important]
+> All interfaces and models are tested on a card with 24GB VRAM.<br>
+> Some interfaces or models may not work on cards with less VRAM.
+
 ### Test platform:
 |Name|Info|
 |:---|:---|
@@ -17,7 +21,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Ubuntu 24.04.2 LTS|
-|Kernel|6.14.0-24-generic|
+|Kernel|6.14.0-27-generic|
 |ROCm|6.4.2|
 
 ###  Text generation
