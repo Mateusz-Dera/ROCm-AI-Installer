@@ -25,10 +25,10 @@
 install_flash_attention() {
     git clone https://github.com/Dao-AILab/flash-attention
     cd flash-attention
-    git checkout 7661781d001e0900121c000a0aaf21b3f94337d6
+    git checkout dc742f2c47baa4b15cc33e6a2444f33d02c0a6d4
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    python3 setup.py install
+    pip install . --no-build-isolation
     cd ..
 }
 
@@ -187,7 +187,7 @@ EOF
 
 # Artist
 install_artist() {
-    install "https://github.com/songrise/Artist.git" "d244220702d4e7800b68f148d84cf95dd88ec8f0" "python injection_main.py --mode app"
+    uv_install "https://github.com/songrise/Artist.git" "d244220702d4e7800b68f148d84cf95dd88ec8f0" "python injection_main.py --mode app"
     sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
     mv ./example_config.yaml ./config.yaml
 }

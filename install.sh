@@ -26,7 +26,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="7.11"
+version="8.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -266,7 +266,8 @@ uv_install(){
     local git_commit=$2
     local start_command=$3
     local python_version=${4:-3.12}
-    local pytorch_version=${5:-rocm6.3}
+    local pytorch_version=${5:-rocm6.4}
+    local flash_attn=${6:-1}
 
     # Check if git repo and commit are provided
     if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
@@ -314,11 +315,15 @@ uv_install(){
     source .venv/bin/activate
 
     # Upgrade pip
-    uv pip install --upgrade pip
+    uv pip install -U pip==25.2
 
     # Install requirements
     if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
         uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$pytorch_version --index-strategy unsafe-best-match
+    fi
+
+    if [ "$flash_attn" -eq 1 ]; then
+        install_flash_attention
     fi
 
     # Create run.sh

@@ -4,10 +4,11 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-7.11-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Ubuntu 24.04.2 LTS is recommended. Version 7.x is not tested on older systems.
+> Debian 13 is recommended. Version 8.x is not tested on older systems.
+> It should work on Ubuntu 24.04 LTS.
 
 > [!Important]
 > All interfaces and models are tested on a card with 24GB VRAM.<br>
@@ -20,7 +21,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
-|OS|Ubuntu 24.04.2 LTS|
+|OS|Debian 13|
 |Kernel|6.14.0-27-generic|
 |ROCm|6.4.2|
 
