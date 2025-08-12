@@ -146,6 +146,60 @@ profile(){
     fi
 }
 
+# Detect current shell and source appropriate config file
+detect_and_source_shell() {
+    # Get the current shell name
+    CURRENT_SHELL=$(basename "$SHELL")
+    
+    case "$CURRENT_SHELL" in
+        bash)
+            if [ -f ~/.bashrc ]; then
+                echo "Sourcing ~/.bashrc for bash..."
+                source ~/.bashrc
+            elif [ -f ~/.bash_profile ]; then
+                echo "Sourcing ~/.bash_profile for bash..."
+                source ~/.bash_profile
+            fi
+            ;;
+        zsh)
+            if [ -f ~/.zshrc ]; then
+                echo "Sourcing ~/.zshrc for zsh..."
+                source ~/.zshrc
+            fi
+            ;;
+        fish)
+            echo "For fish shell, restart your terminal or run: source ~/.config/fish/config.fish"
+            ;;
+        tcsh|csh)
+            if [ -f ~/.tcshrc ]; then
+                echo "Sourcing ~/.tcshrc for tcsh..."
+                source ~/.tcshrc
+            elif [ -f ~/.cshrc ]; then
+                echo "Sourcing ~/.cshrc for csh..."
+                source ~/.cshrc
+            fi
+            ;;
+        ksh)
+            if [ -f ~/.kshrc ]; then
+                echo "Sourcing ~/.kshrc for ksh..."
+                source ~/.kshrc
+            elif [ -f ~/.profile ]; then
+                echo "Sourcing ~/.profile for ksh..."
+                source ~/.profile
+            fi
+            ;;
+        *)
+            echo "Unknown shell: $CURRENT_SHELL"
+            echo "Please manually source your shell's config file or restart your terminal and run script agin"
+            echo "Common locations:"
+            echo "  - bash: ~/.bashrc or ~/.bash_profile"
+            echo "  - zsh: ~/.zshrc" 
+            echo "  - fish: ~/.config/fish/config.fish"
+            echo "  - tcsh/csh: ~/.tcshrc or ~/.cshrc"
+            ;;
+    esac
+}
+
 # Function to install ROCm and basic packages
 install_rocm() {
     sudo apt update -y
@@ -161,29 +215,25 @@ EOF
 
     profile
 
+    sudo apt install -y curl wget
     sudo apt install -y git git-lfs
-    sudo apt install -y libstdc++-12-dev
-    sudo apt install -y libtcmalloc-minimal4
-    sudo apt install -y git git-lfs
-    sudo apt install -y python3.12 python3.12-full python3.12-dev python3.12-venv python3.12-dev python3.12-tk
-    sudo apt install -y libgl1
-    sudo apt install -y ffmpeg
-    sudo apt install -y libmecab-dev
-    sudo apt install -y python3-openssl
-    sudo apt install -y espeak-ng
-    sudo apt install -y libomp-dev
-    sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
-    sudo apt install -y cmake
-    sudo apt install -y libegl1 libgl1-mesa-dev
-    sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
-
-    sudo snap install node --classic
+    sudo apt install -y nodejs
+    # sudo apt install -y libstdc++-12-dev
+    # sudo apt install -y libtcmalloc-minimal4
+    # sudo apt install -y libgl1
+    # sudo apt install -y ffmpeg
+    # sudo apt install -y libmecab-dev
+    # sudo apt install -y python3-openssl
+    # sudo apt install -y espeak-ng
+    # sudo apt install -y libomp-dev
+    # sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
+    # sudo apt install -y cmake
+    # sudo apt install -y libegl1 libgl1-mesa-dev
+    # sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
   
-    sudo snap install astral-uv --classic
-
-    sudo apt purge -y cargo rustc rustup
-    sudo snap install rustup --classic
-    rustup default stable
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    detect_and_source_shell
+    uv self update
 }
 
 # Universal function
@@ -316,6 +366,8 @@ uv_install(){
 
     # Upgrade pip
     uv pip install -U pip==25.2
+    uv pip install wheel==0.45.1
+    uv pip install setuptools==80.9.0
 
     # Install requirements
     if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then

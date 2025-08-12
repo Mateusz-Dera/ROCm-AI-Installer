@@ -28,7 +28,7 @@ install_flash_attention() {
     git checkout dc742f2c47baa4b15cc33e6a2444f33d02c0a6d4
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    pip install . --no-build-isolation
+    uv pip install . --no-build-isolation
     cd ..
 }
 
@@ -185,13 +185,6 @@ EOF
     chmod +x run.sh
 }
 
-# Artist
-install_artist() {
-    uv_install "https://github.com/songrise/Artist.git" "d244220702d4e7800b68f148d84cf95dd88ec8f0" "python injection_main.py --mode app"
-    sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
-    mv ./example_config.yaml ./config.yaml
-}
-
 # Cinemo
 install_cinemo() {
     install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
@@ -308,8 +301,8 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-        install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
-        install_flash_attention
+    uv_install "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    uv pip install -e .
 }
 
 # WhisperSpeech web UI
@@ -389,14 +382,12 @@ install_hierspeech(){
 
 # TripoSG
 install_triposg(){
-    install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python triposg_webui.py"
+    uv_install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3"
     cp $CUSTOM_FILES_DIR/triposg_webui.py ./
-    install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
-    pip cache purge
-    pip install .
+    git checkout c5b476b1fab72bb7da839a5a723c6ae15f4e2d19
+    uv pip install .
 }
 
 install_partcrafter(){
@@ -408,8 +399,9 @@ install_partcrafter(){
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
     git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
-    pip cache purge
-    pip install .
+    rm -r ./requirements.txt
+    touch ./requirements.txt
+    uv pip install .
 }
 
 # Login to HuggingFace

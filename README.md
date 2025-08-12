@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 [![Version](https://img.shields.io/badge/Version-8.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13 is recommended. Version 8.x is not tested on older systems.
+> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.
 > It should work on Ubuntu 24.04 LTS.
 
 > [!Important]

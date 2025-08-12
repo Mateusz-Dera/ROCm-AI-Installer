@@ -25,7 +25,7 @@
 export NEWT_COLORS='
 root=,black
 textbox=white,black
-border=cyan,black
+border=magenta,black
 window=white,black
 title=yellow,black
 button=black,yellow
@@ -853,9 +853,8 @@ image_generation() {
         
         choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             0 "ComfyUI" \
-            1 "Install Artist" \
-            2 "Install Cinemo" \
-            3 "Install Ovis-U1-3B" \
+            1 "Install Cinemo" \
+            2 "Install Ovis-U1-3B" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -869,12 +868,9 @@ image_generation() {
                 comfyui_addons
                 ;;
             "1")
-                install_artist
-                ;;
-            "2")
                 install_cinemo
                 ;;
-            "3")
+            "2")
                 install_ovis
                 ;;
             "")
