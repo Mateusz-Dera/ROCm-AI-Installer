@@ -386,19 +386,18 @@ install_triposg(){
     cp $CUSTOM_FILES_DIR/triposg_webui.py ./
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout c5b476b1fab72bb7da839a5a723c6ae15f4e2d19
+    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
     uv pip install .
 }
 
 install_partcrafter(){
-    install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "python partcrafter_webui.py"
+    uv_install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
-    install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
+    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
     rm -r ./requirements.txt
     touch ./requirements.txt
     uv pip install .

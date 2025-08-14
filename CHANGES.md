@@ -1,3 +1,4 @@
+Updated ROCm to 6.4.3
 Updated ComfyUI
 Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
