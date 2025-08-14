@@ -40,13 +40,20 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "b7d59829448870a0acd6aaef48917703c70cb3fa" 'python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_install "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
-    # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31 --extra-index-url https://download.pytorch.org/whl/rocm6.3
-    install_flash_attention
-    pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.3.1/exllamav2-0.3.1+rocm6.3.torch2.7.0-cp312-cp312-linux_x86_64.whl
-    pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.24.0/llama_cpp_binaries-0.24.0+vulkan-py3-none-linux_x86_64.whl
+    # bitsandbytes
+    uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
+
+    # ExLlamaV2
+    git clone https://github.com/turboderp/exllamav2
+    cd exllamav2
+    git checkout 6a2d8311408aa23af34e8ec32e28085ea68dada7
+    uv pip install .
+    cd ..
+
+    # llama_cpp
+    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.36.0/llama_cpp_binaries-0.36.0+vulkanavx-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern

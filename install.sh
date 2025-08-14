@@ -315,7 +315,7 @@ uv_install(){
     local git_repo=$1
     local git_commit=$2
     local start_command=$3
-    local python_version=${4:-3.12}
+    local python_version=${4:-3.13}
     local pytorch_version=${5:-rocm6.4}
     local flash_attn=${6:-1}
 
@@ -383,11 +383,12 @@ uv_install(){
 #!/bin/bash
 source $installation_path/$repo_name/.venv/bin/activate
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
+export HIP_VISIBLE_DEVICES=0
+#export CUDA_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
 export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-#export HIP_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=$GFX
 $start_command
 EOF
     chmod +x run.sh
