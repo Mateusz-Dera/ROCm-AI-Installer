@@ -34,8 +34,8 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "7ae1d4621b81628cf4d290ec5283492c0b475e6a" "python koboldcpp.py"
-    make LLAMA_HIPBLAS=1 -j4
+    uv_install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.14" "rocm6.4" "0"
+    make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
@@ -66,7 +66,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 9a191c41e8b8fa7d203974c0b0debdfe1146a7a0
+    git checkout 2e3dff73a127679f643e971801cd51173c2c34e7
 
     mv ./start.sh ./run.sh
 
@@ -175,18 +175,17 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 17a1f0d2d407040ee242e18dd79be8bb212cfcef
+    git checkout 810b9fc8b99dd55517a3e94c6dee29748d482559
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build --config Release -- -j 16
+    && cmake --build build --config Release -- -j$(($(nproc) - 1))
 
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
-export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-export TORCH_BLAS_PREFER_HIPBLASLT=0
+export HIP_VISIBLE_DEVICES=0
+#export CUDA_VISIBLE_DEVICES=0
 ./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1
 EOF
     chmod +x run.sh
@@ -194,7 +193,7 @@ EOF
 
 # Cinemo
 install_cinemo() {
-    install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
+    uv_install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 

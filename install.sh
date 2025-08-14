@@ -379,18 +379,28 @@ uv_install(){
     fi
 
     # Create run.sh
-    tee --append run.sh <<EOF
+    
+tee --append run.sh <<EOF
 #!/bin/bash
 source $installation_path/$repo_name/.venv/bin/activate
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
 export HIP_VISIBLE_DEVICES=0
 #export CUDA_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=$GFX
+EOF
+
+if [ "$flash_attn" -eq 1 ]; then
+    tee --append run.sh <<EOF
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
 export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-export PYTORCH_ROCM_ARCH=$GFX
+EOF
+fi
+
+tee --append run.sh <<EOF
 $start_command
 EOF
+
     chmod +x run.sh
 }
 

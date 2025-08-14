@@ -44,7 +44,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
 |Artist|https://github.com/songrise/Artist/||
-|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo|Interface PyTorch uses PyTorch 2.4.0|
+|Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
 |Ovis-U1-3B|https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B<br> https://github.com/AIDC-AI/Ovis-U1||
 
 #### ComfyUI Addons
