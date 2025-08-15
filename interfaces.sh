@@ -340,21 +340,14 @@ install_dia(){
 
 # IMS-Toucan
 install_ims_toucan(){
-    install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py"
-    # self.iface.launch()
+    uv_install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox
 install_chatterbox(){
-    install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "python app.py"
-        sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
-}
-
-# HierSpeech++
-install_hierspeech(){
-    install "http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS" "365f5cfe0da9e7b3589ca6650c35d38df6d979f5" "python app.py"
-    sed -i 's/demo_play.launch()/demo_play.launch(server_name="0.0.0.0")/' "app.py"
+    uv_install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "uv run app.py"
+    sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
 }
 
 # TripoSG

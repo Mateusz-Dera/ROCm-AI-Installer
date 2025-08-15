@@ -12,6 +12,7 @@ Added Qwen-Image GGUF
 
 Drop Artist support
 Drop Artist Orpheus-TTS
+Drop HierSpeech++
 
 Moved to uv:
 - PartCrafter
@@ -23,6 +24,8 @@ Moved to uv:
 - Ovis-U1-3B
 - F5-TTS
 - Matcha-TTS
+- IMS-Toucan
+- Chatterbox
 
 Updated PyTorch to 2.8.0 ROCm 6.4:
 - ComfyUI
@@ -31,3 +34,4 @@ Updated PyTorch to 2.8.0 ROCm 6.4:
 - Cinemo
 - F5-TTS
 - Matcha-TTS
+- Chatterbox
