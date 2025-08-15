@@ -314,14 +314,14 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    uv_install "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0"
+    uv_install "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
     git submodule update --init --recursive
     uv pip install -e .
 }
 
 # Matcha-TTS
 install_matcha_tts(){
-    install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    uv_install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
     cd ./matcha
     sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
     cd $installation_path/Matcha-TTS
@@ -329,7 +329,7 @@ install_matcha_tts(){
     sed -i 's/numpy==1.24.3/numpy/' "pyproject.toml"
     rm requirements.txt
     touch requirements.txt
-    pip install -e .
+    uv pip install -e .
 }
 
 # Dia
@@ -384,7 +384,7 @@ install_hierspeech(){
 
 # TripoSG
 install_triposg(){
-    uv_install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3"
+    uv_install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/triposg_webui.py ./
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
@@ -393,7 +393,7 @@ install_triposg(){
 }
 
 install_partcrafter(){
-    uv_install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3"
+    uv_install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py

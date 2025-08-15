@@ -21,6 +21,7 @@ Moved to uv:
 - Cinemo
 - Ovis-U1-3B
 - F5-TTS
+- Matcha-TTS
 
 Updated PyTorch to 2.8.0 ROCm 6.4:
 - ComfyUI
@@ -28,3 +29,4 @@ Updated PyTorch to 2.8.0 ROCm 6.4:
 - Text generation web UI
 - Cinemo
 - F5-TTS
+- Matcha-TTS
