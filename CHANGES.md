@@ -18,6 +18,7 @@ Moved to uv:
 - Text generation web UI
 - KoboldCPP
 - Cinemo
+- Ovis-U1-3B
 
 Updated PyTorch to 2.8.0 ROCm 6.4:
 - ComfyUI

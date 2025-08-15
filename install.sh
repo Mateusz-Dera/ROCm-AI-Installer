@@ -317,7 +317,7 @@ uv_install(){
     local start_command=$3
     local python_version=${4:-3.13}
     local pytorch_version=${5:-rocm6.4}
-    local flash_attn=${6:-1}
+    local flash_attn_version=${6:-2.8.3}
 
     # Check if git repo and commit are provided
     if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
@@ -374,12 +374,6 @@ uv_install(){
         uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$pytorch_version --index-strategy unsafe-best-match
     fi
 
-    if [ "$flash_attn" -eq 1 ]; then
-        install_flash_attention
-    fi
-
-    # Create run.sh
-    
 tee --append run.sh <<EOF
 #!/bin/bash
 source $installation_path/$repo_name/.venv/bin/activate
@@ -389,7 +383,8 @@ export HIP_VISIBLE_DEVICES=0
 export PYTORCH_ROCM_ARCH=$GFX
 EOF
 
-if [ "$flash_attn" -eq 1 ]; then
+if [ -n "${flash_attn_version}" ] && [ "${flash_attn_version}" != "0" ]; then
+    install_flash_attention "$flash_attn_version"
     tee --append run.sh <<EOF
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0

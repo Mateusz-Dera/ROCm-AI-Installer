@@ -23,18 +23,15 @@
 
 # FlashAttention
 install_flash_attention() {
-    git clone https://github.com/Dao-AILab/flash-attention
-    cd flash-attention
-    git checkout dc742f2c47baa4b15cc33e6a2444f33d02c0a6d4
+    local flash_attn_version=${1:-2.8.3}
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    uv pip install . --no-build-isolation
-    cd ..
+    uv pip install flash-attn=="$flash_attn_version" --no-build-isolation
 }
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.14" "rocm6.4" "0"
+    uv_install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
@@ -199,10 +196,9 @@ install_cinemo() {
 
 # Ovis-U1
 install_ovis() {
-    install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "python3 app.py"
+    uv_install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "python3 app.py" "3.12" "rocm6.3" "2.7.4.post1"
     sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
     sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
-    install_flash_attention
 }
 
 # ComfyUI
