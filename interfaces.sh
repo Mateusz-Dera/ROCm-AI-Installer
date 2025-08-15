@@ -338,30 +338,6 @@ install_dia(){
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
-# Orpheus-TTS
-install_orpheus_tts(){
-    install "https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS" "e45257580188c1f3232781a9ec98089303c2be22" "python3 app.py"
-
-    install_flash_attention
-
-    cp -r /opt/rocm/share/amd_smi ./
-    cd ./amd_smi
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
-
-    git clone https://github.com/vllm-project/vllm.git
-    cd ./vllm
-    git checkout ed6e9075d31e32c8548b480a47d1ffb77da1f54c
-    export PYTORCH_ROCM_ARCH=$GFX
-    export VLLM_TARGET_DEVICE="rocm"
-    export VLLM_USE_TRITON_FLASH_ATTN=0
-    pip install  --no-build-isolation --verbose .
-
-    pip install orpheus-speech==0.1.0 --no-deps
-
-    cd $installation_path/Orpheus-TTS
-    sed -i 's/demo.queue().launch(share=False, ssr_mode=False)/demo.queue().launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
-}
-
 # IMS-Toucan
 install_ims_toucan(){
     install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py"

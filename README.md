@@ -78,7 +78,6 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select the voice file when using the interface.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
-|Orpheus-TTS|https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS<br> https://github.com/canopyai/Orpheus-TTS|If GPU is not detected change HIP_VISIBLE_DEVICES value.<br> Examples may show errors.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox|https://github.com/resemble-ai/chatterbox<br> https://huggingface.co/spaces/ResembleAI/Chatterbox||
 |HierSpeech++|https://github.com/sh-lee-prml/HierSpeechpp<br> http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS|Interface PyTorch uses PyTorch 2.4.0|

@@ -11,6 +11,7 @@ Updated F5-TTS
 Added Qwen-Image GGUF
 
 Drop Artist support
+Drop Artist Orpheus-TTS
 
 Moved to uv:
 - PartCrafter
