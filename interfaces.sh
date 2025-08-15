@@ -172,7 +172,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 810b9fc8b99dd55517a3e94c6dee29748d482559
+    git checkout 5e6229a8409ac786e62cb133d09f1679a9aec13e
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
