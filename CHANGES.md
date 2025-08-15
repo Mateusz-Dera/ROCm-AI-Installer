@@ -26,6 +26,7 @@ Moved to uv:
 - Matcha-TTS
 - IMS-Toucan
 - Chatterbox
+- ComfyUI
 
 Updated PyTorch to 2.8.0 ROCm 6.4:
 - ComfyUI
