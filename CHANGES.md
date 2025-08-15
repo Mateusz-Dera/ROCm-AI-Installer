@@ -7,6 +7,7 @@ Updated Text generation web UI
 Updated KoboldCPP
 Updated SillyTavern
 Updated llama.cpp
+Updated F5-TTS
 Added Qwen-Image GGUF
 
 Drop Artist support
@@ -19,9 +20,11 @@ Moved to uv:
 - KoboldCPP
 - Cinemo
 - Ovis-U1-3B
+- F5-TTS
 
 Updated PyTorch to 2.8.0 ROCm 6.4:
 - ComfyUI
 - ACE-Step
 - Text generation web UI
 - Cinemo
+- F5-TTS

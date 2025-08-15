@@ -314,9 +314,9 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "a275798a2fba6accbb4730cc5530bdaabd3a5efd" "f5-tts_infer-gradio --host 0.0.0.0"
+    uv_install "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0"
     git submodule update --init --recursive
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
+    uv pip install -e .
 }
 
 # Matcha-TTS
