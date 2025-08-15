@@ -203,7 +203,7 @@ install_ovis() {
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "37d620a6b85f61b824363ed8170db373726ca45a" "python3 ./main.py --listen --use-split-cross-attention"
+    uv_install "https://github.com/comfyanonymous/ComfyUI.git" "37d620a6b85f61b824363ed8170db373726ca45a" "python3 ./main.py --listen --use-split-cross-attention" "3.12" "rocm6.3" "2.7.4.post1"
 
     install_flash_attention
 
