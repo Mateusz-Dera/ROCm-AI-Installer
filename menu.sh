@@ -56,7 +56,7 @@ show_menu() {
             set_installation_path
             ;;
         1)
-            install_rocm
+            install
             ;;
         2)
             text_generation

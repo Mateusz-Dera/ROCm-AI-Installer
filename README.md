@@ -1,5 +1,5 @@
 # ROCm-AI-Installer
-A script that automatically installs all the required stuff to run selected AI interfaces on AMD Radeon 7900XTX.
+A script that automatically installs all the required stuff to run selected AI apps on AMD Radeon 7900XTX.
 It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
@@ -11,8 +11,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 > It should work on Ubuntu 24.04 LTS.
 
 > [!Important]
-> All interfaces and models are tested on a card with 24GB VRAM.<br>
-> Some interfaces or models may not work on cards with less VRAM.
+> All apps and models are tested on a card with 24GB VRAM.<br>
+> Some apps or models may not work on cards with less VRAM.
 
 ### Test platform:
 |Name|Info|
@@ -75,7 +75,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Links|Additional information|
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
-|F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select the voice file when using the interface.|
+|F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select voice.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
@@ -94,38 +94,35 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 
 ## Instalation:
 > [!Note]
-> First startup after installation of the selected interface may take longer.
+> First startup after installation of the selected app may take longer.
 
-> [!Important]
-> This script does not download any models. If the interface does not have defaults, download your own.
+> [!Important] 
+> If app does not download any default models, download your own.
 
 > [!Caution]
 > If you update, back up your settings and models. Reinstallation deletes the previous directories.
 
-1\. Add the user to the required groups.
-```bash
-sudo adduser `whoami` video
-sudo adduser `whoami` render
-```
-2\. Reboot
-```bash
-sudo reboot
-```
-3\. Clone repository 
+1\. If you have installed uv other than through <b>pipx</b>, uninstall <b>uv</b> first.
+
+2\. Clone repository 
 ```bash
 git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 ```
-4\. Run installer 
+
+3\. Run installer 
 ```bash
 bash ./install.sh
 ```
-5\. Select installation path.
 
-6\. Select ROCm installation if you are upgrading or running the script for the first time.
+4\. Select installation path.
 
-7\. Install selected interfaces
+5\. Select ROCm installation if you are upgrading or running the script for the first time.
 
-8\. Go to the installation path with the selected interface and run:
+6\. If you are installing the script for the first time, restart system after this step.
+
+7\. Install selected app.
+
+8\. Go to the installation path with the selected app and run:
 ```bash
 ./run.sh
 ```
