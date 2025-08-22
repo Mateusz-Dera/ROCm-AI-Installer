@@ -110,6 +110,8 @@ install_uv() {
     sudo apt install -y pipx
     pipx install uv --force
     pipx upgrade uv
+    pipx ensurepath
+    source ~/.bashrc
 }
 
 install(){
@@ -119,9 +121,9 @@ install(){
     sudo adduser `whoami` video
     sudo adduser `whoami` render
 
-    #uninstall_rocm
+    uninstall_rocm
 
-    #install_rocm
+    install_rocm
 
     install_uv
 }
