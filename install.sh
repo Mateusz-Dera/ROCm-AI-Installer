@@ -149,23 +149,6 @@ EOF
 apt update
 }
 
-profile(){
-    # Check if there's a line starting with PATH=
-    if grep -q '^PATH=' ~/.profile; then
-        # If the line exists, add new paths at the beginning if they're not already there
-        if ! grep -q '/opt/rocm/bin' ~/.profile || ! grep -q '/opt/rocm/opencl/bin' ~/.profile; then
-            sed -i '/^PATH=/ s|PATH=|PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:|' ~/.profile
-            echo "Added new paths ~/.profile"
-        else
-            echo "Paths already exist in ~/.profile"
-        fi
-    else
-        # If the line doesn't exist, add a new line with these paths at the beginning
-        echo 'PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH' >> ~/.profile
-        echo "Added a new PATH line to ~/.profile"
-    fi
-}
-
 install(){
     command -v sudo >/dev/null || { echo "sudo not installed" >&2; exit 1; }
     sudo -n true 2>/dev/null || sudo -v || { echo "no sudo access" >&2; exit 1; }
@@ -187,8 +170,6 @@ install(){
 /opt/rocm/lib64
 EOF
     sudo ldconfig
-
-    profile
 
     install_uv
 }

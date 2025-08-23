@@ -152,7 +152,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 2e3dff73a127679f643e971801cd51173c2c34e7
+    git checkout 37e2ddf59664dd1604cc41b2660f48d1fa1af173
 
     mv ./start.sh ./run.sh
 
@@ -178,7 +178,7 @@ install_sillytavern_whisperspeech_web_ui() {
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui
     mv ./whisperspeech-webui ./whisperspeech-webui-temp
     cd whisperspeech-webui-temp
-    git checkout 06aa5f064f6e742f33178214bc883883a5ed0c40
+    git checkout 37e2ddf59664dd1604cc41b2660f48d1fa1af173
     mv ./whisperspeech-webui ../
     cd ..
     rm -rf whisperspeech-webui-temp
