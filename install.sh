@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # ROCM-AI-Installer
 # Copyright © 2023-2025 Mateusz Dera
@@ -25,6 +24,10 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
+# Debian 12 fallback
+MIRROR="http://deb.debian.org/debian"
+BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
+
 # Version
 version="8.0"
 
@@ -42,45 +45,24 @@ CUSTOM_FILES_DIR="$SCRIPT_DIR/custom_files"
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
     sudo apt update
-    sudo apt -y install whiptail
+    sudo apt install -y whiptail
 fi
 
 source ./menu.sh
 source ./interfaces.sh
 
-# Installation path
-set_installation_path() {
-    # Prompt for installation path, using the default if the user leaves it blank
-
-    new_installation_path=$(whiptail --inputbox "Enter the installation path (default: $default_installation_path):" 10 150 "$installation_path" --cancel-button "Back" 3>&1 1>&2 2>&3)
-    status=$?
-
-    if [ $status -ne 0 ]; then
-        return 0
-    fi
-
-    # If the user leaves it blank, use the default
-    new_installation_path=${new_installation_path:-$default_installation_path}
-
-    # Remove trailing "/" if it exists
-    new_installation_path=$(echo "$new_installation_path" | sed 's#/$##')
-
-    # Update the installation path variable
-    installation_path="$new_installation_path"
-}
-
-## INSTALLATION
-
-# Remove old
-remove_old() {
+# Remove old ROCm
+uninstall_rocm() {
+    # Remove old ROCm packages
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
-    # sudo apt purge -y nvidia*
 
+    # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
         sudo rm -r /opt/rocm*
     fi
 
+    # Remove old ROCm keyrings and sources
     if [ -f /etc/apt/keyrings/rocm.gpg ]; then
         sudo rm /etc/apt/keyrings/rocm.gpg
     fi
@@ -97,147 +79,93 @@ remove_old() {
         sudo rm /etc/apt/preferences.d/rocm-pin-600
     fi
 
+    # Clean up the package cache
+    sudo rm -rf /var/cache/apt/*
+    sudo apt clean all
     sudo apt autoremove -y
 }
 
-# Repositories
-repo(){
-    # Update
-    sudo apt update -y && sudo apt upgrade -y
-    
-    # Wget
-    sudo apt install -y wget
+install_rocm() {
+    # Create the keyrings directory if it does not exist
+    if [ ! -d /etc/apt/keyrings ]; then
+        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+    fi
 
-    # AMDGPU
-    sudo apt-add-repository -y -s -s
-    sudo apt install -y "linux-headers-$(uname -r)" \
-	"linux-modules-extra-$(uname -r)"
-    sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.4.3/ubuntu noble main' \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-    sudo apt update -y
-    sudo apt install -y amdgpu-dkms
+    #TODO
+    # Add the ROCm repository
+    #wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |
+    #gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-    # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.3 noble main" \
-    | sudo tee --append /etc/apt/sources.list.d/rocm.list
+    #TODO
+    # Add the ROCm repository to the sources list
+    # echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
+    # | sudo tee /etc/apt/sources.list.d/rocm.list
+
+    echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
+    | sudo tee /etc/apt/sources.list.d/rocm.list
+
+    # Add the AMDGPU repository
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    sudo apt update -y
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+
+    # Update the package list
+    sudo apt update
+
+    # Install the ROCm packages
+    sudo apt install -y -t jammy rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
-profile(){
-    # Check if there's a line starting with PATH=
-    if grep -q '^PATH=' ~/.profile; then
-        # If the line exists, add new paths at the beginning if they're not already there
-        if ! grep -q '/opt/rocm/bin' ~/.profile || ! grep -q '/opt/rocm/opencl/bin' ~/.profile; then
-            sed -i '/^PATH=/ s|PATH=|PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:|' ~/.profile
-            echo "Added new paths ~/.profile"
-        else
-            echo "Paths already exist in ~/.profile"
-        fi
-    else
-        # If the line doesn't exist, add a new line with these paths at the beginning
-        echo 'PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH' >> ~/.profile
-        echo "Added a new PATH line to ~/.profile"
+install_uv() {
+    sudo apt install -y pipx
+    pipx install uv --force
+    pipx upgrade uv
+    pipx ensurepath
+    source ~/.bashrc
+}
+
+debian_fallback(){
+    if grep -q "bookworm main" /etc/apt/sources.list 2>/dev/null; then
+        sudo sed -i '/bookworm main/d' /etc/apt/sources.list
     fi
-}
 
-# Detect current shell and source appropriate config file
-detect_and_source_shell() {
-    # Get the current shell name
-    CURRENT_SHELL=$(basename "$SHELL")
-    
-    case "$CURRENT_SHELL" in
-        bash)
-            if [ -f ~/.bashrc ]; then
-                echo "Sourcing ~/.bashrc for bash..."
-                source ~/.bashrc
-            elif [ -f ~/.bash_profile ]; then
-                echo "Sourcing ~/.bash_profile for bash..."
-                source ~/.bash_profile
-            fi
-            ;;
-        zsh)
-            if [ -f ~/.zshrc ]; then
-                echo "Sourcing ~/.zshrc for zsh..."
-                source ~/.zshrc
-            fi
-            ;;
-        fish)
-            echo "For fish shell, restart your terminal or run: source ~/.config/fish/config.fish"
-            ;;
-        tcsh|csh)
-            if [ -f ~/.tcshrc ]; then
-                echo "Sourcing ~/.tcshrc for tcsh..."
-                source ~/.tcshrc
-            elif [ -f ~/.cshrc ]; then
-                echo "Sourcing ~/.cshrc for csh..."
-                source ~/.cshrc
-            fi
-            ;;
-        ksh)
-            if [ -f ~/.kshrc ]; then
-                echo "Sourcing ~/.kshrc for ksh..."
-                source ~/.kshrc
-            elif [ -f ~/.profile ]; then
-                echo "Sourcing ~/.profile for ksh..."
-                source ~/.profile
-            fi
-            ;;
-        *)
-            echo "Unknown shell: $CURRENT_SHELL"
-            echo "Please manually source your shell's config file or restart your terminal and run script agin"
-            echo "Common locations:"
-            echo "  - bash: ~/.bashrc or ~/.bash_profile"
-            echo "  - zsh: ~/.zshrc" 
-            echo "  - fish: ~/.config/fish/config.fish"
-            echo "  - tcsh/csh: ~/.tcshrc or ~/.cshrc"
-            ;;
-    esac
-}
+    echo -e "\n$BOOKWORM_LINE" | sudo tee -a /etc/apt/sources.list > /dev/null
 
-# Function to install ROCm and basic packages
-install_rocm() {
-    sudo apt update -y
-    remove_old
+    sudo tee /etc/apt/preferences.d/fallback > /dev/null << EOF
+$MARKER
+Package: *
+Pin: release n=trixie
+Pin-Priority: 900
 
-    repo
+Package: *
+Pin: release n=bookworm  
+Pin-Priority: 100
 
-    sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
-/opt/rocm/lib
-/opt/rocm/lib64
+# Higher position - when you install from bookworm, all dependencies also come from bookworm
+Package: *
+Pin: release n=bookworm
+Pin-Priority: 1001
 EOF
-    sudo ldconfig
 
-    profile
-
-    sudo apt install -y curl wget
-    sudo apt install -y git git-lfs
-    sudo apt install -y nodejs
-    # sudo apt install -y libstdc++-12-dev
-    # sudo apt install -y libtcmalloc-minimal4
-    # sudo apt install -y libgl1
-    # sudo apt install -y ffmpeg
-    # sudo apt install -y libmecab-dev
-    # sudo apt install -y python3-openssl
-    # sudo apt install -y espeak-ng
-    # sudo apt install -y libomp-dev
-    # sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
-    # sudo apt install -y cmake
-    # sudo apt install -y libegl1 libgl1-mesa-dev
-    # sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
-  
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    detect_and_source_shell
-    uv self update
+apt update
 }
 
+install(){
+    command -v sudo >/dev/null || { echo "sudo not installed" >&2; exit 1; }
+    sudo -n true 2>/dev/null || sudo -v || { echo "no sudo access" >&2; exit 1; }
+    
+    sudo adduser `whoami` video
+    sudo adduser `whoami` render
 
-## MAIN
+    debian_fallback
+
+    uninstall_rocm
+
+    sudo apt install python3-dev
+
+    install_rocm
+
+    install_uv
+}
 
 # Main loop
 while show_menu; do

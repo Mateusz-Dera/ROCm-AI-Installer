@@ -8,7 +8,9 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 
 > [!Note]
 > Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.
-> It should work on Ubuntu 24.04 LTS.
+> This script requires several packages from Debian 12.
+> Default mirror is http://deb.debian.org/debian
+> If you wannt another mirror in install.sh change MIRROR variable value.
 
 > [!Important]
 > All apps and models are tested on a card with 24GB VRAM.<br>
@@ -22,7 +24,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Debian 13|
-|Kernel|6.14.0-27-generic|
+|Kernel|6.12.41+deb13-amd64|
 |ROCm|6.4.3|
 
 ###  Text generation
