@@ -3,10 +3,6 @@
 # ROCM-AI-Installer
 # Copyright © 2023-2025 Mateusz Dera
 
-# Source the backup system
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/backup.sh"
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -24,6 +20,10 @@ source "$SCRIPT_DIR/backup.sh"
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+# Backup
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/backup.sh"
 
 # Colors
 export NEWT_COLORS='
