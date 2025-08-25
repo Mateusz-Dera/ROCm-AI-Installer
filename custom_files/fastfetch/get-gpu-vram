@@ -1,27 +1,27 @@
 #!/bin/bash
 
-# Function to get AMD GPU names and count
-get_amd_gpus() {
-    lspci -nn | grep -i "VGA" | grep -i "AMD" | sed 's/.*\[AMD\/ATI\] //; s/ \[.*\]//'
-}
-
-# Function to count AMD GPUs
-count_amd_gpus() {
-    lspci | grep -i "VGA" | grep -i "AMD" | wc -l
-}
-
-# Function to count NVIDIA GPUs
-count_nvidia_gpus() {
-    if command -v nvidia-smi &> /dev/null; then
-        nvidia-smi --query-gpu=count --format=csv,noheader
-    else
-        echo 0
-    fi
+# Function to get all GPUs in lspci order with vendor info
+get_all_gpus() {
+    lspci | grep ' VGA ' | while read -r line; do
+        bus_id=$(echo "$line" | awk '{print $1}')
+        
+        if echo "$line" | grep -qi "AMD"; then
+            gpu_name=$(echo "$line" | sed 's/.*\[AMD\/ATI\] //; s/ \[.*\]//')
+            echo "$bus_id|AMD|$gpu_name"
+        elif echo "$line" | grep -qi "NVIDIA"; then
+            gpu_name=$(echo "$line" | sed 's/.*NVIDIA Corporation //; s/ \[.*\]//')
+            echo "$bus_id|NVIDIA|$gpu_name"
+        elif echo "$line" | grep -qi "Intel"; then
+            gpu_name=$(echo "$line" | sed 's/.*Intel Corporation //; s/ \[.*\]//')
+            echo "$bus_id|Intel|$gpu_name"
+        fi
+    done
 }
 
 # Check for required tools
 has_rocm_smi=false
 has_nvidia_smi=false
+has_intel_gpu_top=false
 
 if command -v rocm-smi &> /dev/null; then
     has_rocm_smi=true
@@ -31,75 +31,94 @@ if command -v nvidia-smi &> /dev/null; then
     has_nvidia_smi=true
 fi
 
-# Count GPUs
-amd_count=$(count_amd_gpus)
-nvidia_count=$(count_nvidia_gpus)
-
-# Get GPU names
-amd_names=()
-if [ "$amd_count" -gt 0 ]; then
-    while IFS= read -r line; do
-        amd_names+=("$line")
-    done < <(get_amd_gpus)
+if command -v intel_gpu_top &> /dev/null; then
+    has_intel_gpu_top=true
 fi
 
-nvidia_names=()
-if [ "$nvidia_count" -gt 0 ] && $has_nvidia_smi; then
-    while IFS= read -r line; do
-        nvidia_names+=("$line")
-    done < <(nvidia-smi --query-gpu=name --format=csv,noheader)
-fi
+# Get all GPUs in system order
+gpu_data=$(get_all_gpus)
 
 # Check if any GPUs are found
-if [ "$amd_count" -le 0 ] && [ "$nvidia_count" -le 0 ]; then
+if [ -z "$gpu_data" ]; then
     exit 0
 fi
 
-# Process AMD GPUs if found
-if [ "$amd_count" -gt 0 ]; then
-    if $has_rocm_smi; then
-        # Loop through each AMD GPU index
-        for ((gpu=0; gpu<amd_count; gpu++)); do
-            used_mem_bytes=$(rocm-smi --showmeminfo vram -d $gpu | grep 'Used Memory' | awk '{print $NF}')
-            total_mem_bytes=$(rocm-smi --showmeminfo vram -d $gpu | grep 'Total Memory' | awk '{print $NF}')
-            used_mem_mb=$(echo "$used_mem_bytes / 1048576" | bc)
-            total_mem_mb=$(echo "$total_mem_bytes / 1048576" | bc)
-            
-            # Output format: GPU_NAME||VRAM_INFO
-            # FIX: Use $gpu instead of 0 to get the correct GPU name
-            gpu_name=$(rocm-smi --showproductname -d $gpu | grep 'Card Series' | awk -F: '{print $NF}' | xargs)
-            echo "$gpu_name||$used_mem_mb/$total_mem_mb MB"
-        done
-    else
-        # If no rocm-smi, just output the names
-        for ((gpu=0; gpu<amd_count; gpu++)); do
-            gpu_name="${amd_names[$gpu]:-AMD GPU $gpu}"
-            echo "$gpu_name||Memory info unavailable"
-        done
-    fi
-fi
+# Initialize counters for each vendor
+amd_index=0
+nvidia_index=0
+intel_index=0
 
-# Process NVIDIA GPUs if found
-if [ "$nvidia_count" -gt 0 ]; then
-    if $has_nvidia_smi; then
-        # Get memory usage for all NVIDIA GPUs
-        nvidia_index=0
-        nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv,noheader,nounits | while read -r line; do
-            index=$(echo "$line" | awk -F ', ' '{print $1}')
-            used=$(echo "$line" | awk -F ', ' '{print $2}')
-            total=$(echo "$line" | awk -F ', ' '{print $3}')
+# Process GPUs in system order
+echo "$gpu_data" | while IFS='|' read -r bus_id vendor gpu_name; do
+    case $vendor in
+        "AMD")
+            if $has_rocm_smi; then
+                # Get GPU name and memory info using rocm-smi
+                amd_gpu_name=$(rocm-smi --showproductname -d $amd_index 2>/dev/null | grep 'Card Series' | awk -F: '{print $NF}' | xargs)
+                if [ -z "$amd_gpu_name" ]; then
+                    amd_gpu_name="$gpu_name"
+                fi
+                
+                used_mem_bytes=$(rocm-smi --showmeminfo vram -d $amd_index 2>/dev/null | grep 'Used Memory' | awk '{print $NF}')
+                total_mem_bytes=$(rocm-smi --showmeminfo vram -d $amd_index 2>/dev/null | grep 'Total Memory' | awk '{print $NF}')
+                
+                if [ -n "$used_mem_bytes" ] && [ -n "$total_mem_bytes" ]; then
+                    used_mem_mb=$(echo "$used_mem_bytes / 1048576" | bc 2>/dev/null || echo "0")
+                    total_mem_mb=$(echo "$total_mem_bytes / 1048576" | bc 2>/dev/null || echo "0")
+                    echo "$amd_gpu_name||$used_mem_mb/$total_mem_mb MB"
+                else
+                    echo "$amd_gpu_name||Memory info unavailable"
+                fi
+                amd_index=$((amd_index + 1))
+            else
+                echo "$gpu_name||Memory info unavailable"
+            fi
+            ;;
+        "NVIDIA")
+            if $has_nvidia_smi; then
+                # Get GPU name and memory info using nvidia-smi
+                nvidia_gpu_name=$(nvidia-smi --query-gpu=name --format=csv,noheader -i $nvidia_index 2>/dev/null)
+                if [ -z "$nvidia_gpu_name" ]; then
+                    nvidia_gpu_name="$gpu_name"
+                fi
+                
+                mem_info=$(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits -i $nvidia_index 2>/dev/null)
+                if [ -n "$mem_info" ]; then
+                    used=$(echo "$mem_info" | awk -F ', ' '{print $1}')
+                    total=$(echo "$mem_info" | awk -F ', ' '{print $2}')
+                    echo "$nvidia_gpu_name||$used/$total MB"
+                else
+                    echo "$nvidia_gpu_name||Memory info unavailable"
+                fi
+                nvidia_index=$((nvidia_index + 1))
+            else
+                echo "$gpu_name||Memory info unavailable"
+            fi
+            ;;
+        "Intel")
+            # Intel GPU memory detection is complex
+            intel_memory=""
+            if $has_intel_gpu_top; then
+                # Try to get memory info from /sys filesystem
+                if [ -d "/sys/class/drm/card$intel_index" ]; then
+                    if [ -r "/sys/class/drm/card$intel_index/device/mem_info_vram_total" ]; then
+                        total_bytes=$(cat "/sys/class/drm/card$intel_index/device/mem_info_vram_total" 2>/dev/null)
+                        used_bytes=$(cat "/sys/class/drm/card$intel_index/device/mem_info_vram_used" 2>/dev/null)
+                        if [ -n "$total_bytes" ] && [ -n "$used_bytes" ]; then
+                            total_mb=$(echo "$total_bytes / 1048576" | bc 2>/dev/null || echo "0")
+                            used_mb=$(echo "$used_bytes / 1048576" | bc 2>/dev/null || echo "0")
+                            intel_memory="${used_mb}/${total_mb} MB"
+                        fi
+                    fi
+                fi
+                intel_index=$((intel_index + 1))
+            fi
             
-            # Output format: GPU_NAME||VRAM_INFO
-            gpu_name="${nvidia_names[$nvidia_index]:-NVIDIA GPU $index}"
-            echo "$gpu_name||$used/$total MB"
+            if [ -z "$intel_memory" ]; then
+                intel_memory="Memory info unavailable"
+            fi
             
-            nvidia_index=$((nvidia_index + 1))
-        done
-    else
-        # If no nvidia-smi, just output the model names if available
-        for ((gpu=0; gpu<nvidia_count; gpu++)); do
-            gpu_name="${nvidia_names[$gpu]:-NVIDIA GPU $gpu}"
-            echo "$gpu_name||Memory info unavailable"
-        done
-    fi
-fi
+            echo "$gpu_name||$intel_memory"
+            ;;
+    esac
+done
