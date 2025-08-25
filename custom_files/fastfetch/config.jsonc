@@ -6,6 +6,9 @@
     "top": 0
     },
   },
+  "display": {
+    "separator": ": "
+  },
   "modules": [
     "title",
     "break",

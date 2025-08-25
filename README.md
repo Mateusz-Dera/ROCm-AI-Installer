@@ -92,7 +92,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Tools
 |Name|Links|Additional information|
 |:---|:---|:---|
-|Fastfetch|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.<br> Script supports not only AMD but also NVIDIA graphics cards (nvidia-smi needed).<br> If you change the number or order of graphics cards you must run the installer again.|
+|Fastfetch|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.<br> Script supports not only AMD but also NVIDIA graphics cards (nvidia-smi needed).<br> If you change the number or order of graphics cards you must run the installer again.<br>If you want to modify default theme, modify the config.jsonc file.|
 
 ## Instalation:
 > [!Note]
