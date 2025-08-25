@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Run the get-gpu-vram command and capture output
+output=$(get-gpu-vram)
+
+# Exit if no output
+if [ -z "$output" ]; then
+    echo ""
+    exit 0
+fi
+
+# Initialize JSON modules array
+modules=""
+
+# Process each line of output
+while IFS= read -r line; do
+    # Split by the || delimiter to get name and info
+    gpu_name=$(echo "$line" | cut -d'|' -f1)
+    vram_info=$(echo "$line" | cut -d'|' -f3-)  # Allows for cases where || might appear in the vram_info
+    
+    # Escape any quotes in the line
+    escaped_vram_info=$(echo "$vram_info" | sed 's/"/\\"/g')
+    escaped_gpu_name=$(echo "$gpu_name" | sed 's/"/\\"/g')
+    
+    # Create a JSON module for this GPU
+    if [ -n "$modules" ]; then
+        modules="${modules},"
+    fi
+    modules="${modules}{\"type\": \"command\", \"text\": \"echo '$escaped_vram_info'\", \"key\": \"$escaped_gpu_name\"}"
+done <<< "$output"
+
+# Output the JSON
+echo "$modules"

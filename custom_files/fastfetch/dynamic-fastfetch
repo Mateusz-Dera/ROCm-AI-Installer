@@ -1,0 +1,29 @@
+#!/bin/bash
+# Dynamic fastfetch wrapper that ensures VRAM information is always up-to-date
+
+# Generate temporary config file with current GPU VRAM info
+TMP_CONFIG="$HOME/.config/fastfetch/tmp_config.jsonc"
+BASE_CONFIG="$HOME/.config/fastfetch/base_config.jsonc"
+
+# Copy base config to temp
+cp "$BASE_CONFIG" "$TMP_CONFIG"
+
+# Get dynamic GPU modules
+gpu_modules=$(dynamic-gpu-vram)
+
+# Insert GPU modules into temp config
+if [ -n "$gpu_modules" ]; then
+    # Replace placeholder with actual modules
+    sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules,|" "$TMP_CONFIG"
+else
+    # Remove placeholder if no GPU data
+    sed -i "s|__GPU_VRAM_MODULES__||" "$TMP_CONFIG"
+fi
+
+# Run fastfetch with the temporary config
+echo
+/usr/bin/fastfetch --config "$TMP_CONFIG"
+echo
+
+# Clean up temp file
+rm "$TMP_CONFIG"
