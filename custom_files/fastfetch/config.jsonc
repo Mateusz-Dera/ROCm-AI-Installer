@@ -39,8 +39,8 @@
       "key": "SWAP",
       "format": "{used} / {total}"
     },
-    "gpu",
+    __GPU_VRAM_MODULES__,
     "break",
-    __GPU_VRAM_MODULES__
+    "colors"
   ]
 }
