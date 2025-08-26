@@ -464,13 +464,14 @@ install_fastfetch(){
         sudo rm "/usr/bin/get-gpu-vram"
     fi
 
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/get-gpu-vram" /usr/bin/get-gpu-vram
-    sudo chmod +x /usr/bin/get-gpu-vram
-
     if [ -f "/usr/bin/dynamic-gpu-vram" ]; then
         sudo rm "/usr/bin/dynamic-gpu-vram"
     fi
 
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/dynamic-gpu-vram" /usr/bin/dynamic-gpu-vram
-    sudo chmod +x /usr/bin/dynamic-gpu-vram
+    if [ -f "/usr/bin/fastfetch-gpu.sh" ]; then
+        sudo rm "/usr/bin/fastfetch-gpu.sh"
+    fi
+
+    sudo cp "$CUSTOM_FILES_DIR/fastfetch/fastfetch-gpu.sh" /usr/bin/fastfetch-gpu.sh
+    sudo chmod +x /usr/bin/fastfetch-gpu.sh
 }

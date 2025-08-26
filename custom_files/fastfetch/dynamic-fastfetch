@@ -8,13 +8,39 @@ BASE_CONFIG="$HOME/.config/fastfetch/base_config.jsonc"
 # Copy base config to temp
 cp "$BASE_CONFIG" "$TMP_CONFIG"
 
-# Get dynamic GPU modules
-gpu_modules=$(dynamic-gpu-vram)
+# Get dynamic GPU modules from fastfetch-gpu.sh (JSON format)
+gpu_json=$(fastfetch-gpu.sh)
 
-# Insert GPU modules into temp config
-if [ -n "$gpu_modules" ]; then
+# Parse JSON and convert to fastfetch custom modules
+if [ -n "$gpu_json" ] && [ "$gpu_json" != "{}" ]; then
+    # Convert JSON to fastfetch custom modules format
+    gpu_modules=""
+    
+    # Extract GPU info from JSON and create custom modules
+    echo "$gpu_json" | sed -n 's/.*"GPU \([0-9]*\)": "\([^"]*\)".*/\1:\2/p' | while IFS=':' read -r gpu_num gpu_info; do
+        if [ -n "$gpu_info" ]; then
+            module="{\"type\": \"custom\", \"key\": \"GPU $gpu_num\", \"format\": \"$gpu_info\"}"
+            if [ -z "$gpu_modules" ]; then
+                gpu_modules="$module"
+            else
+                gpu_modules="$gpu_modules,$module"
+            fi
+            echo "$gpu_modules" > /tmp/gpu_modules
+        fi
+    done
+    
+    # Read the accumulated modules
+    if [ -f /tmp/gpu_modules ]; then
+        gpu_modules=$(cat /tmp/gpu_modules)
+        rm /tmp/gpu_modules
+    fi
+    
     # Replace placeholder with actual modules
-    sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules,|" "$TMP_CONFIG"
+    if [ -n "$gpu_modules" ]; then
+        sed -i "s|__GPU_VRAM_MODULES__|$gpu_modules|" "$TMP_CONFIG"
+    else
+        sed -i "s|__GPU_VRAM_MODULES__||" "$TMP_CONFIG"
+    fi
 else
     # Remove placeholder if no GPU data
     sed -i "s|__GPU_VRAM_MODULES__||" "$TMP_CONFIG"
