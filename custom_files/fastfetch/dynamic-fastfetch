@@ -52,4 +52,6 @@ echo
 echo
 
 # Clean up temp file
-rm "$TMP_CONFIG"
+if [ -f "$TMP_CONFIG" ]; then
+    rm "$TMP_CONFIG"
+fi
