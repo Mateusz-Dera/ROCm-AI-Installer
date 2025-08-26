@@ -45,13 +45,15 @@ if command -v lspci &> /dev/null; then
                     gpu_count=$((gpu_count + 1))
                 done
             fi
-        # Intel GPU (use lspci name, no VRAM info)
-        elif echo "$line" | grep -qi intel; then
+        # All other GPUs (use lspci name, no VRAM info)
+        else
             gpu_name=$(echo "$line" | sed 's/^[0-9a-f:.]* VGA compatible controller: //')
+            # Clean up name by cutting off everything after [ or (
+            gpu_name=$(echo "$gpu_name" | sed 's/\[[^]]*\].*$//' | sed 's/(.*$//' | xargs)
             if [ "$first_entry" = false ]; then
                 echo ","
             fi
-            echo "  \"GPU $gpu_count\": \"$gpu_name (integrated)\""
+            echo "  \"GPU $gpu_count\": \"$gpu_name\""
             first_entry=false
             gpu_count=$((gpu_count + 1))
         fi
