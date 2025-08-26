@@ -18,7 +18,11 @@ if command -v lspci &> /dev/null; then
                 if [ "$first_entry" = false ]; then
                     echo ","
                 fi
-                echo "  \"GPU $gpu_count\": \"$name ${used}MB/${total}MB\""
+                # Trim whitespace from values
+                name=$(echo "$name" | xargs)
+                used=$(echo "$used" | xargs)
+                total=$(echo "$total" | xargs)
+                echo "  \"GPU $gpu_count\": \"$name ${used}/${total}MB\""
                 first_entry=false
                 gpu_count=$((gpu_count + 1))
             done
@@ -32,7 +36,11 @@ if command -v lspci &> /dev/null; then
                     if [ "$first_entry" = false ]; then
                         echo ","
                     fi
-                    echo "  \"GPU $gpu_count\": \"$name ${used}MB/${total} MB\""
+                    # Trim whitespace from values
+                    name=$(echo "$name" | xargs)
+                    used=$(echo "$used" | xargs)
+                    total=$(echo "$total" | xargs)
+                    echo "  \"GPU $gpu_count\": \"$name ${used}/${total}MB\""
                     first_entry=false
                     gpu_count=$((gpu_count + 1))
                 done
