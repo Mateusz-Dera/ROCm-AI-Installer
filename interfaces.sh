@@ -447,12 +447,8 @@ install_fastfetch(){
     sudo cp "$CUSTOM_FILES_DIR/fastfetch/dynamic-fastfetch" /usr/bin/dynamic-fastfetch
     sudo chmod +x /usr/bin/dynamic-fastfetch
 
-    # TODO
-    if [ -d "$HOME/.config/fastfetch" ]; then
-        echo "Fastfetch config already exists"
-    else
+    if [ ! -d "$HOME/.config/fastfetch" ]; then
         mkdir -p "$HOME/.config/fastfetch"
-        echo "Fastfetch config created"
     fi
 
     if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
