@@ -419,6 +419,7 @@ huggingface() {
 
 # Install fastfetch
 install_fastfetch(){
+    local language=${1:-"english"}
 
     # Install fastfetch
     
@@ -446,7 +447,15 @@ install_fastfetch(){
         sudo rm -rf "$HOME/.config/fastfetch/config.jsonc"
     fi
 
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+    # Copy language-specific config file
+    case "$language" in
+        "polish")
+            sudo cp "$CUSTOM_FILES_DIR/fastfetch/config_polish.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+            ;;
+        "english"|*)
+            sudo cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+            ;;
+    esac
 
     # GPU
 

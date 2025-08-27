@@ -519,7 +519,7 @@ tools() {
 
         case "$choice" in
             "0")
-                install_fastfetch
+                fastfetch_menu
                 ;;
             "")
                 echo "Previous menu..."
@@ -536,5 +536,38 @@ tools() {
         if [ $status -ne 0 ]; then
             return 0
         fi
+    done
+}
+
+fastfetch_menu() {
+    second=true
+    while $second; do
+        choice=$(whiptail --title "Fastfetch" --menu "Choose language:" 15 100 2 --cancel-button "Back" \
+            0 "English" \
+            1 "Polish" \
+            2>&1 > /dev/tty)
+        status=$?
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "0")
+                install_fastfetch "english"
+                ;;
+            "1")
+                install_fastfetch "polish"
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
     done
 }
