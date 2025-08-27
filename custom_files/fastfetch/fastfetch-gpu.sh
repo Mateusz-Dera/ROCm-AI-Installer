@@ -103,17 +103,27 @@ if command -v lspci &> /dev/null; then
             done < <(nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free --format=csv,noheader,nounits -i "$bus_id" 2>/dev/null)
         # Check for AMD GPU
         elif command -v rocm-smi &> /dev/null && echo "$line" | grep -qi amd; then
-            # Get AMD GPU info (matching by bus ID is complex, so we'll use index)
-            amd_name=$(rocm-smi --showproductname --csv 2>/dev/null | tail -n +2 | head -n 1 | cut -d',' -f2)
-            amd_vram=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | tail -n +2 | head -n 1 | cut -d',' -f2,3,4)
+            # Calculate AMD GPU index based on current gpu_count (0-indexed for rocm-smi)
+            amd_gpu_index=$((gpu_count - 1))
+            # Get AMD GPU info for specific GPU index
+            amd_name=$(rocm-smi --showproductname --csv 2>/dev/null | tail -n +2 | sed -n "$((amd_gpu_index + 1))p" | cut -d',' -f2)
+            amd_vram=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | tail -n +2 | sed -n "$((amd_gpu_index + 1))p" | cut -d',' -f2,3,4)
             if [ -n "$amd_name" ] && [ -n "$amd_vram" ]; then
                 while IFS=',' read -r name total used free; do
                     # Trim whitespace from values
                     name=$(echo "$name" | xargs)
                     used=$(echo "$used" | xargs)
                     total=$(echo "$total" | xargs)
-
-                    echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name} ${used} MiB / ${total} MiB"
+                    
+                    # Convert bytes to MiB (1 MiB = 1048576 bytes)
+                    if [[ "$used" =~ ^[0-9]+$ ]] && [[ "$total" =~ ^[0-9]+$ ]]; then
+                        used_mib=$((used / 1048576))
+                        total_mib=$((total / 1048576))
+                        echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name} ${used_mib} MiB / ${total_mib} MiB"
+                    else
+                        echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name}"
+                    fi
+                    
                     first_gpu=false
                     gpu_count=$((gpu_count + 1))
                 done < <(echo "$amd_name,$amd_vram")
