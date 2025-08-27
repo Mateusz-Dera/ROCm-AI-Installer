@@ -9,6 +9,7 @@ Updated SillyTavern
 Updated llama.cpp
 Updated F5-TTS
 Added Qwen-Image GGUF
+Rewrited fastfetch configuration
 
 Drop Artist support
 Drop Artist Orpheus-TTS

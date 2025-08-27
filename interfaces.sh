@@ -433,42 +433,27 @@ install_fastfetch(){
     # Add fastfetch to shell
 
     CONFIG_FILE="$HOME/.bashrc"
-    LINE="alias fastfetch='dynamic-fastfetch'"
-    grep -qxF "$LINE" "$CONFIG_FILE" || echo "$LINE" >> "$CONFIG_FILE"
     LINE="fastfetch"
     grep -qxF "$LINE" "$CONFIG_FILE" || echo "$LINE" >> "$CONFIG_FILE"
 
-    # Files
-
-    if [ -f "/usr/bin/dynamic-fastfetch" ]; then
-        sudo rm "/usr/bin/dynamic-fastfetch"
-    fi
-
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/dynamic-fastfetch" /usr/bin/dynamic-fastfetch
-    sudo chmod +x /usr/bin/dynamic-fastfetch
+    # Config
 
     if [ ! -d "$HOME/.config/fastfetch" ]; then
-        mkdir -p "$HOME/.config/fastfetch"
+        sudo mkdir -p "$HOME/.config/fastfetch"
     fi
 
     if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
-        rm "$HOME/.config/fastfetch/config.jsonc"
+        sudo rm -rf "$HOME/.config/fastfetch/config.jsonc"
     fi
 
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/base_config.jsonc"
+    sudo cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
 
-    if [ -f "/usr/bin/get-gpu-vram" ]; then
-        sudo rm "/usr/bin/get-gpu-vram"
+    # GPU
+
+    if [ -f "/usr/bin/fastfetch-gpu" ]; then
+        sudo rm -rf "/usr/bin/fastfetch-gpu"
     fi
 
-    if [ -f "/usr/bin/dynamic-gpu-vram" ]; then
-        sudo rm "/usr/bin/dynamic-gpu-vram"
-    fi
-
-    if [ -f "/usr/bin/fastfetch-gpu.sh" ]; then
-        sudo rm "/usr/bin/fastfetch-gpu.sh"
-    fi
-
-    sudo cp "$CUSTOM_FILES_DIR/fastfetch/fastfetch-gpu.sh" /usr/bin/fastfetch-gpu.sh
-    sudo chmod +x /usr/bin/fastfetch-gpu.sh
+    sudo cp "$CUSTOM_FILES_DIR/fastfetch/fastfetch-gpu.sh" /usr/bin/fastfetch-gpu
+    sudo chmod +x /usr/bin/fastfetch-gpu
 }
