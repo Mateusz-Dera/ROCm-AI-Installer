@@ -97,4 +97,3 @@ fi
 if [[ "$show_count" == true ]]; then
     echo $((gpu_count - 1))
 fi
-
