@@ -73,11 +73,7 @@
       "key": "DYSK",
       "format": "{size-used} / {size-total}"
     },
-    {
-      "type": "command",
-      "key": " ",
-      "text": "fastfetch-gpu --polish --bold --key-color cyan --separator-color yellow --separator ' ❯ '"
-    },
+__GPU__
     "break",
     {
       "type": "colors",

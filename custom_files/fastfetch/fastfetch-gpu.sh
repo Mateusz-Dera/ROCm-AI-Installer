@@ -1,87 +1,29 @@
 #!/bin/bash
 
 # Default values
-bold_enabled=false
-polish=false
-color_name="white"
-separator_color_name="white"
-separator=": "
+target_index=-1
+show_count=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --bold)
-            bold_enabled=true
+        --index|-i)
+            target_index="$2"
+            shift 2
+            ;;
+        --number|-n)
+            show_count=true
             shift
-            ;;
-        --polish)
-            polish=true
-            shift
-            ;;
-        --key-color)
-            color_name="$2"
-            shift 2
-            ;;
-        --separator)
-            separator="$2"
-            shift 2
-            ;;
-        --separator-color)
-            separator_color_name="$2"
-            shift 2
             ;;
         *)
             printf "Unknown option: %s\n" "$1"
-            printf "Usage: %s [--bold] [--polish] [--key-color <color_name>] [--separator <separator>] [--separator-color <color_name>]\n" "$0"
-            printf "Available colors: black, red, green, yellow, blue, magenta, cyan, white,\n"
+            printf "Usage: %s [--index|-i <number>] [--number|-n]\n" "$0"
             exit 1
             ;;
     esac
 done
 
 gpu_count=1
-first_gpu=true
-
-# Function to map color names to ANSI codes (16 standard colors)
-get_color_code() {
-    local color_name="$1"
-    case "$color_name" in
-        black)         echo "30" ;;
-        red)           echo "31" ;;
-        green)         echo "32" ;;
-        yellow)        echo "33" ;;
-        blue)          echo "34" ;;
-        magenta)       echo "35" ;;
-        cyan)          echo "36" ;;
-        white)         echo "37" ;;
-        *)
-            printf "Error: Unknown color '%s'\n" "$color_name"
-            printf "Available colors: black, red, green, yellow, blue, magenta, cyan, white\n"
-            exit 1
-            ;;
-    esac
-}
-
-# Map color names to ANSI codes
-color_code=$(get_color_code "$color_name")
-separator_color_code=$(get_color_code "$separator_color_name")
-
-# Set color codes based on bold option
-if [[ "$bold_enabled" == true ]]; then
-    color_start="\e[1;${color_code}m"
-    separator_color_start="\e[1;${separator_color_code}m"
-else
-    color_start="\e[${color_code}m"
-    separator_color_start="\e[${separator_color_code}m"
-fi
-color_end="\e[0m"
-
-# Set GPU label based on polish flag
-if [[ "$polish" == true ]]; then
-    gpu_label="KARTA"
-else
-    gpu_label="GPU"
-fi
 
 if command -v lspci &> /dev/null; then
     # Get graphics cards info for ordering
@@ -97,8 +39,10 @@ if command -v lspci &> /dev/null; then
                 used=$(echo "$used" | xargs)
                 total=$(echo "$total" | xargs)
 
-                echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name} ${used} MiB / ${total} MiB"
-                first_gpu=false
+                # Check if we should display this GPU based on target_index
+                if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
+                    echo "${name} ${total} MiB"
+                fi
                 gpu_count=$((gpu_count + 1))
             done < <(nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free --format=csv,noheader,nounits -i "$bus_id" 2>/dev/null)
         # Check for AMD GPU
@@ -119,12 +63,17 @@ if command -v lspci &> /dev/null; then
                     if [[ "$used" =~ ^[0-9]+$ ]] && [[ "$total" =~ ^[0-9]+$ ]]; then
                         used_mib=$((used / 1048576))
                         total_mib=$((total / 1048576))
-                        echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name} ${used_mib} MiB / ${total_mib} MiB"
+                        # Check if we should display this GPU based on target_index
+                        if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
+                            echo "${name} ${total_mib} MiB"
+                        fi
                     else
-                        echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${name}"
+                        # Check if we should display this GPU based on target_index
+                        if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
+                            echo "${name}"
+                        fi
                     fi
                     
-                    first_gpu=false
                     gpu_count=$((gpu_count + 1))
                 done < <(echo "$amd_name,$amd_vram")
             fi
@@ -134,11 +83,18 @@ if command -v lspci &> /dev/null; then
             # Clean up name by cutting off everything after [ or (
             gpu_name=$(echo "$gpu_name" | sed 's/\[[^]]*\].*$//' | sed 's/(.*$//' | xargs)
             
-            echo -e "${color_start}${gpu_label} ${gpu_count}${color_end}${separator_color_start}${separator}${color_end}${gpu_name}"
+            # Check if we should display this GPU based on target_index
+            if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
+                echo "${gpu_name}"
+            fi
             
-            first_gpu=false
             gpu_count=$((gpu_count + 1))
         fi
     done < <(lspci | grep -i vga | sort)
+fi
+
+# If show_count is true, display the count instead
+if [[ "$show_count" == true ]]; then
+    echo $((gpu_count - 1))
 fi
 

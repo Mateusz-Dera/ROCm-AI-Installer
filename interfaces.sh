@@ -434,26 +434,34 @@ install_fastfetch(){
     # Add fastfetch to shell
 
     CONFIG_FILE="$HOME/.bashrc"
-    LINE="fastfetch"
-    grep -qxF "$LINE" "$CONFIG_FILE" || echo "$LINE" >> "$CONFIG_FILE"
+    
+    # Remove old fastfetch line if it exists
+    OLD_LINE="fastfetch"
+    if grep -qxF "$OLD_LINE" "$CONFIG_FILE"; then
+        sed -i "/^fastfetch$/d" "$CONFIG_FILE"
+    fi
 
     # Config
 
     if [ ! -d "$HOME/.config/fastfetch" ]; then
-        sudo mkdir -p "$HOME/.config/fastfetch"
+        mkdir -p "$HOME/.config/fastfetch"
     fi
 
     if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
-        sudo rm -rf "$HOME/.config/fastfetch/config.jsonc"
+        rm -rf "$HOME/.config/fastfetch/config.jsonc"
     fi
 
-    # Copy language-specific config file
+    if [ -f "$HOME/.config/fastfetch/config_temp.jsonc" ]; then
+        rm -rf "$HOME/.config/fastfetch/config_temp.jsonc"
+    fi
+
+    # Copy language-specific config file as config_temp
     case "$language" in
         "polish")
-            sudo cp "$CUSTOM_FILES_DIR/fastfetch/config_polish.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+            cp "$CUSTOM_FILES_DIR/fastfetch/config_polish.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
             ;;
         "english"|*)
-            sudo cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+            cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
             ;;
     esac
 
@@ -465,4 +473,31 @@ install_fastfetch(){
 
     sudo cp "$CUSTOM_FILES_DIR/fastfetch/fastfetch-gpu.sh" /usr/bin/fastfetch-gpu
     sudo chmod +x /usr/bin/fastfetch-gpu
+
+    # Dynamic fastfetch
+    if [ -f "/usr/bin/dynamic-fastfetch" ]; then
+        sudo rm -rf "/usr/bin/dynamic-fastfetch"
+    fi
+
+    sudo cp "$CUSTOM_FILES_DIR/fastfetch/dynamic-fastfetch.sh" /usr/bin/dynamic-fastfetch
+    sudo chmod +x /usr/bin/dynamic-fastfetch
+
+    # Add dynamic-fastfetch alias to bash
+    CONFIG_FILE="$HOME/.bashrc"
+    
+    # Remove old entries if they exist
+    OLD_ALIAS="alias fastfetch='dynamic-fastfetch'"
+    FASTFETCH_LINE="fastfetch"
+    
+    if grep -qF "$OLD_ALIAS" "$CONFIG_FILE"; then
+        sed -i '/alias fastfetch='\''dynamic-fastfetch'\''/d' "$CONFIG_FILE"
+    fi
+    
+    if grep -qxF "$FASTFETCH_LINE" "$CONFIG_FILE"; then
+        sed -i "/^fastfetch$/d" "$CONFIG_FILE"
+    fi
+    
+    # Add new entries (alias must be before fastfetch)
+    echo "alias fastfetch='dynamic-fastfetch'" >> "$CONFIG_FILE"
+    echo "fastfetch" >> "$CONFIG_FILE"
 }
