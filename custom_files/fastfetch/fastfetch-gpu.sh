@@ -41,7 +41,7 @@ if command -v lspci &> /dev/null; then
 
                 # Check if we should display this GPU based on target_index
                 if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
-                    echo "${name} ${total} MiB"
+                    echo "${name} ${used} MiB / ${total} MiB"
                 fi
                 gpu_count=$((gpu_count + 1))
             done < <(nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free --format=csv,noheader,nounits -i "$bus_id" 2>/dev/null)
@@ -65,7 +65,7 @@ if command -v lspci &> /dev/null; then
                         total_mib=$((total / 1048576))
                         # Check if we should display this GPU based on target_index
                         if [[ "$show_count" == false ]] && ([[ "$target_index" == -1 ]] || [[ "$target_index" == "$gpu_count" ]]); then
-                            echo "${name} ${total_mib} MiB"
+                            echo "${name} ${used_mib} MiB / ${total_mib} MiB"
                         fi
                     else
                         # Check if we should display this GPU based on target_index
