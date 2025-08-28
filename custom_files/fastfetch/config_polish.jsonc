@@ -1,10 +1,11 @@
 {
-  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/json_schema.json",
   "logo": {
-      "type": "auto",
+      "source": "~/.config/fastfetch/asci.txt",
       "color": {
         "1": "yellow",
-        "2": "cyan"
+        "2": "cyan",
+        "3": "magenta"
       },
       "padding": {
           "top": 1,
