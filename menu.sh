@@ -542,9 +542,11 @@ tools() {
 fastfetch_menu() {
     second=true
     while $second; do
-        choice=$(whiptail --title "Fastfetch" --menu "Choose language:" 15 100 2 --cancel-button "Back" \
+        choice=$(whiptail --title "Fastfetch" --menu "Choose configuration:" 15 100 4 --cancel-button "Back" \
             0 "English" \
             1 "Polish" \
+            2 "English - no logo" \
+            3 "Polish - no logo" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -556,9 +558,19 @@ fastfetch_menu() {
         case "$choice" in
             "0")
                 install_fastfetch "english"
+                second=false
                 ;;
             "1")
                 install_fastfetch "polish"
+                second=false
+                ;;
+            "2")
+                install_fastfetch "english_no_logo"
+                second=false
+                ;;
+            "3")
+                install_fastfetch "polish_no_logo"
+                second=false
                 ;;
             "")
                 echo "Previous menu..."

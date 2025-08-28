@@ -22,55 +22,52 @@
     "break",
     {
       "type": "command",
-      "key": "NAZWA",
+      "key": "HOSTNAME",
       "text": "hostname",
     },
-    {
-      "type": "os",
-      "key": "SYSTEM"
-    },
+    "os",
     {
       "type": "localip",
-      "key": "ADRES",
+      "key": "IP",
       "compact": true
     },
     {
       "type": "kernel",
-      "key": "JĄDRO"
+      "key": "KERNEL"
     },
     {
       "type": "packages",
-      "key": "PACZKI"
+      "key": "PACKAGES"
     },
     {
       "type": "shell",
-      "key": "POWŁOKA"
+      "key": "SHELL"
     },
     "break",
     {
       "type": "board",
-      "key": "PŁYTA GŁÓWNA"
+      "key": "BOARD"
     },
     {
       "type": "cpu",
-      "key": "PROCESOR",
+      "key": "CPU",
       "showPeCoreCount": true,
       "temp": true,
       "format": "{name} ({core-types}) {freq-max}"
     },
     {
       "type": "memory",
-      "key": "PAMIĘĆ",
+      "key": "RAM",
       "format": "{used} / {total}"
     },
     {
       "type": "swap",
-      "key": "PRZESTRZEŃ WYMIANY",
+      "key": "SWAP",
       "format": "{used} / {total}"
     },
     {
       "type": "disk",
-      "key": "DYSK",
+      "key": "DISK",
       "format": "{size-used} / {size-total}"
     },
 __GPU__

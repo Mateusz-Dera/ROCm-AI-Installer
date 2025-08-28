@@ -455,13 +455,20 @@ install_fastfetch(){
         rm -rf "$HOME/.config/fastfetch/config_temp.jsonc"
     fi
 
+
     # Copy language-specific config file as config_temp
     case "$language" in
         "polish")
             cp "$CUSTOM_FILES_DIR/fastfetch/config_polish.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
             ;;
+        "polish_no_logo")
+            cp "$CUSTOM_FILES_DIR/fastfetch/config_polish_no_logo.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
+            ;;
+        "english_no_logo")
+            cp "$CUSTOM_FILES_DIR/fastfetch/config_english_no_logo.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
+            ;;
         "english"|*)
-            cp "$CUSTOM_FILES_DIR/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
+            cp "$CUSTOM_FILES_DIR/fastfetch/config_english.jsonc" "$HOME/.config/fastfetch/config_temp.jsonc"
             ;;
     esac
 
