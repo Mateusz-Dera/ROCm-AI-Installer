@@ -332,7 +332,7 @@ install_comfyui() {
                 git checkout fab70362f423dc63bd0e7980eb740b0d84605be7
 
                 cd $installation_path/ComfyUI/models/checkpoints
-                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision f452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
+                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr_v2.safetensors
                 huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr.safetensors
