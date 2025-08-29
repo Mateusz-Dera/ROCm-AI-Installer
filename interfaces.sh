@@ -21,32 +21,123 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+# uv
+uv_base(){
+    local git_repo=$1
+    local git_commit=$2
+    local start_command=$3
+    local python_version=${4:-3.13}
+    local pytorch_version=${5:-rocm6.4}
+    local flash_attn_version=${6:-2.8.3}
+
+    # Check if git repo and commit are provided
+    if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
+        echo "Error: git repo, git commit, and start command must be provided"
+        exit 1
+    fi
+
+    # Get the repository name
+    local repo_name=$(basename "$git_repo" .git)
+
+    # Check if uv version is installed
+    if ! command -v uv &> /dev/null; then
+        echo "Install uv first"
+        exit 1
+    fi
+
+    # Create installation path
+    if [ ! -d "$installation_path" ]; then
+        mkdir -p $installation_path
+    fi
+    
+    cd $installation_path
+    
+    # Clone the repository
+    if [ -d "$repo_name" ]; then
+        rm -rf $repo_name
+    fi
+
+    git clone $git_repo
+
+    cd $repo_name || exit 1
+
+    # Checkout the commit
+    git checkout $git_commit
+
+    # Create a virtual environment
+    uv venv --python $python_version
+
+    # Activate the virtual environment
+    source .venv/bin/activate
+
+    # Upgrade pip
+    uv pip install -U pip==25.2
+    uv pip install wheel==0.45.1
+    uv pip install setuptools==80.9.0
+
+    echo https://download.pytorch.org/whl/$pytorch_version
+    exit 1
+
+    # Install requirements
+    if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
+        uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$pytorch_version --index-strategy unsafe-best-match
+    fi
+
+tee --append run.sh <<EOF
+#!/bin/bash
+source $installation_path/$repo_name/.venv/bin/activate
+export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
+export HIP_VISIBLE_DEVICES=0
+#export CUDA_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=$GFX
+EOF
+
+if [ -n "${flash_attn_version}" ] && [ "${flash_attn_version}" != "0" ]; then
+    install_flash_attention
+    tee --append run.sh <<EOF
+export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+export TORCH_BLAS_PREFER_HIPBLASLT=0
+export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
+EOF
+fi
+
+tee --append run.sh <<EOF
+$start_command
+EOF
+
+    chmod +x run.sh
+}
+
 # FlashAttention
 install_flash_attention() {
-    git clone https://github.com/Dao-AILab/flash-attention
-    cd flash-attention
-    git checkout 7661781d001e0900121c000a0aaf21b3f94337d6
+    local flash_attn_version=${1:-2.8.3}
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-    python3 setup.py install
-    cd ..
+    uv pip install flash-attn=="$flash_attn_version" --no-build-isolation
 }
 
 # KoboldCPP
 install_koboldcpp() {
-    install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "7ae1d4621b81628cf4d290ec5283492c0b475e6a" "python koboldcpp.py"
-    make LLAMA_HIPBLAS=1 -j4
+    uv_install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    install "https://github.com/oobabooga/text-generation-webui.git" "b7d59829448870a0acd6aaef48917703c70cb3fa" 'python server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_install "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
-    # Additional requirements
-    pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31 --extra-index-url https://download.pytorch.org/whl/rocm6.3
-    install_flash_attention
-    pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.3.1/exllamav2-0.3.1+rocm6.3.torch2.7.0-cp312-cp312-linux_x86_64.whl
-    pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.24.0/llama_cpp_binaries-0.24.0+vulkan-py3-none-linux_x86_64.whl
+    # bitsandbytes
+    uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
+
+    # ExLlamaV2
+    git clone https://github.com/turboderp/exllamav2
+    cd exllamav2
+    git checkout 6a2d8311408aa23af34e8ec32e28085ea68dada7
+    uv pip install .
+    cd ..
+
+    # llama_cpp
+    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.36.0/llama_cpp_binaries-0.36.0+vulkanavx-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -59,7 +150,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 9a191c41e8b8fa7d203974c0b0debdfe1146a7a0
+    git checkout 12ac17197925ee1e1dba00a9505001e09e13dfde
 
     mv ./start.sh ./run.sh
 
@@ -85,7 +176,7 @@ install_sillytavern_whisperspeech_web_ui() {
     git clone https://github.com/Mateusz-Dera/whisperspeech-webui
     mv ./whisperspeech-webui ./whisperspeech-webui-temp
     cd whisperspeech-webui-temp
-    git checkout 06aa5f064f6e742f33178214bc883883a5ed0c40
+    git checkout 37e2ddf59664dd1604cc41b2660f48d1fa1af173
     mv ./whisperspeech-webui ../
     cd ..
     rm -rf whisperspeech-webui-temp
@@ -168,47 +259,55 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 17a1f0d2d407040ee242e18dd79be8bb212cfcef
+    git checkout 5e6229a8409ac786e62cb133d09f1679a9aec13e
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build --config Release -- -j 16
+    && cmake --build build --config Release -- -j$(($(nproc) - 1))
 
     tee --append run.sh <<EOF
 #!/bin/bash
 export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
-export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-export TORCH_BLAS_PREFER_HIPBLASLT=0
+export HIP_VISIBLE_DEVICES=0
+#export CUDA_VISIBLE_DEVICES=0
 ./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1
 EOF
     chmod +x run.sh
 }
 
-# Artist
-install_artist() {
-    install "https://github.com/songrise/Artist.git" "d244220702d4e7800b68f148d84cf95dd88ec8f0" "python injection_main.py --mode app"
-    sed -i 's/app.launch()/app.launch(share=False, server_name="0.0.0.0")/' injection_main.py
-    mv ./example_config.yaml ./config.yaml
-}
-
 # Cinemo
 install_cinemo() {
-    install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "python demo.py"
+    uv_install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 
 # Ovis-U1
 install_ovis() {
-    install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "python3 app.py"
+    uv_install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "uv run app.py" "3.13" "rocm6.3" "2.7.4.post1"
     sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
     sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
-    install_flash_attention
 }
 
 # ComfyUI
 install_comfyui() {
-    install "https://github.com/comfyanonymous/ComfyUI.git" "5612670ee48ce500aab98e362b3372ab06d1d659" "python3 ./main.py --listen --use-split-cross-attention"
+    # Check if HuggingFace login is required based on selected choices
+    local hf_required=0
+    for choice in $CHOICES; do
+        case $choice in
+            '"2"'|'"3"'|'"4"'|'"5"'|'"6"')
+                hf_required=1
+                break
+                ;;
+        esac
+    done
+
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "5612670ee48ce500aab98e362b3372ab06d1d659" "python3 ./main.py --listen --use-split-cross-attention"
+
+    # Login to HuggingFace if required
+    if [ $hf_required -eq 1 ]; then
+        echo "HuggingFace login required for selected ComfyUI options..."
+        huggingface
+    fi
 
     install_flash_attention
 
@@ -240,7 +339,7 @@ install_comfyui() {
                 huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr.safetensors
 
-                pip install aura-sr==0.0.4
+                uv pip install aura-sr==0.0.4
                 ;;
             '"3"')
                 # AuraFlow
@@ -291,25 +390,25 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-        install "https://github.com/ace-step/ACE-Step" "9bf891fb2880383cc845309c3a2dd9a46e1942d6" "python app.py --server_name 0.0.0.0"
-        install_flash_attention
+    uv_install "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    uv pip install -e .
 }
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    uv_install "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "06aa5f064f6e742f33178214bc883883a5ed0c40" "uv run --extra rocm webui.py --listen --api"
+    uv_base "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "37e2ddf59664dd1604cc41b2660f48d1fa1af173" "uv run --extra rocm webui.py --listen --api"
 }
 
 # F5-TTS
 install_f5_tts(){
-    install "https://github.com/SWivid/F5-TTS.git" "a275798a2fba6accbb4730cc5530bdaabd3a5efd" "f5-tts_infer-gradio --host 0.0.0.0"
+    uv_install "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
     git submodule update --init --recursive
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
+    uv pip install -e .
 }
 
 # Matcha-TTS
 install_matcha_tts(){
-    install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    uv_install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
     cd ./matcha
     sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
     cd $installation_path/Matcha-TTS
@@ -317,82 +416,48 @@ install_matcha_tts(){
     sed -i 's/numpy==1.24.3/numpy/' "pyproject.toml"
     rm requirements.txt
     touch requirements.txt
-    pip install -e .
+    uv pip install -e .
 }
 
 # Dia
 install_dia(){
-    install "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
-    pip install uv==0.6.16
+    uv_install "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
-}
-
-# Orpheus-TTS
-install_orpheus_tts(){
-    install "https://huggingface.co/spaces/MohamedRashad/Orpheus-TTS" "e45257580188c1f3232781a9ec98089303c2be22" "python3 app.py"
-
-    install_flash_attention
-
-    cp -r /opt/rocm/share/amd_smi ./
-    cd ./amd_smi
-    pip install -e . --extra-index-url https://download.pytorch.org/whl/rocm6.3
-
-    git clone https://github.com/vllm-project/vllm.git
-    cd ./vllm
-    git checkout ed6e9075d31e32c8548b480a47d1ffb77da1f54c
-    export PYTORCH_ROCM_ARCH=$GFX
-    export VLLM_TARGET_DEVICE="rocm"
-    export VLLM_USE_TRITON_FLASH_ATTN=0
-    pip install  --no-build-isolation --verbose .
-
-    pip install orpheus-speech==0.1.0 --no-deps
-
-    cd $installation_path/Orpheus-TTS
-    sed -i 's/demo.queue().launch(share=False, ssr_mode=False)/demo.queue().launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
 }
 
 # IMS-Toucan
 install_ims_toucan(){
-    install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py"
-    # self.iface.launch()
+    uv_install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox
 install_chatterbox(){
-    install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "python app.py"
-        sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
-}
-
-# HierSpeech++
-install_hierspeech(){
-    install "http://huggingface.co/spaces/LeeSangHoon/HierSpeech_TTS" "365f5cfe0da9e7b3589ca6650c35d38df6d979f5" "python app.py"
-    sed -i 's/demo_play.launch()/demo_play.launch(server_name="0.0.0.0")/' "app.py"
+    uv_install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "uv run app.py"
+    sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
 }
 
 # TripoSG
 install_triposg(){
-    install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "python triposg_webui.py"
+    uv_install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/triposg_webui.py ./
-    install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
-    pip cache purge
-    pip install .
+    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
+    uv pip install .
 }
 
 install_partcrafter(){
-    install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "python partcrafter_webui.py"
+    uv_install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
-    install_flash_attention
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
-    git checkout 6de5b11db1d403180a7c93caf9bd7593e08a0df7
-    pip cache purge
-    pip install .
+    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
+    rm -r ./requirements.txt
+    touch ./requirements.txt
+    uv pip install .
 }
 
 # Login to HuggingFace
