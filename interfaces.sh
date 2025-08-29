@@ -118,13 +118,13 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_install "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_install "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # bitsandbytes
     uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
@@ -277,13 +277,13 @@ EOF
 
 # Cinemo
 install_cinemo() {
-    uv_install "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
+    uv_base "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
     sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
 }
 
 # Ovis-U1
 install_ovis() {
-    uv_install "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "uv run app.py" "3.13" "rocm6.3" "2.7.4.post1"
+    uv_base "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "uv run app.py" "3.13" "rocm6.3" "2.7.4.post1"
     sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
     sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
 }
@@ -390,7 +390,7 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-    uv_install "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
     uv pip install -e .
 }
 
@@ -401,14 +401,14 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    uv_install "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
     git submodule update --init --recursive
     uv pip install -e .
 }
 
 # Matcha-TTS
 install_matcha_tts(){
-    uv_install "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    uv_base "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
     cd ./matcha
     sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
     cd $installation_path/Matcha-TTS
@@ -421,25 +421,25 @@ install_matcha_tts(){
 
 # Dia
 install_dia(){
-    uv_install "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    uv_base "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
 # IMS-Toucan
 install_ims_toucan(){
-    uv_install "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
+    uv_base "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox
 install_chatterbox(){
-    uv_install "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "uv run app.py"
+    uv_base "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "uv run app.py"
     sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
 }
 
 # TripoSG
 install_triposg(){
-    uv_install "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/triposg_webui.py ./
     git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
     cd ./pytorch_cluster_rocm
@@ -448,7 +448,7 @@ install_triposg(){
 }
 
 install_partcrafter(){
-    uv_install "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
