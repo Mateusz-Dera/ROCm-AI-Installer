@@ -307,15 +307,20 @@ install_comfyui() {
         retry_count=0
         max_retries=3
         while [ $retry_count -lt $max_retries ]; do
-            if huggingface; then
+            retry_count=$((retry_count + 1))
+            is_last_attempt=0
+            if [ $retry_count -eq $max_retries ]; then
+                is_last_attempt=1
+            fi
+            
+            if huggingface $is_last_attempt; then
                 break
             else
-                retry_count=$((retry_count + 1))
                 if [ $retry_count -lt $max_retries ]; then
                     echo "Login failed. Retrying attempt ($retry_count/$max_retries)..."
                     sleep 2
                 else
-                    echo "Failed to login after $max_retries attempts. Exiting."
+                    whiptail --title "Login Failed" --msgbox "Failed to login after $max_retries attempts. Exiting." 8 60
                     exit 1
                 fi
             fi
@@ -489,23 +494,27 @@ install_partcrafter(){
 
 # Login to HuggingFace
 huggingface() {
-    read -sp "Enter your Hugging Face access token: " HF_TOKEN
-        
-    if [ -z "$HF_TOKEN" ]; then
-        echo -e "\nError: No token provided."
+    local is_last_attempt=${1:-0}
+    
+    HF_TOKEN=$(whiptail --title "Hugging Face Login" --inputbox "Enter your Hugging Face access token:" 10 60 3>&1 1>&2 2>&3)
+    
+    # Check if user cancelled or token is empty
+    if [ $? -ne 0 ] || [ -z "$HF_TOKEN" ]; then
+        whiptail --title "Error" --msgbox "No token provided. Login cancelled." 8 50
         return 1
     fi
         
     # Login to Hugging Face
-    echo -e "\nLogging into Hugging Face..."
     huggingface-cli login --token "$HF_TOKEN"
 
     # Check login status
     if [ $? -eq 0 ]; then
-        echo "Successfully logged into Hugging Face!"
+        whiptail --title "Success" --msgbox "Successfully logged into Hugging Face!" 8 50
         return 0
     else
-        echo "Login failed. Please check your token and try again."
+        if [ $is_last_attempt -eq 0 ]; then
+            whiptail --title "Error" --msgbox "Login failed. Please check your token and try again." 8 50
+        fi
         return 1
     fi
 }
