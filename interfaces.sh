@@ -304,7 +304,22 @@ install_comfyui() {
 
     # LOGIN to HF if needed
     if [ $needs_hf_login -eq 1 ]; then
-        huggingface
+        retry_count=0
+        max_retries=3
+        while [ $retry_count -lt $max_retries ]; do
+            if huggingface; then
+                break
+            else
+                retry_count=$((retry_count + 1))
+                if [ $retry_count -lt $max_retries ]; then
+                    echo "Login failed. Retrying attempt ($retry_count/$max_retries)..."
+                    sleep 2
+                else
+                    echo "Failed to login after $max_retries attempts. Exiting."
+                    exit 1
+                fi
+            fi
+        done
     fi
 
     uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/rocm6.3 --index-strategy unsafe-best-match
@@ -477,8 +492,8 @@ huggingface() {
     read -sp "Enter your Hugging Face access token: " HF_TOKEN
         
     if [ -z "$HF_TOKEN" ]; then
-        echo -e "\nError: No token provided. Exiting."
-        exit 1
+        echo -e "\nError: No token provided."
+        return 1
     fi
         
     # Login to Hugging Face
@@ -488,9 +503,10 @@ huggingface() {
     # Check login status
     if [ $? -eq 0 ]; then
         echo "Successfully logged into Hugging Face!"
+        return 0
     else
         echo "Login failed. Please check your token and try again."
-        exit 1
+        return 1
     fi
 }
 
