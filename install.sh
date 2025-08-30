@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # ROCM-AI-Installer
 # Copyright © 2023-2025 Mateusz Dera
@@ -25,8 +24,12 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
+# Debian 12 fallback
+MIRROR="http://deb.debian.org/debian"
+BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
+
 # Version
-version="7.10.2"
+version="8.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -42,45 +45,24 @@ CUSTOM_FILES_DIR="$SCRIPT_DIR/custom_files"
 # Check if whiptail is installed
 if ! command -v whiptail &> /dev/null; then
     sudo apt update
-    sudo apt -y install whiptail
+    sudo apt install -y whiptail
 fi
 
 source ./menu.sh
 source ./interfaces.sh
 
-# Installation path
-set_installation_path() {
-    # Prompt for installation path, using the default if the user leaves it blank
-
-    new_installation_path=$(whiptail --inputbox "Enter the installation path (default: $default_installation_path):" 10 150 "$installation_path" --cancel-button "Back" 3>&1 1>&2 2>&3)
-    status=$?
-
-    if [ $status -ne 0 ]; then
-        return 0
-    fi
-
-    # If the user leaves it blank, use the default
-    new_installation_path=${new_installation_path:-$default_installation_path}
-
-    # Remove trailing "/" if it exists
-    new_installation_path=$(echo "$new_installation_path" | sed 's#/$##')
-
-    # Update the installation path variable
-    installation_path="$new_installation_path"
-}
-
-## INSTALLATION
-
-# Remove old
-remove_old() {
+# Remove old ROCm
+uninstall_rocm() {
+    # Remove old ROCm packages
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
-    # sudo apt purge -y nvidia*
 
+    # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
         sudo rm -r /opt/rocm*
     fi
 
+    # Remove old ROCm keyrings and sources
     if [ -f /etc/apt/keyrings/rocm.gpg ]; then
         sudo rm /etc/apt/keyrings/rocm.gpg
     fi
@@ -97,61 +79,93 @@ remove_old() {
         sudo rm /etc/apt/preferences.d/rocm-pin-600
     fi
 
+    # Clean up the package cache
+    sudo rm -rf /var/cache/apt/*
+    sudo apt clean all
     sudo apt autoremove -y
 }
 
-# Repositories
-repo(){
-    # Update
-    sudo apt update -y && sudo apt upgrade -y
-    
-    # Wget
-    sudo apt install -y wget
+install_rocm() {
+    # Create the keyrings directory if it does not exist
+    if [ ! -d /etc/apt/keyrings ]; then
+        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+    fi
 
-    # AMDGPU
-    sudo apt-add-repository -y -s -s
-    sudo apt install -y "linux-headers-$(uname -r)" \
-	"linux-modules-extra-$(uname -r)"
-    sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-    gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/6.4.2/ubuntu noble main' \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-    sudo apt update -y
-    sudo apt install -y amdgpu-dkms
+    #TODO
+    # Add the ROCm repository
+    #wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |
+    #gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-    # ROCm
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.2 noble main" \
-    | sudo tee --append /etc/apt/sources.list.d/rocm.list
+    #TODO
+    # Add the ROCm repository to the sources list
+    # echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
+    # | sudo tee /etc/apt/sources.list.d/rocm.list
+
+    echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
+    | sudo tee /etc/apt/sources.list.d/rocm.list
+
+    # Add the AMDGPU repository
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    sudo apt update -y
-    sudo apt install -y rocm-dev rocm-libs rocm-hip-sdk rocm-libs
+
+    # Update the package list
+    sudo apt update
+
+    # Install the ROCm packages
+    sudo apt install -y -t jammy rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
-profile(){
-    # Check if there's a line starting with PATH=
-    if grep -q '^PATH=' ~/.profile; then
-        # If the line exists, add new paths at the beginning if they're not already there
-        if ! grep -q '/opt/rocm/bin' ~/.profile || ! grep -q '/opt/rocm/opencl/bin' ~/.profile; then
-            sed -i '/^PATH=/ s|PATH=|PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:|' ~/.profile
-            echo "Added new paths ~/.profile"
-        else
-            echo "Paths already exist in ~/.profile"
-        fi
-    else
-        # If the line doesn't exist, add a new line with these paths at the beginning
-        echo 'PATH=/opt/rocm/bin:/opt/rocm/opencl/bin:$PATH' >> ~/.profile
-        echo "Added a new PATH line to ~/.profile"
+install_uv() {
+    sudo apt install -y pipx
+    pipx install uv --force
+    pipx upgrade uv
+    pipx ensurepath
+    source ~/.bashrc
+}
+
+debian_fallback(){
+    if grep -q "bookworm main" /etc/apt/sources.list 2>/dev/null; then
+        sudo sed -i '/bookworm main/d' /etc/apt/sources.list
     fi
+
+    echo -e "\n$BOOKWORM_LINE" | sudo tee -a /etc/apt/sources.list > /dev/null
+
+    sudo tee /etc/apt/preferences.d/fallback > /dev/null << EOF
+$MARKER
+Package: *
+Pin: release n=trixie
+Pin-Priority: 900
+
+Package: *
+Pin: release n=bookworm  
+Pin-Priority: 100
+
+# Higher position - when you install from bookworm, all dependencies also come from bookworm
+Package: *
+Pin: release n=bookworm
+Pin-Priority: 1001
+EOF
+
+apt update
 }
 
-# Function to install ROCm and basic packages
-install_rocm() {
-    sudo apt update -y
-    remove_old
+install(){
+    command -v sudo >/dev/null || { echo "sudo not installed" >&2; exit 1; }
+    sudo -n true 2>/dev/null || sudo -v || { echo "no sudo access" >&2; exit 1; }
+    
+    sudo adduser `whoami` video
+    sudo adduser `whoami` render
 
-    repo
+    debian_fallback
+
+    uninstall_rocm
+
+    sudo apt install -y python3-dev
+    sudo apt install -y nodejs npm
+    sudo apt install -y ffmpeg
+    sudo apt install -y cmake
+
+    install_rocm
 
     sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
 /opt/rocm/lib
@@ -159,184 +173,8 @@ install_rocm() {
 EOF
     sudo ldconfig
 
-    profile
-
-    sudo apt install -y git git-lfs
-    sudo apt install -y libstdc++-12-dev
-    sudo apt install -y libtcmalloc-minimal4
-    sudo apt install -y git git-lfs
-    sudo apt install -y python3.12 python3.12-full python3.12-dev python3.12-venv python3.12-dev python3.12-tk
-    sudo apt install -y libgl1
-    sudo apt install -y ffmpeg
-    sudo apt install -y libmecab-dev
-    sudo apt install -y python3-openssl
-    sudo apt install -y espeak-ng
-    sudo apt install -y libomp-dev
-    sudo apt install -y libssl-dev build-essential g++ libboost-all-dev libsparsehash-dev git-core perl
-    sudo apt install -y cmake
-    sudo apt install -y libegl1 libgl1-mesa-dev
-    sudo cp /usr/lib/x86_64-linux-gnu/libomp5.so /usr/lib/x86_64-linux-gnu/libomp.so
-
-    sudo snap install node --classic
-  
-    sudo snap install astral-uv --classic
-
-    sudo apt purge -y cargo rustc rustup
-    sudo snap install rustup --classic
-    rustup default stable
+    install_uv
 }
-
-# Universal function
-install() {
-    local git_repo=$1
-    local git_commit=$2
-    local start_command=$3
-    local python_version=${4:-python3.12}
-
-    # Check if git repo and commit are provided
-    if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
-        echo "Error: git repo, git commit, and start command must be provided"
-        exit 1
-    fi
-
-    # Get the repository name
-    local repo_name=$(basename "$git_repo" .git)
-
-    # Check if Python version is installed
-    if ! command -v $python_version &> /dev/null; then
-        echo "Install $python_version first"
-        exit 1
-    fi
-
-    # Create installation path
-    if [ ! -d "$installation_path" ]; then
-        mkdir -p $installation_path
-    fi
-    
-    cd $installation_path
-    
-    # Clone the repository
-    if [ -d "$repo_name" ]; then
-        rm -rf $repo_name
-    fi
-
-    git clone $git_repo
-
-    cd $repo_name || exit 1
-
-    # Checkout the commit
-    git checkout $git_commit
-
-    # Remove venv if exist
-    if [ -d ".venv" ]; then
-        rm -rf ".venv"
-    fi
-
-    # Create a virtual environment
-    $python_version -m venv .venv --prompt $repo_name
-
-    # Activate the virtual environment
-    source .venv/bin/activate
-
-    # Upgrade pip
-    pip install --upgrade pip
-
-    # Install requirements
-    if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
-        pip install -r $REQUIREMENTS_DIR/$repo_name.txt
-    fi
-
-    # Create run.sh
-    tee --append run.sh <<EOF
-#!/bin/bash
-source $installation_path/$repo_name/.venv/bin/activate
-export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
-export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-export TORCH_BLAS_PREFER_HIPBLASLT=0
-export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-#export HIP_VISIBLE_DEVICES=0
-$start_command
-EOF
-    chmod +x run.sh
-}
-
-uv_install(){
-    local git_repo=$1
-    local git_commit=$2
-    local start_command=$3
-    local python_version=${4:-3.12}
-    local pytorch_version=${5:-rocm6.3}
-
-    # Check if git repo and commit are provided
-    if [[ -z "$git_repo" || -z "$git_commit" || -z "$start_command" ]]; then
-        echo "Error: git repo, git commit, and start command must be provided"
-        exit 1
-    fi
-
-    # Get the repository name
-    local repo_name=$(basename "$git_repo" .git)
-
-    # Check if uv version is installed
-    if ! command -v uv &> /dev/null; then
-        echo "Install uv first"
-        exit 1
-    fi
-
-    # Create installation path
-    if [ ! -d "$installation_path" ]; then
-        mkdir -p $installation_path
-    fi
-    
-    cd $installation_path
-    
-    # Clone the repository
-    if [ -d "$repo_name" ]; then
-        rm -rf $repo_name
-    fi
-
-    git clone $git_repo
-
-    cd $repo_name || exit 1
-
-    # Checkout the commit
-    git checkout $git_commit
-
-    # Remove venv if exist
-    if [ -d ".venv" ]; then
-        rm -rf ".venv"
-    fi
-
-    # Create a virtual environment
-    uv venv --python $python_version
-
-    # Activate the virtual environment
-    source .venv/bin/activate
-
-    # Upgrade pip
-    uv pip install --upgrade pip
-
-    # Install requirements
-    if [ -f "$REQUIREMENTS_DIR/$repo_name.txt" ]; then
-        uv pip install -r $REQUIREMENTS_DIR/$repo_name.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$pytorch_version --index-strategy unsafe-best-match
-    fi
-
-    # Create run.sh
-    tee --append run.sh <<EOF
-#!/bin/bash
-source $installation_path/$repo_name/.venv/bin/activate
-export HSA_OVERRIDE_GFX_VERSION=$HSA_OVERRIDE_GFX_VERSION
-export CUDA_VISIBLE_DEVICES=0
-export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-export TORCH_BLAS_PREFER_HIPBLASLT=0
-export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
-#export HIP_VISIBLE_DEVICES=0
-$start_command
-EOF
-    chmod +x run.sh
-}
-
-## MAIN
 
 # Main loop
 while show_menu; do
