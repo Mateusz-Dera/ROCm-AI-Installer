@@ -163,6 +163,7 @@ install(){
     sudo apt install -y python3-dev
     sudo apt install -y nodejs npm
     sudo apt install -y ffmpeg
+    sudo apt install -y cmake
 
     install_rocm
 
