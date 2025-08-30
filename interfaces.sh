@@ -90,7 +90,7 @@ export PYTORCH_ROCM_ARCH=$GFX
 EOF
 
 if [ -n "${flash_attn_version}" ] && [ "${flash_attn_version}" != "0" ]; then
-    install_flash_attention
+    install_flash_attention "$flash_attn_version"
     tee --append run.sh <<EOF
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
@@ -110,6 +110,7 @@ install_flash_attention() {
     local flash_attn_version=${1:-2.8.3}
     export PYTORCH_ROCM_ARCH=$GFX
     export FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"
+    echo "Installing FlashAttention version $flash_attn_version"
     uv pip install flash-attn=="$flash_attn_version" --no-build-isolation
 }
 
