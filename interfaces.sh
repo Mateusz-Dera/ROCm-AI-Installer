@@ -292,6 +292,7 @@ install_comfyui() {
 
     local gguf=0
     local flux=0
+    local qwen=0
     local needs_hf_login=0
 
     # Check if HF login is needed for any selected choices
@@ -384,14 +385,15 @@ install_comfyui() {
                 ;;
             '"7"')
                 gguf=1
+                qwen=1
                 # Qwen-Image
                 huggingface-cli download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir $installation_path/ComfyUI/models/diffusion_models
-
-                huggingface-cli download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q6_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-            
-                huggingface-cli download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
-                mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
-                rm -rf $installation_path/ComfyUI/models/vae/split_files
+                ;;
+            '"8"')
+                gguf=1
+                qwen=1
+                # Qwen-Image-Edit
+                huggingface-cli download QuantStack/Qwen-Image-Edit-GGUF Qwen_Image_Edit-Q6_K.gguf --revision 8eaf4077139df80a12c36831b0b0e890d1470436 --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             "")
                 break
@@ -418,6 +420,14 @@ install_comfyui() {
 
         cd $installation_path/ComfyUI/models/vae
         huggingface-cli download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9 --local-dir $installation_path/ComfyUI/models/vae
+    fi
+
+    if [ $qwen -eq 1 ]; then
+        huggingface-cli download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q6_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
+            
+        huggingface-cli download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
+        mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
+        rm -rf $installation_path/ComfyUI/models/vae/split_files 
     fi
 }
 

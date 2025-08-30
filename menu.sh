@@ -376,7 +376,7 @@ image_generation() {
 
 comfyui_addons(){
     
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 8 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 9 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
         2 "ComfyUI-AuraSR" ON \
@@ -384,7 +384,8 @@ comfyui_addons(){
         4 "FLUX.1-schnell GGUF" ON \
         5 "AnimePro FLUX GGUF" ON \
         6 "Flex.1-alpha GGUF" ON \
-        7 "Qwen-Image GGUF" ON 3>&1 1>&2 2>&3)
+        7 "Qwen-Image GGUF" ON \
+        8 "Qwen-Image-Edit GGUF" ON 3>&1 1>&2 2>&3)
 
     status=$?
     
