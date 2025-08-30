@@ -162,6 +162,7 @@ install(){
 
     sudo apt install -y python3-dev
     sudo apt install -y nodejs npm
+    sudo apt install -y ffmpeg
 
     install_rocm
 
