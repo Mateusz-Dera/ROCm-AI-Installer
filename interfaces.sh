@@ -422,7 +422,7 @@ install_comfyui() {
 
 # ACE-Step
 install_ace_step() {
-    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0" "3.12"
     uv pip install -e .
 }
 
