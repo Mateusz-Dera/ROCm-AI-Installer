@@ -90,7 +90,9 @@ export PYTORCH_ROCM_ARCH=$GFX
 EOF
 
 if [ -n "${flash_attn_version}" ] && [ "${flash_attn_version}" != "0" ]; then
-    install_flash_attention "$flash_attn_version"
+    if [ "${flash_attn_version}" != "-1" ]; then
+        install_flash_attention "$flash_attn_version"
+    fi
     tee --append run.sh <<EOF
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 export TORCH_BLAS_PREFER_HIPBLASLT=0
@@ -288,7 +290,7 @@ install_ovis() {
 
 # ComfyUI
 install_comfyui() {
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "37d620a6b85f61b824363ed8170db373726ca45a" "python3 ./main.py --listen --use-split-cross-attention" "3.12" "rocm6.3" "0"
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "4449e147692366ac8b9bd3b8834c771bc81e91ac" "PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --use-split-cross-attention" "3.13" "rocm6.3" "-1"
 
     local gguf=0
     local flux=0
@@ -329,9 +331,9 @@ install_comfyui() {
         done
     fi
 
-    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/rocm6.3 --index-strategy unsafe-best-match
+    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/rocm6.4 --index-strategy unsafe-best-match
 
-    install_flash_attention "2.7.4.post1"
+    install_flash_attention "2.8.3 "
 
     # Process each selected choice
     for choice in $CHOICES; do
@@ -341,7 +343,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 205044ca667e97b8da4417cf21835d713d22bd23
+                git checkout 104ae77f7a22304743e425d53f908e34cb89bc7e
                 ;;
             '"1"')
                 gguf=1
@@ -351,49 +353,53 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive
                 cd ComfyUI-AuraSR
-                git checkout fab70362f423dc63bd0e7980eb740b0d84605be7
+                git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4
 
                 cd $installation_path/ComfyUI/models/checkpoints
-                huggingface-cli download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
+                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr_v2.safetensors
-                huggingface-cli download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
+                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
                 mv ./model.safetensors ./aura_sr.safetensors
 
                 pip install aura-sr==0.0.4
                 ;;
             '"3"')
                 # AuraFlow
-                huggingface-cli download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir $installation_path/ComfyUI/models/checkpoints
+                hf download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir $installation_path/ComfyUI/models/checkpoints
                 ;;
             '"4"')
                 gguf=1
                 flux=1
                 # Flux
-                huggingface-cli download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2 --local-dir $installation_path/ComfyUI/models/unet
+                hf download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2 --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"5"')
                 gguf=1
                 flux=1
                 # AnimePro FLUX
-                huggingface-cli download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d --local-dir $installation_path/ComfyUI/models/unet
+                hf download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"6"')
                 gguf=1
                 flux=1
                 # Flex.1-alpha 
-                huggingface-cli download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
+                hf download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
                 ;;
             '"7"')
                 gguf=1
                 qwen=1
                 # Qwen-Image
-                huggingface-cli download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir $installation_path/ComfyUI/models/diffusion_models
+                hf download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
             '"8"')
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                huggingface-cli download QuantStack/Qwen-Image-Edit-GGUF Qwen_Image_Edit-Q6_K.gguf --revision 8eaf4077139df80a12c36831b0b0e890d1470436 --local-dir $installation_path/ComfyUI/models/unet
+                # hf download QuantStack/Qwen-Image-Edit-GGUF Qwen_Image_Edit-Q6_K.gguf --revision 8eaf4077139df80a12c36831b0b0e890d1470436 --local-dir $installation_path/ComfyUI/models/unet
+                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V1.0.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
+                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V1.1.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
+                hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q5_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
+                # hf download calcuis/pig-vae pig_qwen_image_vae_fp32-f16.gguf --revision 20479f0d8aec3e2b84fac809cf3767243f01fc65 --local-dir $installation_path/ComfyUI/models/vae
                 ;;
             "")
                 break
@@ -405,6 +411,15 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
+        uv pip install gguf-node==0.2.8
+        uv pip install gguf==0.17.1
+        uv pip install protobuf==6.32.0
+        
+        cd $installation_path/ComfyUI/custom_nodes
+        git clone https://github.com/calcuis/gguf
+        cd gguf
+        git checkout caabdcaece21f4247a38810530f6e82d8609d90a
+        
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/city96/ComfyUI-GGUF
         cd ComfyUI-GGUF
@@ -413,19 +428,21 @@ install_comfyui() {
     
     if [ $flux -eq 1 ]; then
         cd $installation_path/ComfyUI/models/text_encoders
-        huggingface-cli download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
+        hf download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
-        huggingface-cli download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41 --local-dir $installation_path/ComfyUI/models/text_encoders
+        hf download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41 --local-dir $installation_path/ComfyUI/models/text_encoders
         mv ./model.safetensors ./clip-vit-large-patch14.safetensors
 
         cd $installation_path/ComfyUI/models/vae
-        huggingface-cli download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9 --local-dir $installation_path/ComfyUI/models/vae
+        hf download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9 --local-dir $installation_path/ComfyUI/models/vae
     fi
 
     if [ $qwen -eq 1 ]; then
-        huggingface-cli download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q6_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-            
-        huggingface-cli download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
+        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q5_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
+        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF mmproj-BF16.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
+        mv $installation_path/ComfyUI/models/text_encoders/mmproj-BF16.gguf $installation_path/ComfyUI/models/text_encoders/Qwen2.5-VL-7B-Instruct-mmproj-F16.gguf
+
+        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
     fi
