@@ -4,15 +4,13 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
-> On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
-> This script requires several packages from Debian 12.<br>
-> Default mirror is http://deb.debian.org/debian<br>
+> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.
+> This script requires several packages from Debian 12.
+> Default mirror is http://deb.debian.org/debian
 > If you wannt another mirror in install.sh change MIRROR variable value.
-> 
 
 > [!Important]
 > All apps and models are tested on a card with 24GB VRAM.<br>
@@ -62,14 +60,13 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Link|Additional information|
 |:---|:---|:---|
 |ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager| Manage nodes of ComfyUI.<br> After first run change custom_nodes/ComfyUI-Manager/config.ini security_level to weak.|
-|ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://github.com/calcuis/gguf|GGUF models loader.|
+|ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://huggingface.co/city96/t5-v1_1-xxl-encoder-bf16<br> https://huggingface.co/openai/clip-vit-large-patch14<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell|GGUF models loader.|
 |ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.<br> Model quant: <b>Q8_0</b>|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.<br> Flux based.<br> Model quant: <b>Q5_K_M</b>|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
-|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
-|Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br>https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant-Edit: <b>Q5_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
+|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/city96/Qwen-Image-gguf/tree/main<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q6_K_XL</b>|
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -131,3 +128,84 @@ bash ./install.sh
 ```bash
 ./run.sh
 ```
+
+-----
+
+# Docker Guide
+
+## 🏗️ 1. Build the Docker Image
+
+First, build the Docker image from the `Dockerfile` in the current directory. This command tags the image as `rocm-ai-app:latest`.
+
+```bash
+docker build -t rocm-ai-app:latest .
+```
+
+-----
+
+## 🚀 2. General Purpose Container
+
+Use this method to create a **persistent container** that runs in the background. It's useful for general development and interactive sessions.
+
+### Start the Container
+
+This command starts a container named `rocm` that will restart automatically unless manually stopped.
+
+```bash
+docker run -d --restart unless-stopped --name rocm rocm-ai-app tail -f /dev/null
+```
+
+### Access the Shell
+
+To get an interactive `bash` shell inside the running `rocm` container:
+
+```bash
+docker exec -it rocm /bin/bash
+```
+
+-----
+
+## ✨ 3. Run the TripoSG Application
+
+Use this command to run the **TripoSG application directly**. This method is ideal for running the specific service, providing it with GPU access, and mapping a data directory.
+
+The container will be automatically removed after it stops (`--rm`).
+
+### Create a Data Directory
+
+First, create a directory on your host machine to persist the TripoSG data.
+
+```bash
+mkdir -p ./TripoSG_data
+```
+
+### Run the Application
+
+This command runs the container with the necessary ROCm devices, maps port `8000`, and mounts the local data directory.
+
+```bash
+docker run -it --rm \
+  --device=/dev/kfd --device=/dev/dri \
+  -p 8000:8000 \
+  -v "$(pwd)/TripoSG_data":/opt/AI/TripoSG/data \
+  rocm-ai-app:latest TripoSG
+```
+
+-----
+
+## 🛠️ 4. Container Management
+
+Here are some common commands for managing your containers.
+
+  * **List running containers:**
+    ```bash
+    docker ps
+    ```
+  * **Stop the persistent container:**
+    ```bash
+    docker stop rocm
+    ```
+  * **Remove the persistent container** (must be stopped first):
+    ```bash
+    docker rm rocm
+    ```
