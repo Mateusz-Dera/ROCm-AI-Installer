@@ -71,6 +71,7 @@ USER root
 COPY --chown=root:root interfaces.sh /tmp/
 COPY --chown=root:root install.sh /tmp/
 COPY --chown=root:root menu.sh /tmp/
+COPY --chown=root:root backup.sh /tmp/
 RUN /bin/bash -c "source /tmp/install.sh && install"
 RUN /bin/bash -c "source /tmp/menu.sh && install_triposg"
 
