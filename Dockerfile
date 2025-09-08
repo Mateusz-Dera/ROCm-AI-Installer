@@ -105,20 +105,20 @@ WORKDIR ${CUSTOM_FILES_DIR}
 # --- Data Persistence ---
 # Define volumes to persist models, configs, outputs, and other user data.
 # Note: These are now managed in the docker-compose.yml for better host mapping.
-VOLUME [ \
-    "${AI_PATH}/text-generation-webui/models", \
-    "${AI_PATH}/text-generation-webui/loras", \
-    "${AI_PATH}/text-generation-webui/presets", \
-    "${AI_PATH}/text-generation-webui/characters", \
-    "${AI_PATH}/text-generation-webui/logs", \
-    "${AI_PATH}/ComfyUI/models", \
-    "${AI_PATH}/ComfyUI/input", \
-    "${AI_PATH}/ComfyUI/output", \
-    "${AI_PATH}/ComfyUI/custom_nodes", \
-    "${AI_PATH}/SillyTavern/data", \
-    "${AI_PATH}/llama.cpp/models", \
-    "${CUSTOM_FILES_DIR}/.ollama" \
-]
+# VOLUME [ \
+#     "${AI_PATH}/text-generation-webui/models", \
+#     "${AI_PATH}/text-generation-webui/loras", \
+#     "${AI_PATH}/text-generation-webui/presets", \
+#     "${AI_PATH}/text-generation-webui/characters", \
+#     "${AI_PATH}/text-generation-webui/logs", \
+#     "${AI_PATH}/ComfyUI/models", \
+#     "${AI_PATH}/ComfyUI/input", \
+#     "${AI_PATH}/ComfyUI/output", \
+#     "${AI_PATH}/ComfyUI/custom_nodes", \
+#     "${AI_PATH}/SillyTavern/data", \
+#     "${AI_PATH}/llama.cpp/models", \
+#     "${CUSTOM_FILES_DIR}/.ollama" \
+# ]
 
 # --- Networking ---
 # Expose the default ports for the installed applications
