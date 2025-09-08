@@ -141,7 +141,7 @@ bash ./install.sh
 First, build the Docker image from the `Dockerfile` in the current directory. This command tags the image as `rocm-ai-app:latest`.
 
 ```bash
-docker build -t rocm-ai-app:latest .
+docker-compose build
 ```
 
 -----
@@ -154,6 +154,18 @@ Use this method to create a **persistent container** that runs in the background
 
 This command starts a container named `rocm` that will restart automatically unless manually stopped.
 
+```bash
+docker run -d --restart unless-stopped --name rocm rocm-ai-app tail -f /dev/null
+```
+
+### Access the Shell
+
+To get an interactive `bash` shell inside the running `rocm` container:
+
+```bash
+docker-compose run --rm bash
+```
+
 -----
 
 ## ✨ 3. Run the TripoSG Application
@@ -162,26 +174,20 @@ Use this command to run the **TripoSG application directly**. This method is ide
 
 The container will be automatically removed after it stops (`--rm`).
 
-### Create a Data Directory
-
-First, create a directory on your host machine to persist the TripoSG data.
-
 ```bash
-mkdir -p ./TripoSG_data
+# Run ComfyUI in the foreground
+docker-compose up comfyui
 ```
 
-### Run the Application
-
-This command runs the container with the necessary ROCm devices, maps port `8000`, and mounts the local data directory.
-
 ```bash
-docker run -it --rm \
-  --device=/dev/kfd --device=/dev/dri \
-  -p 8000:8000 \
-  -v "$(pwd)/TripoSG_data":/AI/TripoSG/data \
-  rocm-ai-app:latest TripoSG
+# Run llama-cpp in the foreground
+docker-compose up llama-cpp
 ```
 
+```bash
+# Run triposg in the foreground
+docker-compose up triposg
+```
 -----
 
 ## 🛠️ 4. Container Management
@@ -194,9 +200,9 @@ Here are some common commands for managing your containers.
     ```
   * **Stop the persistent container:**
     ```bash
-    docker stop rocm
+    docker-compose down
     ```
   * **Remove the persistent container** (must be stopped first):
     ```bash
-    docker rm rocm
+    docker-compose run --rm bash
     ```

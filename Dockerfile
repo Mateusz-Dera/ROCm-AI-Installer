@@ -21,9 +21,14 @@ ENV AI_PATH=/AI
 ENV PATH="${AI_PATH}/.local/bin:${PATH}"
 ENV installation_path="${AI_PATH}"
 
+# Backup
+ENV SCRIPT_DIR=/AI
+ENV source="$SCRIPT_DIR/backup.sh"
+
 # Set user and home directory
 ENV APP_USER=aiuser
-ENV APP_HOME=/home/${APP_USER}
+ENV REQUIREMENTS_DIR="$SCRIPT_DIR/requirements"
+ENV CUSTOM_FILES_DIR="$SCRIPT_DIR/custom_files"
 
 # --- System Setup and Dependency Installation (as root) ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -74,7 +79,7 @@ RUN echo "${APP_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aiuser && chmod 0
 
 # Switch to the non-root user
 USER ${APP_USER}
-WORKDIR ${APP_HOME}
+WORKDIR ${CUSTOM_FILES_DIR}
 
 # Install uv using pipx
 RUN pipx install uv --force && pipx ensurepath
@@ -95,10 +100,11 @@ RUN /bin/bash -c "source /tmp/interfaces.sh && install_triposg"
 
 # Switch back to the application user
 USER ${APP_USER}
-WORKDIR ${APP_HOME}
+WORKDIR ${CUSTOM_FILES_DIR}
 
 # --- Data Persistence ---
 # Define volumes to persist models, configs, outputs, and other user data.
+# Note: These are now managed in the docker-compose.yml for better host mapping.
 VOLUME [ \
     "${AI_PATH}/text-generation-webui/models", \
     "${AI_PATH}/text-generation-webui/loras", \
@@ -111,7 +117,7 @@ VOLUME [ \
     "${AI_PATH}/ComfyUI/custom_nodes", \
     "${AI_PATH}/SillyTavern/data", \
     "${AI_PATH}/llama.cpp/models", \
-    "${APP_HOME}/.ollama" \
+    "${CUSTOM_FILES_DIR}/.ollama" \
 ]
 
 # --- Networking ---
@@ -119,11 +125,6 @@ VOLUME [ \
 EXPOSE 7860 8188 8000 8080 5000 11434
 
 # --- Runtime ---
-# Copy the entrypoint script to launch applications
-COPY --chown=${APP_USER}:${APP_USER} entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-# Default command shows help message
-CMD ["--help"]
+# The container is designed to be run via docker-compose, with each service specifying its own command.
+# See the docker-compose.yml file for available services.
+CMD ["/bin/bash", "-c", "echo 'This image is designed to be used with the provided docker-compose.yml. Please start a service, e.g., `docker-compose up comfyui`'"]

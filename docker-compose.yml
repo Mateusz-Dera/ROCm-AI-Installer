@@ -1,0 +1,148 @@
+# This configuration defines a service for each AI application.
+# Run a specific application using: docker-compose up <service_name>
+# Example: docker-compose up -d comfyui
+# To get a shell inside the container: docker-compose run --rm bash
+
+services:
+  # Base configuration using a YAML anchor to avoid repetition
+  x-common-config: &common-config
+    build:
+      context: .
+      args:
+        GFX: "gfx1100" # Change for your GPU: gfx1100 (RDNA3), gfx1030 (RDNA2)
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION="11.0.0"
+      - TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL="1"
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    volumes:
+      - comfyui_models:/AI/ComfyUI/models
+      - comfyui_input:/AI/ComfyUI/input
+      - comfyui_output:/AI/ComfyUI/output
+      - comfyui_custom_nodes:/AI/ComfyUI/custom_nodes
+      - textgen_models:/AI/text-generation-webui/models
+      - textgen_loras:/AI/text-generation-webui/loras
+      - sillytavern_data:/AI/SillyTavern/data
+      - llamacpp_models:/AI/llama.cpp/models
+      - ollama_data:/AI/custom_files/.ollama
+
+  # --- Application Services ---
+
+  comfyui:
+    <<: *common-config
+    ports:
+      - "8188:8188"
+    command: >
+      /bin/bash -c "cd /AI/ComfyUI && ./run.sh"
+
+  text-generation-webui:
+    <<: *common-config
+    ports:
+      - "7860:7860"
+    command: >
+      /bin/bash -c "cd /AI/text-generation-webui && ./run.sh"
+
+  sillytavern:
+    <<: *common-config
+    ports:
+      - "8000:8000"
+    command: >
+      /bin/bash -c "cd /AI/SillyTavern && ./run.sh"
+
+  llama-cpp:
+    <<: *common-config
+    ports:
+      - "8080:8080" # Default port for llama.cpp server
+    command: >
+      /bin/bash -c "cd /AI/llama.cpp && ./run.sh"
+
+  koboldcpp:
+    <<: *common-config
+    ports:
+      - "5000:5000"
+    command: >
+      /bin/bash -c "cd /AI/koboldcpp-rocm && ./run.sh"
+
+  ollama:
+    <<: *common-config
+    ports:
+      - "11434:11434"
+    command: >
+      /bin/bash -c "sudo /usr/local/bin/ollama serve"
+
+  whisperspeech:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/whisperspeech-webui && sudo ./run.sh"
+
+  cinemo:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/Cinemo && sudo ./run.sh"
+
+  ovis:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/Ovis-U1-3B && sudo ./run.sh"
+
+  ace-step:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/ACE-Step && sudo ./run.sh"
+
+  f5-tts:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/F5-TTS && sudo ./run.sh"
+
+  matcha-tts:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/Matcha-TTS && sudo ./run.sh"
+
+  dia:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/dia && sudo ./run.sh"
+
+  ims-toucan:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/IMS-Toucan && sudo ./run.sh"
+
+  chatterbox:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/Chatterbox && sudo ./run.sh"
+
+  triposg:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/TripoSG && sudo ./run.sh"
+
+  partcrafter:
+    <<: *common-config
+    command: >
+      /bin/bash -c "cd /AI/PartCrafter && sudo ./run.sh"
+  
+  # --- Utility Service ---
+  
+  bash:
+    <<: *common-config
+    # 'docker-compose run --rm bash' is the intended use
+    stdin_open: true # Equivalent to -i
+    tty: true        # Equivalent to -t
+    command: /bin/bash
+
+# Define named volumes for persistent data storage
+volumes:
+  comfyui_models:
+  comfyui_input:
+  comfyui_output:
+  comfyui_custom_nodes:
+  textgen_models:
+  textgen_loras:
+  sillytavern_data:
+  llamacpp_models:
+  ollama_data:
