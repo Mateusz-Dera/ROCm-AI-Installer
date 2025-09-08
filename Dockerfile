@@ -73,7 +73,7 @@ COPY --chown=root:root install.sh /tmp/
 COPY --chown=root:root menu.sh /tmp/
 COPY --chown=root:root backup.sh /tmp/
 RUN /bin/bash -c "source /tmp/install.sh && install"
-RUN /bin/bash -c "source /tmp/menu.sh && install_triposg"
+RUN /bin/bash -c "source /tmp/interfaces.sh && install_triposg"
 
 # Switch back to the application user
 USER ${APP_USER}
