@@ -21,6 +21,14 @@ ENV AI_PATH=/AI
 ENV PATH="${AI_PATH}/.local/bin:${PATH}"
 ENV installation_path="${AI_PATH}"
 
+# Add video and render groups for GPU access
+RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
+
+# Create the non-root application user and add to groups
+RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
+# Allow passwordless sudo
+RUN echo "${APP_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aiuser && chmod 0440 /etc/sudoers.d/aiuser
+
 # Set user and home directory
 ENV APP_USER=aiuser
 ENV APP_HOME=/home/${APP_USER}
@@ -47,12 +55,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Add video and render groups for GPU access
-RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
-
-# Create the non-root application user and add to groups
-RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
-
 RUN apt-get update && \
     apt-get install -y pipx && \
     pipx install uv --force && \
@@ -63,7 +65,8 @@ RUN apt-get update && \
 RUN pipx install uv --force --include-in-path && \
     ln -s ~/.local/bin/uv /usr/local/bin/uv || true
 
-ENV PATH=$PATH:/root/.local/bin
+RUN ln -sf /home/${APP_USER}/.local/bin/uv /usr/local/bin/uv || true
+ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
 
 # Configure Debian 12 (Bookworm) fallback for compatibility
 COPY install.sh /tmp/
@@ -75,6 +78,8 @@ WORKDIR ${APP_HOME}
 
 # Install uv using pipx
 RUN pipx install uv --force && pipx ensurepath
+RUN ln -sf /home/${APP_USER}/.local/bin/uv /usr/local/bin/uv || true
+ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
 
 # Copy installer scripts into the container
 COPY --chown=${APP_USER}:${APP_USER} . ${AI_PATH}/installer/
