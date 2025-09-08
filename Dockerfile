@@ -19,6 +19,7 @@ ENV GFX=${GFX}
 # Define the main installation path
 ENV AI_PATH=/AI
 ENV PATH="${AI_PATH}/.local/bin:${PATH}"
+ENV installation_path="${AI_PATH}"
 
 # Set user and home directory
 ENV APP_USER=aiuser
@@ -47,10 +48,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Add video and render groups for GPU access
-RUN groupadd --gid 109 gender && groupadd --gid 108 render
+RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
 
 # Create the non-root application user and add to groups
-RUN useradd --create-home --uid 1000 --gid gender --shell /bin/bash -G video,render ${APP_USER}
+RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
 
 RUN apt-get update && \
     apt-get install -y pipx && \

@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="$1"
-AI_PATH="/opt/AI"
+AI_PATH="/AI"
 
 # Function to display help message
 show_help() {
