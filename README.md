@@ -150,14 +150,6 @@ docker-compose build
 
 Use this method to create a **persistent container** that runs in the background. It's useful for general development and interactive sessions.
 
-### Start the Container
-
-This command starts a container named `rocm` that will restart automatically unless manually stopped.
-
-```bash
-docker run -d --restart unless-stopped --name rocm rocm-ai-app tail -f /dev/null
-```
-
 ### Access the Shell
 
 To get an interactive `bash` shell inside the running `rocm` container:
