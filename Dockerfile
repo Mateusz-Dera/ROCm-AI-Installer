@@ -17,7 +17,7 @@ ENV PYTORCH_ROCM_ARCH=${GFX}
 ENV GFX=${GFX}
 
 # Define the main installation path
-ENV AI_PATH=/opt/AI
+ENV AI_PATH=/AI
 ENV PATH="${AI_PATH}/.local/bin:${PATH}"
 
 # Set user and home directory

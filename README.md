@@ -190,7 +190,7 @@ This command runs the container with the necessary ROCm devices, maps port `8000
 docker run -it --rm \
   --device=/dev/kfd --device=/dev/dri \
   -p 8000:8000 \
-  -v "$(pwd)/TripoSG_data":/opt/AI/TripoSG/data \
+  -v "$(pwd)/TripoSG_data":/AI/TripoSG/data \
   rocm-ai-app:latest TripoSG
 ```
 
