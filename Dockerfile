@@ -21,14 +21,6 @@ ENV AI_PATH=/AI
 ENV PATH="${AI_PATH}/.local/bin:${PATH}"
 ENV installation_path="${AI_PATH}"
 
-# Add video and render groups for GPU access
-RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
-
-# Create the non-root application user and add to groups
-RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
-# Allow passwordless sudo
-RUN echo "${APP_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aiuser && chmod 0440 /etc/sudoers.d/aiuser
-
 # Set user and home directory
 ENV APP_USER=aiuser
 ENV APP_HOME=/home/${APP_USER}
@@ -71,6 +63,14 @@ ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
 # Configure Debian 12 (Bookworm) fallback for compatibility
 COPY install.sh /tmp/
 RUN /bin/bash -c "source /tmp/install.sh && debian_fallback"
+
+# Add video and render groups for GPU access
+RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
+
+# Create the non-root application user and add to groups
+RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
+# Allow passwordless sudo
+RUN echo "${APP_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aiuser && chmod 0440 /etc/sudoers.d/aiuser
 
 # Switch to the non-root user
 USER ${APP_USER}
