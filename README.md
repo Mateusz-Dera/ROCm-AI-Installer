@@ -154,18 +154,6 @@ Use this method to create a **persistent container** that runs in the background
 
 This command starts a container named `rocm` that will restart automatically unless manually stopped.
 
-```bash
-docker run -d --restart unless-stopped --name rocm rocm-ai-app tail -f /dev/null
-```
-
-### Access the Shell
-
-To get an interactive `bash` shell inside the running `rocm` container:
-
-```bash
-docker exec -it rocm /bin/bash
-```
-
 -----
 
 ## ✨ 3. Run the TripoSG Application
