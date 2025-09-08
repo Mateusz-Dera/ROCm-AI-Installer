@@ -70,7 +70,9 @@ COPY --chown=${APP_USER}:${APP_USER} . ${AI_PATH}/installer/
 USER root
 COPY --chown=root:root interfaces.sh /tmp/
 COPY --chown=root:root install.sh /tmp/
+COPY --chown=root:root menu.sh /tmp/
 RUN /bin/bash -c "source /tmp/install.sh && install"
+RUN /bin/bash -c "source /tmp/menu.sh && install_triposg"
 
 # Switch back to the application user
 USER ${APP_USER}
