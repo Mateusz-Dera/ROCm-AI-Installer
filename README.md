@@ -4,13 +4,15 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.
-> This script requires several packages from Debian 12.
-> Default mirror is http://deb.debian.org/debian
+> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
+> On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
+> This script requires several packages from Debian 12.<br>
+> Default mirror is http://deb.debian.org/debian<br>
 > If you wannt another mirror in install.sh change MIRROR variable value.
+> 
 
 > [!Important]
 > All apps and models are tested on a card with 24GB VRAM.<br>
@@ -60,13 +62,14 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Link|Additional information|
 |:---|:---|:---|
 |ComfyUI-Manager|https://github.com/ltdrdata/ComfyUI-Manager| Manage nodes of ComfyUI.<br> After first run change custom_nodes/ComfyUI-Manager/config.ini security_level to weak.|
-|ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://huggingface.co/city96/t5-v1_1-xxl-encoder-bf16<br> https://huggingface.co/openai/clip-vit-large-patch14<br> https://huggingface.co/black-forest-labs/FLUX.1-schnell|GGUF models loader.|
+|ComfyUI-GGUF|https://github.com/city96/ComfyUI-GGUF<br> https://github.com/calcuis/gguf|GGUF models loader.|
 |ComfyUI-AuraSR|https://github.com/alexisrolland/ComfyUI-AuraSR<br> https://huggingface.co/fal/AuraSR<br> https://huggingface.co/fal/AuraSR-v2|ComfyUI node to upscale images.|
 |AuraFlow-v0.3|https://huggingface.co/fal/AuraFlow-v0.3|Text to image model.|
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.<br> Model quant: <b>Q8_0</b>|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.<br> Flux based.<br> Model quant: <b>Q5_K_M</b>|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
-|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/city96/Qwen-Image-gguf/tree/main<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q6_K_XL</b>|
+|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
+|Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br>https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant-Edit: <b>Q5_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
 
 ###  Music generation
 |Name|Links|Additional information|
