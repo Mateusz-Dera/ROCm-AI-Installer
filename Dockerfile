@@ -52,6 +52,18 @@ RUN groupadd --gid 109 gender && groupadd --gid 108 render
 # Create the non-root application user and add to groups
 RUN useradd --create-home --uid 1000 --gid gender --shell /bin/bash -G video,render ${APP_USER}
 
+RUN apt-get update && \
+    apt-get install -y pipx && \
+    pipx install uv --force && \
+    pipx upgrade uv && \
+    pipx ensurepath
+
+# Instala uv para o root e garante que está no PATH
+RUN pipx install uv --force --include-in-path && \
+    ln -s ~/.local/bin/uv /usr/local/bin/uv || true
+
+ENV PATH=$PATH:/root/.local/bin
+
 # Configure Debian 12 (Bookworm) fallback for compatibility
 COPY install.sh /tmp/
 RUN /bin/bash -c "source /tmp/install.sh && debian_fallback"
