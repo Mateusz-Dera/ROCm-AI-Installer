@@ -1,0 +1,21 @@
+[project]
+name = "chatterbox-tts"
+version = "0.1.4"
+description = "Chatterbox: Open Source TTS and Voice Conversion by Resemble AI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "resemble-ai", email = "engineering@resemble.ai"}
+]
+
+[project.urls]
+Homepage = "https://github.com/resemble-ai/chatterbox"
+Repository = "https://github.com/resemble-ai/chatterbox"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -493,8 +493,14 @@ install_ims_toucan(){
 
 # Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://github.com/resemble-ai/chatterbox" "1b5ae50585c8fa4d30ca6a7b304d787b4f802a42" "uv run chatterbox.py"
-    cp $CUSTOM_FILES_DIR/chatterbox.py ./
+    uv_base "https://github.com/resemble-ai/chatterbox" "1b5ae50585c8fa4d30ca6a7b304d787b4f802a42" "uv run multilingual_app.py" #"3.11" #"rocm6.2.4" "2.7.4.post1"
+    rm -rf ./multilingual_app.py
+    cp $CUSTOM_FILES_DIR/chatterbox/multilingual_app.py ./
+    
+    rm pyproject.toml
+    cp $CUSTOM_FILES_DIR/chatterbox/pyproject.toml ./
+    
+    uv pip install -e .
 }
 
 # TripoSG

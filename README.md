@@ -84,7 +84,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
-|Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox| Only Polish and English have been tested.<br> ThMay not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the chatterbox.app file.|
+|Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox|Only Polish and English have been tested.<br> ThMay not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the multilingual_app.py file.|
 
 ###  3D generation
 |Name|Links|Additional information|
