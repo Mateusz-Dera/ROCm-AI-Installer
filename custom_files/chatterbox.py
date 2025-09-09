@@ -1,6 +1,6 @@
 # https://github.com/resemble-ai/chatterbox
 # This is a modified multilingual_app.py file from the original repository.
-# A patch for Polish characters.
+# Polish characters fix.
 # https://github.com/resemble-ai/chatterbox/issues/256
 
 import random
