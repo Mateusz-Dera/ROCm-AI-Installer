@@ -437,7 +437,7 @@ voice_generation() {
             2 "Install Matcha-TTS" \
             3 "Install Dia" \
             4 "Install IMS-Toucan" \
-            5 "Install Chatterbox" \
+            5 "Install Chatterbox Multilingual" \
             2>&1 > /dev/tty)
 
         case "$choice" in

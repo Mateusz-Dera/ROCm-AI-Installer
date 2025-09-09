@@ -491,10 +491,10 @@ install_ims_toucan(){
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
-# Chatterbox
+# Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://huggingface.co/spaces/ResembleAI/Chatterbox" "eb90621fa748f341a5b768aed0c0c12fc561894b" "uv run app.py"
-    sed -i 's/demo.launch(mcp_server=True)/demo.launch(server_name="0.0.0.0")/' "app.py"
+    uv_base "https://github.com/resemble-ai/chatterbox" "1b5ae50585c8fa4d30ca6a7b304d787b4f802a42" "uv run chatterbox.py"
+    cp $CUSTOM_FILES_DIR/chatterbox.py ./
 }
 
 # TripoSG
