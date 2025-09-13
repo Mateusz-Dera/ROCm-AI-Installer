@@ -7,9 +7,9 @@
     }
   },
   "display": {
-    "separator": " ❯ ",
+    "separator": " - ",
     "color": {
-      "keys": "cyan",
+      "keys": "22;3;36",
       "separator": "yellow"
     }
   },
@@ -70,7 +70,6 @@ __GPU__
     {
       "type": "colors",
       "symbol": "circle"
-    },
-    "break"
+    }
   ]
 }

@@ -3,19 +3,20 @@
   "logo": {
       "source": "~/.config/fastfetch/asci.txt",
       "color": {
-        "1": "yellow",
-        "2": "cyan",
-        "3": "magenta"
+        "1": "22;33",
+        "2": "22;36",
+        "3": "22;35"
       },
       "padding": {
           "top": 1,
-          "left": 2
+          "left": 1,
+          "right": 2
       }
   },
   "display": {
-    "separator": " ❯ ",
+    "separator": " - ",
     "color": {
-      "keys": "cyan",
+      "keys": "22;3;36",
       "separator": "yellow"
     }
   },
@@ -79,7 +80,6 @@ __GPU__
     {
       "type": "colors",
       "symbol": "circle"
-    },
-    "break"
+    }
   ]
 }
