@@ -76,76 +76,6 @@
       ]
     },
     {
-      "id": 124,
-      "type": "UnetLoaderGGUF",
-      "pos": [
-        351.87200927734375,
-        -769.1310424804688
-      ],
-      "size": [
-        350,
-        70
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            265
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-GGUF",
-        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
-        "Node name for S&R": "UnetLoaderGGUF",
-        "aux_id": "city96/ComfyUI-GGUF"
-      },
-      "widgets_values": [
-        "qwen-image-Q6_K.gguf"
-      ]
-    },
-    {
-      "id": 125,
-      "type": "CLIPLoaderGGUF",
-      "pos": [
-        29.39860725402832,
-        -654.3635864257812
-      ],
-      "size": [
-        300,
-        82
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            266,
-            267
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-GGUF",
-        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
-        "Node name for S&R": "CLIPLoaderGGUF",
-        "aux_id": "city96/ComfyUI-GGUF"
-      },
-      "widgets_values": [
-        "Qwen2.5-VL-7B-Instruct-UD-Q6_K_XL.gguf",
-        "qwen_image"
-      ]
-    },
-    {
       "id": 100,
       "type": "CLIPTextEncode",
       "pos": [
@@ -354,13 +284,83 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        1058914794114894,
+        395352547723522,
         "randomize",
         20,
         4.5,
         "euler",
         "normal",
         1
+      ]
+    },
+    {
+      "id": 124,
+      "type": "UnetLoaderGGUF",
+      "pos": [
+        351.87200927734375,
+        -769.1310424804688
+      ],
+      "size": [
+        350,
+        70
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            265
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "city96/ComfyUI-GGUF",
+        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
+        "Node name for S&R": "UnetLoaderGGUF",
+        "cnr_id": "ComfyUI-GGUF"
+      },
+      "widgets_values": [
+        "qwen-image-Q6_K.gguf"
+      ]
+    },
+    {
+      "id": 125,
+      "type": "CLIPLoaderGGUF",
+      "pos": [
+        29.39860725402832,
+        -654.3635864257812
+      ],
+      "size": [
+        300,
+        82
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            266,
+            267
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "city96/ComfyUI-GGUF",
+        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
+        "Node name for S&R": "CLIPLoaderGGUF",
+        "cnr_id": "ComfyUI-GGUF"
+      },
+      "widgets_values": [
+        "Qwen2.5-VL-7B-Instruct-UD-Q5_K_XL.gguf",
+        "qwen_image"
       ]
     }
   ],
@@ -444,11 +444,11 @@
     "ds": {
       "scale": 1.228459735736771,
       "offset": [
-        -198.8887047807194,
-        1155.4348979345484
+        162.145207929493,
+        1091.0313320720097
       ]
     },
-    "frontendVersion": "1.18.9",
+    "frontendVersion": "1.25.11",
     "groupNodes": {}
   },
   "version": 0.4

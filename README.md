@@ -7,7 +7,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 [![Version](https://img.shields.io/badge/Version-8.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
+> Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
 > On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
 > This script requires several packages from Debian 12.<br>
 > Default mirror is http://deb.debian.org/debian<br>
@@ -25,8 +25,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
-|OS|Debian 13|
-|Kernel|6.12.41+deb13-amd64|
+|OS|Debian 13.1|
+|Kernel|6.12.43+deb13-amd64|
 |ROCm|6.4.3|
 
 ###  Text generation
