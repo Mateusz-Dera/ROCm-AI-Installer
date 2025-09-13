@@ -395,11 +395,9 @@ install_comfyui() {
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                # hf download QuantStack/Qwen-Image-Edit-GGUF Qwen_Image_Edit-Q6_K.gguf --revision 8eaf4077139df80a12c36831b0b0e890d1470436 --local-dir $installation_path/ComfyUI/models/unet
                 hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V1.0.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
                 hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V1.1.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
-                hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q5_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
-                # hf download calcuis/pig-vae pig_qwen_image_vae_fp32-f16.gguf --revision 20479f0d8aec3e2b84fac809cf3767243f01fc65 --local-dir $installation_path/ComfyUI/models/vae
+                hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
             "")
                 break
