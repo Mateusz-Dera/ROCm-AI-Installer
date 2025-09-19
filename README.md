@@ -75,7 +75,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ACE-Step|https://github.com/ace-step/ACE-Step||
-|YuE-UI|https://github.com/joeljuvel/YuE-UI<br> https://huggingface.co/m-a-p/xcodec_mini_infer<br> https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2<br> https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2|YuE-s1-7B-anneal-en-cot-exl2 quant: <b>4.25bpw-h6</b><br> YuE-s2-1B-general-exl2 quant: <b>8.0bpw-h8</b>|
+|YuE-UI|https://github.com/joeljuvel/YuE-UI<br> https://huggingface.co/m-a-p/xcodec_mini_infer<br> https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2<br> https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2|Interface PyTorch uses PyTorch 2.6.0<br> YuE-s1-7B-anneal-en-cot-exl2 quant: <b>4.25bpw-h6</b><br> YuE-s2-1B-general-exl2 quant: <b>8.0bpw-h8</b>|
 
 ###  Voice generation
 |Name|Links|Additional information|
