@@ -29,7 +29,7 @@ MIRROR="http://deb.debian.org/debian"
 BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
 
 # Version
-version="8.1.1"
+version="8.2"
 
 # Default installation path
 default_installation_path="$HOME/AI"

@@ -452,6 +452,24 @@ install_ace_step() {
     uv pip install -e .
 }
 
+# YuE-UI
+install_yue_ui() {
+    uv_base "https://github.com/joeljuvel/YuE-UI" "c98cd6efd8c174680913fea831b687ad620c5e69" "uv run ./source/ui.py --server_name 0.0.0.0" "3.12" "rocm6.2.4" "2.7.4.post1"
+    git clone https://huggingface.co/m-a-p/xcodec_mini_infer
+
+    cd models
+    git clone https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2
+    git clone https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2
+    cd YuE-s1-7B-anneal-en-cot-exl2
+    git checkout b7037dcd1d1ec09a6df600424e8b6acdbca4d96b
+    cd ../YuE-s2-1B-general-exl2
+    git checkout 674b44b254f01516a256bebef45deb600bdf33f2
+    cd ../..
+
+    cd xcodec_mini_infer
+    git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
+}
+
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
     uv_base "https://github.com/Mateusz-Dera/whisperspeech-webui.git" "37e2ddf59664dd1604cc41b2660f48d1fa1af173" "uv run --extra rocm webui.py --listen --api"

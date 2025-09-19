@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.1.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.2-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
@@ -69,12 +69,13 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.<br> Flux based.<br> Model quant: <b>Q5_K_M</b>|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
 |Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
-|Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br>https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant-Edit: <b>Q4_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
+|Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br>https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
 
 ###  Music generation
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ACE-Step|https://github.com/ace-step/ACE-Step||
+|YuE-UI|https://github.com/joeljuvel/YuE-UI<br> https://huggingface.co/m-a-p/xcodec_mini_infer<br> https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2<br> https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2|YuE-s1-7B-anneal-en-cot-exl2 quant: <b>4.25bpw-h6</b><br> YuE-s2-1B-general-exl2 quant: <b>8.0bpw-h8</b>|
 
 ###  Voice generation
 |Name|Links|Additional information|
