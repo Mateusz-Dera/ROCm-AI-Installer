@@ -29,7 +29,7 @@ MIRROR="http://deb.debian.org/debian"
 BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
 
 # Version
-version="8.1"
+version="8.1.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -164,6 +164,8 @@ install(){
     sudo apt install -y nodejs npm
     sudo apt install -y ffmpeg
     sudo apt install -y cmake
+    sudo apt install -y curl
+    sudo apt install -y git git-lfs
 
     install_rocm
 
