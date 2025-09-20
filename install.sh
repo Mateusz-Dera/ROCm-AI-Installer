@@ -25,7 +25,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # Version
-version="8.4"
+version="9.0"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -82,33 +82,18 @@ uninstall_rocm() {
 }
 
 install_rocm() {
-    # Create the keyrings directory if it does not exist
-    if [ ! -d /etc/apt/keyrings ]; then
-        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    fi
+    cd /tmp
 
-    #TODO
-    # Add the ROCm repository
-    #wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |
-    #gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-
-    #TODO
-    # Add the ROCm repository to the sources list
-    # echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
-    # | sudo tee /etc/apt/sources.list.d/rocm.list
-
-    echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/6.4.3 jammy main" \
-    | sudo tee /etc/apt/sources.list.d/rocm.list
-
-    # Add the AMDGPU repository
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-    | sudo tee /etc/apt/preferences.d/rocm-pin-600
-
-    # Update the package list
+    wget https://repo.radeon.com/amdgpu-install/7.0.1/ubuntu/jammy/amdgpu-install_7.0.1.70001-1_all.deb
+    sudo apt install -y ./amdgpu-install_7.0.1.70001-1_all.deb
     sudo apt update
 
-    # Install the ROCm packages
-    sudo apt install -y -t jammy rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+    wget https://repo.radeon.com/amdgpu-install/7.0.1/ubuntu/jammy/amdgpu-install_7.0.1.70001-1_all.deb
+    sudo apt install -y ./amdgpu-install_7.0.1.70001-1_all.deb
+    sudo apt update
+    sudo apt install -y "linux-headers-$(uname -r)"
+
+    sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
 set_installation_path() {
@@ -137,11 +122,11 @@ install(){
 
     uninstall_rocm
 
-    sudo apt install -y python3-dev
+    sudo apt install -y python3-dev python3-setuptools python3-wheel
     sudo apt install -y nodejs npm
     sudo apt install -y ffmpeg
     sudo apt install -y cmake
-    sudo apt install -y curl
+    sudo apt install -y curl wget
     sudo apt install -y git git-lfs
 
     install_rocm

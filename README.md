@@ -4,10 +4,11 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.4-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-9.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
+> Debian 13.1 with GNOME and Bash is recommended. Version 9.x is not tested on older systems.<br>
+> It should also work on Ubuntu 24.04.<br>
 > On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
 
 > [!Important]
@@ -23,7 +24,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Debian 13.1|
 |Kernel|6.12.43+deb13-amd64|
-|ROCm|6.4.3|
+|ROCm|7.0.1|
 
 ###  Text generation
 |Name|Links|Additional information|
@@ -121,7 +122,7 @@ bash ./install.sh
 
 5\. Select ROCm installation if you are upgrading or running the script for the first time.
 
-6\. If you are installing the script for the first time, restart system after this step.
+6\. If you select the ROCm installation option, a restart is recommended.
 
 7\. Install selected app.
 
