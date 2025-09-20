@@ -24,12 +24,8 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
-# Debian 12 fallback
-MIRROR="http://deb.debian.org/debian"
-BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
-
 # Version
-version="8.3"
+version="8.4"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -132,40 +128,12 @@ install_uv() {
     source ~/.bashrc
 }
 
-debian_fallback(){
-    if grep -q "bookworm main" /etc/apt/sources.list 2>/dev/null; then
-        sudo sed -i '/bookworm main/d' /etc/apt/sources.list
-    fi
-
-    echo -e "\n$BOOKWORM_LINE" | sudo tee -a /etc/apt/sources.list > /dev/null
-
-    sudo tee /etc/apt/preferences.d/fallback > /dev/null << EOF
-$MARKER
-Package: *
-Pin: release n=trixie
-Pin-Priority: 900
-
-Package: *
-Pin: release n=bookworm  
-Pin-Priority: 100
-
-# Higher position - when you install from bookworm, all dependencies also come from bookworm
-Package: *
-Pin: release n=bookworm
-Pin-Priority: 1001
-EOF
-
-apt update
-}
-
 install(){
     command -v sudo >/dev/null || { echo "sudo not installed" >&2; exit 1; }
     sudo -n true 2>/dev/null || sudo -v || { echo "no sudo access" >&2; exit 1; }
     
     sudo adduser `whoami` video
     sudo adduser `whoami` render
-
-    debian_fallback
 
     uninstall_rocm
 
@@ -177,6 +145,10 @@ install(){
     sudo apt install -y git git-lfs
 
     install_rocm
+
+    if [ -f /etc/ld.so.conf.d/rocm.conf ]; then
+        sudo rm /etc/ld.so.conf.d/rocm.conf
+    fi
 
     sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
 /opt/rocm/lib

@@ -4,15 +4,11 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.3-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.4-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
 > On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
-> This script requires several packages from Debian 12.<br>
-> Default mirror is http://deb.debian.org/debian<br>
-> If you wannt another mirror in install.sh change MIRROR variable value.
-> 
 
 > [!Important]
 > All apps and models are tested on a card with 24GB VRAM.<br>
