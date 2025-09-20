@@ -519,6 +519,30 @@ install_chatterbox(){
     uv pip install -e .
 }
 
+# KaniTTS
+install_kanitts(){
+    uv_base "https://github.com/nineninesix-ai/kani-tts" "63df2212c069c4cc147a0dd9f7804672ef8a8cbb" "uv run fastapi_example/server.py"
+    cd fastapi_example
+    mv ./client.html ./index.html
+    sed -i '/if __name__ == "__main__":/,/uvicorn\.run(app, host="0\.0\.0\.0", port=8000, log_level="info")/d' server.py
+    cat >> server.py << 'EOF'
+
+if __name__ == "__main__":
+    import http.server
+    import threading
+    import os
+    
+    # Change to fastapi_example folder and start HTML server
+    os.chdir('fastapi_example')
+    threading.Thread(target=lambda: http.server.HTTPServer(('', 7860), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+    print("HTML Server: http://0.0.0.0:7860")
+    
+    # Start FastAPI server
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+EOF
+}
+
 # TripoSG
 install_triposg(){
     uv_base "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"

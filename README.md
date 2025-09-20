@@ -4,7 +4,7 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.2-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-8.3-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
@@ -86,6 +86,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox|Only Polish and English have been tested.<br> ThMay not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the multilingual_app.py file.<br> For a better effect in Polish, I recommend using lowercase letters for the entire text.|
+|KaniTTS|https://github.com/nineninesix-ai/kani-tts||
 
 ###  3D generation
 |Name|Links|Additional information|

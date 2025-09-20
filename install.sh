@@ -29,7 +29,7 @@ MIRROR="http://deb.debian.org/debian"
 BOOKWORM_LINE="deb $MIRROR bookworm main contrib non-free-firmware"
 
 # Version
-version="8.2"
+version="8.3"
 
 # Default installation path
 default_installation_path="$HOME/AI"
@@ -113,6 +113,15 @@ install_rocm() {
 
     # Install the ROCm packages
     sudo apt install -y -t jammy rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+}
+
+set_installation_path() {
+    new_path=$(whiptail --title "Set Installation Path" --inputbox "Enter the installation path:" 10 60 "$installation_path" 3>&1 1>&2 2>&3)
+    
+    if [ $? -eq 0 ] && [ -n "$new_path" ]; then
+        installation_path="$new_path"
+        whiptail --title "Installation Path Updated" --msgbox "Installation path set to: $installation_path" 8 60
+    fi
 }
 
 install_uv() {
