@@ -395,8 +395,6 @@ install_comfyui() {
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V1.0.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
-                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V1.1.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
                 hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
             "")
@@ -409,19 +407,19 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
-        uv pip install gguf-node==0.2.8
-        uv pip install gguf==0.17.1
-        uv pip install protobuf==6.32.0
+        # uv pip install gguf-node==0.2.8
+        # uv pip install gguf==0.17.1
+        # uv pip install protobuf==6.32.0
         
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/calcuis/gguf
         cd gguf
-        git checkout caabdcaece21f4247a38810530f6e82d8609d90a
+        git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309
         
-        cd $installation_path/ComfyUI/custom_nodes
-        git clone https://github.com/city96/ComfyUI-GGUF
-        cd ComfyUI-GGUF
-        git checkout cf0573351ac260d629d460d97f09b09ac17d3726
+        # cd $installation_path/ComfyUI/custom_nodes
+        # git clone https://github.com/city96/ComfyUI-GGUF
+        # cd ComfyUI-GGUF
+        # git checkout be2a08330d7ec232d684e50ab938870d7529471e
     fi
     
     if [ $flux -eq 1 ]; then
@@ -436,13 +434,23 @@ install_comfyui() {
     fi
 
     if [ $qwen -eq 1 ]; then
-        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q5_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF mmproj-BF16.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-        mv $installation_path/ComfyUI/models/text_encoders/mmproj-BF16.gguf $installation_path/ComfyUI/models/text_encoders/Qwen2.5-VL-7B-Instruct-mmproj-F16.gguf
+        # Lightning
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
 
-        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
+        # VL-7B
+        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/"
+        mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors || exit 1
+        rm -rf $installation_path/ComfyUI/models/split_files
+    
+        # vae
+        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
+    
+        # TODO
+        # https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/blob/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors 
+        # https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/blob/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
     fi
 }
 

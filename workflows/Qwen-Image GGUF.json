@@ -1,8 +1,8 @@
 {
   "id": "68375b17-c65d-48e6-9943-aa696c5116b9",
   "revision": 0,
-  "last_node_id": 127,
-  "last_link_id": 269,
+  "last_node_id": 131,
+  "last_link_id": 277,
   "nodes": [
     {
       "id": 94,
@@ -43,7 +43,7 @@
       "type": "EmptyHunyuanLatentVideo",
       "pos": [
         465.66094970703125,
-        -393.18115234375
+        -387.2713317871094
       ],
       "size": [
         240,
@@ -80,7 +80,7 @@
       "type": "CLIPTextEncode",
       "pos": [
         464.3016052246094,
-        -654.953125
+        -649.043212890625
       ],
       "size": [
         240,
@@ -89,13 +89,13 @@
       "flags": {
         "collapsed": false
       },
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 266
+          "link": 270
         }
       ],
       "outputs": [
@@ -122,7 +122,7 @@
       "type": "CLIPTextEncode",
       "pos": [
         465.2930603027344,
-        -525.7229614257812
+        -519.8130493164062
       ],
       "size": [
         240,
@@ -131,13 +131,13 @@
       "flags": {
         "collapsed": false
       },
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 267
+          "link": 271
         }
       ],
       "outputs": [
@@ -171,7 +171,7 @@
         50
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -214,7 +214,7 @@
         270
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -244,13 +244,13 @@
         474
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 265
+          "link": 275
         },
         {
           "name": "positive",
@@ -284,7 +284,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        395352547723522,
+        1105716572260414,
         "randomize",
         20,
         4.5,
@@ -294,15 +294,55 @@
       ]
     },
     {
-      "id": 124,
-      "type": "UnetLoaderGGUF",
+      "id": 130,
+      "type": "LoraLoaderModelOnly",
       "pos": [
-        351.87200927734375,
-        -769.1310424804688
+        434.957275390625,
+        -768.2135620117188
       ],
       "size": [
-        350,
-        70
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 277
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            275
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.56",
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+        1
+      ]
+    },
+    {
+      "id": 131,
+      "type": "LoaderGGUF",
+      "pos": [
+        141.1669464111328,
+        -768.6039428710938
+      ],
+      "size": [
+        270,
+        58
       ],
       "flags": {},
       "order": 2,
@@ -313,30 +353,29 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            265
+            277
           ]
         }
       ],
       "properties": {
-        "aux_id": "city96/ComfyUI-GGUF",
-        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
-        "Node name for S&R": "UnetLoaderGGUF",
-        "cnr_id": "ComfyUI-GGUF"
+        "cnr_id": "gguf",
+        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
+        "Node name for S&R": "LoaderGGUF"
       },
       "widgets_values": [
-        "qwen-image-Q6_K.gguf"
+        "qwen-image-edit-q4_k_s.gguf"
       ]
     },
     {
-      "id": 125,
-      "type": "CLIPLoaderGGUF",
+      "id": 128,
+      "type": "CLIPLoader",
       "pos": [
-        29.39860725402832,
-        -654.3635864257812
+        136.72413635253906,
+        -575.3486328125
       ],
       "size": [
-        300,
-        82
+        270,
+        106
       ],
       "flags": {},
       "order": 3,
@@ -347,20 +386,20 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            266,
-            267
+            270,
+            271
           ]
         }
       ],
       "properties": {
-        "aux_id": "city96/ComfyUI-GGUF",
-        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
-        "Node name for S&R": "CLIPLoaderGGUF",
-        "cnr_id": "ComfyUI-GGUF"
+        "cnr_id": "comfy-core",
+        "ver": "0.3.56",
+        "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
-        "Qwen2.5-VL-7B-Instruct-UD-Q5_K_XL.gguf",
-        "qwen_image"
+        "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "stable_diffusion",
+        "default"
       ]
     }
   ],
@@ -406,46 +445,54 @@
       "VAE"
     ],
     [
-      265,
-      124,
-      0,
-      95,
-      0,
-      "MODEL"
-    ],
-    [
-      266,
-      125,
-      0,
-      100,
-      0,
-      "CLIP"
-    ],
-    [
-      267,
-      125,
-      0,
-      93,
-      0,
-      "CLIP"
-    ],
-    [
       269,
       98,
       0,
       127,
       0,
       "IMAGE"
+    ],
+    [
+      270,
+      128,
+      0,
+      100,
+      0,
+      "CLIP"
+    ],
+    [
+      271,
+      128,
+      0,
+      93,
+      0,
+      "CLIP"
+    ],
+    [
+      275,
+      130,
+      0,
+      95,
+      0,
+      "MODEL"
+    ],
+    [
+      277,
+      131,
+      0,
+      130,
+      0,
+      "MODEL"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.228459735736771,
+      "scale": 1.7985878990922088,
       "offset": [
-        162.145207929493,
-        1091.0313320720097
+        40.38978713095588,
+        822.2422566173464
       ]
     },
     "frontendVersion": "1.25.11",
