@@ -385,7 +385,7 @@ comfyui_addons(){
         5 "AnimePro FLUX GGUF" ON \
         6 "Flex.1-alpha GGUF" ON \
         7 "Qwen-Image GGUF" ON \
-        8 "Qwen-Image-Edit GGUF" ON 3>&1 1>&2 2>&3)
+        8 "Qwen-Image-Edit-2509 GGUF" ON 3>&1 1>&2 2>&3)
 
     status=$?
     

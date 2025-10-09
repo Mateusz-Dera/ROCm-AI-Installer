@@ -118,13 +118,13 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/LostRuins/koboldcpp.git" "b3a0ba5e371505f55ec3a28958b209bc49ea8f79" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_base "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "042b828c7334278931c3dd70f0c790ace2be7683" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # bitsandbytes
     uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
@@ -150,7 +150,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 12ac17197925ee1e1dba00a9505001e09e13dfde
+    git checkout 8f7b6b43c3f6402a8908d8d9bbf3134b2a43fb2c
 
     mv ./start.sh ./run.sh
 
@@ -259,7 +259,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 5e6229a8409ac786e62cb133d09f1679a9aec13e
+    git checkout 5f7e166cbf7b9ca928c7fad990098ef32358ac75
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
@@ -343,7 +343,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 104ae77f7a22304743e425d53f908e34cb89bc7e
+                git checkout 393839b3ab497522fac489d84119dd362d90dae1
                 ;;
             '"1"')
                 gguf=1

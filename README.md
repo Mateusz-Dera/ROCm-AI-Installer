@@ -4,10 +4,10 @@ It should also work on 7900XT cards.
 For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-8.4-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-9.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13.1 with GNOME and Bash is recommended. Version 8.x is not tested on older systems.<br>
+> Debian 13.1 is recommended. Version 8.x is not tested on older systems.<br>
 > On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
 
 > [!Important]
@@ -22,13 +22,13 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Debian 13.1|
-|Kernel|6.12.43+deb13-amd64|
-|ROCm|6.4.3|
+|Kernel|6.12.48+deb13-amd64|
+|ROCm|7.0.1|
 
 ###  Text generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
+|KoboldCPP|https://github.com/LostRuins/koboldcpp.git|Support GGML and GGUF models.|
 |Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
@@ -64,8 +64,8 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |FLUX.1-schnell GGUF|https://huggingface.co/black-forest-labs/FLUX.1-schnell<br> https://huggingface.co/city96/FLUX.1-schnell-gguf|Text to image model.<br> Model quant: <b>Q8_0</b>|
 |AnimePro FLUX GGUF|https://huggingface.co/advokat/AnimePro-FLUX|Text to image model.<br> Flux based.<br> Model quant: <b>Q5_K_M</b>|
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
-|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
-|Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br>https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
+|Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
+Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/unsloth/Qwen2.5-VL-7B-Instruct-GGUF<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b><br> Qwen2.5-VL-7B-Instruct quant: <b>Q5_K_XL</b>|
 
 ###  Music generation
 |Name|Links|Additional information|
