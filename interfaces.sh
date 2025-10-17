@@ -399,7 +399,7 @@ install_comfyui() {
                 ;;
             '"9"')
                 gguf=1
-                qwen=1
+                qwen2509=1
                 # Qwen-Image-Edit-2509
                 hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q5_1.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
@@ -413,19 +413,10 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
-        # uv pip install gguf-node==0.2.8
-        # uv pip install gguf==0.17.1
-        # uv pip install protobuf==6.32.0
-        
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/calcuis/gguf
         cd gguf
         git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309
-        
-        # cd $installation_path/ComfyUI/custom_nodes
-        # git clone https://github.com/city96/ComfyUI-GGUF
-        # cd ComfyUI-GGUF
-        # git checkout be2a08330d7ec232d684e50ab938870d7529471e
     fi
     
     if [ $flux -eq 1 ]; then
@@ -443,14 +434,27 @@ install_comfyui() {
         # Lightning
         hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
         hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+    fi
 
+    if [ $qwen2509 -eq 1 ]; then
+        # Lightning
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+
+        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors
+        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors
+
+        rm -rf $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509
+    fi
+
+    if [ $qwen -eq 1 -o $qwen2509 -eq 1 ]; then
         # VL-7B
         hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/"
         mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
         rm -rf $installation_path/ComfyUI/models/split_files
     
         # vae
-        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/vae"
+        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
     fi

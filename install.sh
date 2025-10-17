@@ -56,6 +56,7 @@ uninstall_rocm() {
     # Remove old ROCm packages
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
+    sudo apt purge -y amdgpu-install
 
     # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
@@ -86,6 +87,7 @@ uninstall_rocm() {
 }
 
 install_rocm() {
+
     cd /tmp
 
     if [ -f "$DEB_FILE" ]; then
@@ -93,7 +95,9 @@ install_rocm() {
     fi
 
     wget "$URL"
+
     sudo apt install -y ./$DEB_FILE
+
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
     sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev

@@ -8,5 +8,6 @@ Updated ComfyUI-GGUF
 Updated Qwen-Image-Lightning to 2.0 for Qwen Image and Qwen Image Edit
 Replaced Qwen2.5-VL-7B-Instruct GGUF by fp8 version
 Added Qwen-Image-Edit-2509
+Replaced ComfyUI-GGUF by https://github.com/calcuis/gguf
 
 Replaced KoboldCPP-ROCm by KoboldCPP concedo_experimental branch for ROCm 7.x compatibility
