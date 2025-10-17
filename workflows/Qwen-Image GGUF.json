@@ -1,8 +1,8 @@
 {
   "id": "68375b17-c65d-48e6-9943-aa696c5116b9",
   "revision": 0,
-  "last_node_id": 131,
-  "last_link_id": 277,
+  "last_node_id": 130,
+  "last_link_id": 276,
   "nodes": [
     {
       "id": 94,
@@ -89,7 +89,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -131,7 +131,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -294,91 +294,18 @@
       ]
     },
     {
-      "id": 130,
-      "type": "LoraLoaderModelOnly",
-      "pos": [
-        434.957275390625,
-        -768.2135620117188
-      ],
-      "size": [
-        270,
-        82
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 277
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            275
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.56",
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
-        1
-      ]
-    },
-    {
-      "id": 131,
-      "type": "LoaderGGUF",
-      "pos": [
-        141.1669464111328,
-        -768.6039428710938
-      ],
-      "size": [
-        270,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            277
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "gguf",
-        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
-        "Node name for S&R": "LoaderGGUF"
-      },
-      "widgets_values": [
-        "qwen-image-edit-q4_k_s.gguf"
-      ]
-    },
-    {
       "id": 128,
       "type": "CLIPLoader",
       "pos": [
-        136.72413635253906,
-        -575.3486328125
+        142.28402709960938,
+        -572.0126953125
       ],
       "size": [
         270,
         106
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -400,6 +327,80 @@
         "qwen_2.5_vl_7b_fp8_scaled.safetensors",
         "stable_diffusion",
         "default"
+      ]
+    },
+    {
+      "id": 124,
+      "type": "UnetLoaderGGUF",
+      "pos": [
+        37.901588439941406,
+        -766.4773559570312
+      ],
+      "size": [
+        350,
+        70
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            276
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-GGUF",
+        "ver": "cf0573351ac260d629d460d97f09b09ac17d3726",
+        "Node name for S&R": "UnetLoaderGGUF",
+        "aux_id": "city96/ComfyUI-GGUF"
+      },
+      "widgets_values": [
+        "qwen-image-Q6_K.gguf"
+      ]
+    },
+    {
+      "id": 130,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        434.957275390625,
+        -768.2135620117188
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 276
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            275
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.56",
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+        1
       ]
     }
   ],
@@ -477,8 +478,8 @@
       "MODEL"
     ],
     [
-      277,
-      131,
+      276,
+      124,
       0,
       130,
       0,
@@ -489,10 +490,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.7985878990922088,
+      "scale": 1.0152559799477454,
       "offset": [
-        40.38978713095588,
-        822.2422566173464
+        -163.948390009438,
+        931.3784191939485
       ]
     },
     "frontendVersion": "1.25.11",

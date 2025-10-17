@@ -118,7 +118,7 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_base "https://github.com/LostRuins/koboldcpp.git" "b3a0ba5e371505f55ec3a28958b209bc49ea8f79" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/LostRuins/koboldcpp.git" "87d12eb09a108dcf2e7770a754098eb27a9c52b3" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
@@ -290,7 +290,7 @@ install_ovis() {
 
 # ComfyUI
 install_comfyui() {
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "4449e147692366ac8b9bd3b8834c771bc81e91ac" "PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --use-split-cross-attention" "3.13" "rocm6.3" "-1"
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen" "3.13" "rocm6.3" "-1"
 
     local gguf=0
     local flux=0
@@ -331,7 +331,7 @@ install_comfyui() {
         done
     fi
 
-    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/rocm6.4 --index-strategy unsafe-best-match
+    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/nightly/rocm7.0 --index-strategy unsafe-best-match
 
     install_flash_attention "2.8.3 "
 
@@ -397,6 +397,12 @@ install_comfyui() {
                 # Qwen-Image-Edit
                 hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
+            '"9"')
+                gguf=1
+                qwen=1
+                # Qwen-Image-Edit-2509
+                hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q5_1.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
+                ;;
             "")
                 break
                 ;;
@@ -440,17 +446,13 @@ install_comfyui() {
 
         # VL-7B
         hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/"
-        mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors || exit 1
+        mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
         rm -rf $installation_path/ComfyUI/models/split_files
     
         # vae
         hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
-    
-        # TODO
-        # https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/blob/main/split_files/diffusion_models/qwen_image_edit_2509_fp8_e4m3fn.safetensors 
-        # https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/blob/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
     fi
 }
 

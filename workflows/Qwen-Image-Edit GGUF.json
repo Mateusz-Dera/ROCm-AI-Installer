@@ -1,8 +1,8 @@
 {
   "id": "91f6bbe2-ed41-4fd6-bac7-71d5b5864ecb",
   "revision": 0,
-  "last_node_id": 111,
-  "last_link_id": 212,
+  "last_node_id": 112,
+  "last_link_id": 213,
   "nodes": [
     {
       "id": 75,
@@ -115,7 +115,7 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        712447137653083,
+        812591833177336,
         "randomize",
         8,
         1,
@@ -614,7 +614,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 212
+          "link": 213
         }
       ],
       "outputs": [
@@ -637,11 +637,11 @@
       ]
     },
     {
-      "id": 111,
-      "type": "LoaderGGUF",
+      "id": 112,
+      "type": "UnetLoaderGGUF",
       "pos": [
-        -600.492919921875,
-        -52.31142807006836
+        -603.3231811523438,
+        -50.50309371948242
       ],
       "size": [
         270,
@@ -656,17 +656,17 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            212
+            213
           ]
         }
       ],
       "properties": {
-        "aux_id": "calcuis/gguf",
-        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
-        "Node name for S&R": "LoaderGGUF"
+        "cnr_id": "ComfyUI-GGUF",
+        "ver": "be2a08330d7ec232d684e50ab938870d7529471e",
+        "Node name for S&R": "UnetLoaderGGUF"
       },
       "widgets_values": [
-        "qwen-image-edit-q4_k_s.gguf"
+        "Qwen-Image-Edit-2509-Q4_K_S.gguf"
       ]
     }
   ],
@@ -816,8 +816,8 @@
       "CONDITIONING"
     ],
     [
-      212,
-      111,
+      213,
+      112,
       0,
       104,
       0,
@@ -828,13 +828,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.788067144920221,
+      "scale": 0.7880671449202211,
       "offset": [
-        1513.154013880213,
-        394.45756006409624
+        812.4704623314173,
+        524.2224299828342
       ]
     },
-    "frontendVersion": "1.25.11",
+    "frontendVersion": "1.27.10",
     "ue_links": [],
     "links_added_by_ue": [],
     "VHS_latentpreview": false,
