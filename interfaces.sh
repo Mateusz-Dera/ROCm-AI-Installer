@@ -118,7 +118,7 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_base "https://github.com/LostRuins/koboldcpp.git" "87d12eb09a108dcf2e7770a754098eb27a9c52b3" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/LostRuins/koboldcpp.git" "ee3f39fc7ce391d02eda407f828098f70488a6b7" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 

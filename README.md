@@ -23,7 +23,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
 |OS|Debian 13.1|
 |Kernel|6.12.48+deb13-amd64|
-|ROCm|7.0.1|
+|ROCm|7.0.2|
 
 ###  Text generation
 |Name|Links|Additional information|

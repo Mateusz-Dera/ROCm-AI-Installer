@@ -24,6 +24,10 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
+# ROCm
+URL="https://repo.radeon.com/amdgpu-install/7.0.2/ubuntu/noble/amdgpu-install_7.0.2.70002-1_all.deb"
+DEB_FILE=$(basename "$URL")
+
 # Version
 version="9.0"
 
@@ -84,15 +88,14 @@ uninstall_rocm() {
 install_rocm() {
     cd /tmp
 
-    wget https://repo.radeon.com/amdgpu-install/7.0.1/ubuntu/jammy/amdgpu-install_7.0.1.70001-1_all.deb
-    sudo apt install -y ./amdgpu-install_7.0.1.70001-1_all.deb
-    sudo apt update
+    if [ -f "$DEB_FILE" ]; then
+        rm -f "$DEB_FILE"
+    fi
 
-    wget https://repo.radeon.com/amdgpu-install/7.0.1/ubuntu/jammy/amdgpu-install_7.0.1.70001-1_all.deb
-    sudo apt install -y ./amdgpu-install_7.0.1.70001-1_all.deb
-    sudo apt update
+    wget "$URL"
+    sudo apt install -y ./$DEB_FILE
+    sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
-
     sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
