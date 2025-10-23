@@ -118,26 +118,22 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_base "https://github.com/LostRuins/koboldcpp.git" "ee3f39fc7ce391d02eda407f828098f70488a6b7" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm" "ee3f39fc7ce391d02eda407f828098f70488a6b7" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_base "https://github.com/oobabooga/text-generation-webui.git" "042b828c7334278931c3dd70f0c790ace2be7683" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "771130532c02988352c456ecf8d0cb341d5f7dd3" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # bitsandbytes
-    uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
+    uv pip install git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba
 
     # ExLlamaV2
-    git clone https://github.com/turboderp/exllamav2
-    cd exllamav2
-    git checkout 6a2d8311408aa23af34e8ec32e28085ea68dada7
-    uv pip install .
-    cd ..
+    uv pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.3.2/exllamav2-0.3.2+rocm6.4.torch2.8.0-cp313-cp313-linux_x86_64.whl
 
     # llama_cpp
-    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.36.0/llama_cpp_binaries-0.36.0+vulkanavx-py3-none-linux_x86_64.whl
+    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.55.0/llama_cpp_binaries-0.55.0+vulkan-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -401,7 +397,7 @@ install_comfyui() {
                 gguf=1
                 qwen2509=1
                 # Qwen-Image-Edit-2509
-                hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q5_1.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
+                hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
                 ;;
             "")
                 break

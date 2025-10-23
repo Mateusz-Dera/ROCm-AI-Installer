@@ -28,7 +28,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 ###  Text generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|KoboldCPP|https://github.com/LostRuins/koboldcpp.git|Support GGML and GGUF models.|
+|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
 |Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
@@ -66,7 +66,7 @@ For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the
 |Flex.1-alpha GGUF|https://huggingface.co/ostris/Flex.1-alpha<br> https://huggingface.co/hum-ma/Flex.1-alpha-GGUF|Text to image model.<br>Flux based.<br>Model quant: <b>Q8_0</b>|
 |Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/QuantStack/Qwen-Image-Edit-2509-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b>|
 Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://huggingface.co/calcuis/qwen-image-edit-ggu<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b>|
-Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_K_M</b>|
+Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_0</b>|
 
 ###  Music generation
 |Name|Links|Additional information|

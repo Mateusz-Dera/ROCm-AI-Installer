@@ -5,39 +5,6 @@
   "last_link_id": 239,
   "nodes": [
     {
-      "id": 116,
-      "type": "LoaderGGUF",
-      "pos": [
-        -743.4043579101562,
-        -94.82978820800781
-      ],
-      "size": [
-        270,
-        58
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            229
-          ]
-        }
-      ],
-      "properties": {
-        "aux_id": "calcuis/gguf",
-        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
-        "Node name for S&R": "LoaderGGUF"
-      },
-      "widgets_values": [
-        "Qwen-Image-Edit-2509-Q5_1.gguf"
-      ]
-    },
-    {
       "id": 89,
       "type": "LoraLoaderModelOnly",
       "pos": [
@@ -49,7 +16,7 @@
         82
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -109,7 +76,7 @@
         60
       ],
       "flags": {},
-      "order": 7,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -249,58 +216,6 @@
       "widgets_values": []
     },
     {
-      "id": 78,
-      "type": "LoadImage",
-      "pos": [
-        -776.7538452148438,
-        885.705810546875
-      ],
-      "size": [
-        274.080078125,
-        314.0000305175781
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            177
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.50",
-        "Node name for S&R": "LoadImage",
-        "enableTabs": false,
-        "tabWidth": 65,
-        "tabXOffset": 10,
-        "hasSecondTab": false,
-        "secondTabText": "Send Back",
-        "secondTabOffset": 80,
-        "secondTabWidth": 65,
-        "ue_properties": {
-          "widget_ue_connectable": {
-            "image": true,
-            "upload": true
-          }
-        }
-      },
-      "widgets_values": [
-        "cat.png",
-        "image"
-      ]
-    },
-    {
       "id": 38,
       "type": "CLIPLoader",
       "pos": [
@@ -312,7 +227,7 @@
         110
       ],
       "flags": {},
-      "order": 2,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -364,7 +279,7 @@
         46
       ],
       "flags": {},
-      "order": 8,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -455,7 +370,7 @@
         82
       ],
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -510,7 +425,7 @@
         60
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -610,66 +525,13 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        637104281194973,
+        384850108212491,
         "randomize",
         8,
         1,
         "euler",
         "simple",
         1
-      ]
-    },
-    {
-      "id": 106,
-      "type": "LoadImage",
-      "pos": [
-        -424.3259582519531,
-        337.4307556152344
-      ],
-      "size": [
-        274.080078125,
-        314.0000305175781
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            232,
-            235
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.50",
-        "Node name for S&R": "LoadImage",
-        "enableTabs": false,
-        "tabWidth": 65,
-        "tabXOffset": 10,
-        "hasSecondTab": false,
-        "secondTabText": "Send Back",
-        "secondTabOffset": 80,
-        "secondTabWidth": 65,
-        "ue_properties": {
-          "widget_ue_connectable": {
-            "image": true,
-            "upload": true
-          }
-        }
-      },
-      "widgets_values": [
-        "sand.png",
-        "image"
       ]
     },
     {
@@ -684,7 +546,7 @@
         200
       ],
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -747,7 +609,7 @@
         200
       ],
       "flags": {},
-      "order": 9,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -796,6 +658,145 @@
       },
       "widgets_values": [
         "Change the background to a desert. Change the lighting to midnight. The sky should be high quality. Remove all grass. Adjust the cat to the sand. Correct the shadows. Cloudy sky."
+      ]
+    },
+    {
+      "id": 106,
+      "type": "LoadImage",
+      "pos": [
+        -424.3259582519531,
+        337.4307556152344
+      ],
+      "size": [
+        274.080078125,
+        314.0000305175781
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            232,
+            235
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.50",
+        "Node name for S&R": "LoadImage",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "image": true,
+            "upload": true
+          }
+        }
+      },
+      "widgets_values": [
+        "sand.png",
+        "image"
+      ]
+    },
+    {
+      "id": 78,
+      "type": "LoadImage",
+      "pos": [
+        -776.7538452148438,
+        885.705810546875
+      ],
+      "size": [
+        274.080078125,
+        314.0000305175781
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            177
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.50",
+        "Node name for S&R": "LoadImage",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "image": true,
+            "upload": true
+          }
+        }
+      },
+      "widgets_values": [
+        "cat.png",
+        "image"
+      ]
+    },
+    {
+      "id": 116,
+      "type": "LoaderGGUF",
+      "pos": [
+        -743.4043579101562,
+        -94.82978820800781
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            229
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "gguf",
+        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
+        "Node name for S&R": "LoaderGGUF",
+        "aux_id": "calcuis/gguf"
+      },
+      "widgets_values": [
+        "Qwen-Image-Edit-2509-Q4_0.gguf"
       ]
     }
   ],
@@ -973,10 +974,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5830316966669754,
+      "scale": 0.776015188263746,
       "offset": [
-        1506.3025411050871,
-        450.6727769610104
+        118.03805217420664,
+        235.81666915600735
       ]
     },
     "frontendVersion": "1.27.10",
