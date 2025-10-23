@@ -553,16 +553,6 @@ if __name__ == "__main__":
 EOF
 }
 
-# TripoSG
-install_triposg(){
-    uv_base "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
-    cp $CUSTOM_FILES_DIR/triposg_webui.py ./
-    git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
-    cd ./pytorch_cluster_rocm
-    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
-    uv pip install .
-}
-
 install_partcrafter(){
     uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13" "nightly/rocm7.0"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py

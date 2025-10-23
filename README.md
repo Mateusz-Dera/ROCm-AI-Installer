@@ -1,26 +1,25 @@
 # ROCm-AI-Installer
-A script that automatically installs all the required stuff to run selected AI apps on AMD Radeon 7900XTX.
-It should also work on 7900XT cards.
-For other cards, change HSA_OVERRIDE_GFX_VERSION and GFX at the beginning of the script (Not tested).
+A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs (default: RX 7900 XTX). For other cards and architectures, the <b>HSA_OVERRIDE_GFX_VERSION</b> and <b>GFX</b> variables in the <b>install.sh</b> file should be modified accordingly (Not tested).
 
 ## Info
 [![Version](https://img.shields.io/badge/Version-9.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13.1 is recommended. Version 8.x is not tested on older systems.<br>
-> On other distros, most of the python based apps should work, but manual installation of ROCm will be required.<br>
+> Debian 13.1 is recommended. Version 9.x is not tested on older systems.<br>
+> On other distros, most of the python based applications should work, but manual installation of ROCm/ZLUDA will be required.<br>
+> If possible, applications use ROCm by default, but starting from version 9.0, unsupported applications are run through ZLUDA.
 
 > [!Important]
-> All apps and models are tested on a card with 24GB VRAM.<br>
-> Some apps or models may not work on cards with less VRAM.
+> All models and applications are tested on a GPU with 24GB of VVRAM.<br>
+> Some applications may not work on GPUs with less VRAM..
 
 ### Test platform:
 |Name|Info|
 |:---|:---|
-|CPU|AMD Ryzen 9950X3D|
+|CPU|AMD Ryzen 5 7500F|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|ASRock B650E PG Riptide WiFi (BIOS 3.30)|
+|Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8e)|
 |OS|Debian 13.1|
 |Kernel|6.12.48+deb13-amd64|
 |ROCm|7.0.2|
@@ -88,7 +87,6 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 ###  3D generation
 |Name|Links|Additional information|
 |:---|:---|:---|
-|TripoSG|https://github.com/VAST-AI-Research/TripoSG|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.<br> Sometimes there are probelms with the preview, but the model should still be available for download.|
 |PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
 
 ###  Tools

@@ -11,6 +11,10 @@ Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
 Updated Qwen-Image-Lightning to 2.0 for Qwen Image and Qwen Image Edit
 Replaced Qwen2.5-VL-7B-Instruct GGUF by fp8 version
+
 Added Qwen-Image-Edit-2509
 Added espeak to basic installation
+
 Replaced ComfyUI-GGUF by https://github.com/calcuis/gguf
+
+Drop TripoSG support
