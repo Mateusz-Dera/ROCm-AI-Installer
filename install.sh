@@ -135,6 +135,7 @@ install(){
     sudo apt install -y cmake
     sudo apt install -y curl wget
     sudo apt install -y git git-lfs
+    sudo apt install -y espeak
 
     install_rocm
 

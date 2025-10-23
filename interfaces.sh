@@ -487,7 +487,7 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    uv_base "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/SWivid/F5-TTS.git" "f2a4f8581fc9315487cfbbbc3c5ae454c97f59a7" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
     git submodule update --init --recursive
     uv pip install -e .
 }
@@ -519,7 +519,7 @@ install_ims_toucan(){
 
 # Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://github.com/resemble-ai/chatterbox" "1b5ae50585c8fa4d30ca6a7b304d787b4f802a42" "uv run multilingual_app.py" "3.12" #"rocm6.2.4" "2.7.4.post1"
+    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "uv run multilingual_app.py" "3.12" #"rocm6.2.4" "2.7.4.post1"
     rm -rf ./multilingual_app.py
     cp $CUSTOM_FILES_DIR/chatterbox/multilingual_app.py ./
     
@@ -564,7 +564,7 @@ install_triposg(){
 }
 
 install_partcrafter(){
-    uv_base "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13" "nightly/rocm7.0"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
