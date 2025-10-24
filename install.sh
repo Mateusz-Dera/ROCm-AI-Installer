@@ -28,10 +28,13 @@ export GFX=gfx1100
 ROCM_URL="https://repo.radeon.com/amdgpu-install/7.0.2/ubuntu/noble/amdgpu-install_7.0.2.70002-1_all.deb"
 ROCM_FILE=$(basename "$ROCM_URL")
 
-# ZLUDA
-ZLUDA_URL="https://github.com/vosen/ZLUDA/releases/download/v6-preview.8/zluda-linux-f2504cb.tar.gz"
-ZLUDA_FILE=$(basename "$ZLUDA_URL")
-export ZLUDA_PATH="/opt/zluda"
+#? Preparing for future support for ZLUDA
+#? https://github.com/vosen/ZLUDA
+#?
+#? ZLUDA
+#? ZLUDA_URL="https://github.com/vosen/ZLUDA/releases/download/v6-preview.8/zluda-linux-f2504cb.tar.gz"
+#? ZLUDA_FILE=$(basename "$ZLUDA_URL")
+#? export ZLUDA_PATH="/opt/zluda"
 
 # Version
 version="9.0"
@@ -91,10 +94,10 @@ uninstall_rocm() {
     sudo apt autoremove -y
 }
 
-# Uninstall ZLUDA
-uninstall_zluda() {
-    sudo rm -rf $ZLUDA_PATH
-}
+#? Uninstall ZLUDA
+#? uninstall_zluda() {
+#?    sudo rm -rf $ZLUDA_PATH
+#? }
 
 # Install ROCm
 install_rocm() {
@@ -114,24 +117,24 @@ install_rocm() {
     sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
-# Install ZLUDA
-install_zluda() {
-    cd /tmp
-
-    if [ -d "zluda" ]; then
-        rm -rf "zluda"
-    fi
-
-    if [ -f $ZLUDA_FILE ]; then
-        rm -f $ZLUDA_FILE
-    fi
-
-    wget $ZLUDA_URL || { echo "Failed to download ZLUDA from $ZLUDA_URL" >&2; exit 1; }
-
-    tar -xvzf $ZLUDA_FILE
-
-    sudo mv zluda $ZLUDA_PATH || { echo "Failed to move ZLUDA to $ZLUDA_PATH" >&2; exit 1; }
-}
+#? Install ZLUDA
+#? install_zluda() {
+#?    cd /tmp
+#?
+#?    if [ -d "zluda" ]; then
+#?        rm -rf "zluda"
+#?    fi
+#?
+#?    if [ -f $ZLUDA_FILE ]; then
+#?        rm -f $ZLUDA_FILE
+#?    fi
+#?
+#?    wget $ZLUDA_URL || { echo "Failed to download ZLUDA from $ZLUDA_URL" >&2; exit 1; }
+#?
+#?    tar -xvzf $ZLUDA_FILE
+#?
+#?    sudo mv zluda $ZLUDA_PATH || { echo "Failed to move ZLUDA to $ZLUDA_PATH" >&2; exit 1; }
+#?}
 
 set_installation_path() {
     new_path=$(whiptail --title "Set Installation Path" --inputbox "Enter the installation path:" 10 60 "$installation_path" 3>&1 1>&2 2>&3)
@@ -158,7 +161,7 @@ install(){
     sudo adduser `whoami` render
 
     uninstall_rocm
-    uninstall_zluda
+    #? uninstall_zluda
 
     sudo apt install -y python3-dev python3-setuptools python3-wheel
     sudo apt install -y nodejs npm
@@ -170,7 +173,7 @@ install(){
     sudo apt install -y espeak
 
     install_rocm
-    install_zluda
+    #? install_zluda
 
     if [ -f /etc/ld.so.conf.d/rocm.conf ]; then
         sudo rm /etc/ld.so.conf.d/rocm.conf

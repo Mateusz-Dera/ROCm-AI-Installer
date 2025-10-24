@@ -6,8 +6,7 @@ A script that automatically installs the required dependencies to run selected A
 
 > [!Note]
 > Debian 13.1 is recommended. Version 9.x is not tested on older systems.<br>
-> On other distros, most of the python based applications should work, but manual installation of ROCm/ZLUDA will be required.<br>
-> If possible, applications use ROCm (https://github.com/ROCm/ROCm) by default, but starting from version 9.0, unsupported applications are run through ZLUDA (https://github.com/vosen/ZLUDA).
+> On other distros, most of the python based applications should work, but manual installation of ROCm will be required.<br>
 
 > [!Important]
 > All models and applications are tested on a GPU with 24GB of VVRAM.<br>
@@ -23,7 +22,6 @@ A script that automatically installs the required dependencies to run selected A
 |OS|Debian 13.1|
 |Kernel|6.12.48+deb13-amd64|
 |ROCm|7.0.2|
-|ZLUDA|6-preview.8|
 
 ###  Text generation
 |Name|Links|Additional information|
