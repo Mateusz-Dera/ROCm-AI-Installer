@@ -43,7 +43,6 @@ A script that automatically installs the required dependencies to run selected A
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
-|Artist|https://github.com/songrise/Artist/||
 |Cinemo|https://huggingface.co/spaces/maxin-cn/Cinemo<br> https://github.com/maxin-cn/Cinemo||
 |Ovis-U1-3B|https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B<br> https://github.com/AIDC-AI/Ovis-U1||
 
@@ -119,7 +118,7 @@ bash ./install.sh
 
 4\. Select installation path.
 
-5\. Select ROCm installation if you are upgrading or running the script for the first time.
+5\. Select <b>Install required packages</b> if you are upgrading or running the script for the first time.
 
 6\. If you are installing the script for the first time, restart system after this step.
 

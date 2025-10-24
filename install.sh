@@ -25,8 +25,13 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
 # ROCm
-URL="https://repo.radeon.com/amdgpu-install/7.0.2/ubuntu/noble/amdgpu-install_7.0.2.70002-1_all.deb"
-DEB_FILE=$(basename "$URL")
+ROCM_URL="https://repo.radeon.com/amdgpu-install/7.0.2/ubuntu/noble/amdgpu-install_7.0.2.70002-1_all.deb"
+ROCM_FILE=$(basename "$ROCM_URL")
+
+# ZLUDA
+ZLUDA_URL="https://github.com/vosen/ZLUDA/releases/download/v6-preview.8/zluda-linux-f2504cb.tar.gz"
+ZLUDA_FILE=$(basename "$ZLUDA_URL")
+export ZLUDA_PATH="/opt/zluda"
 
 # Version
 version="9.0"
@@ -86,21 +91,46 @@ uninstall_rocm() {
     sudo apt autoremove -y
 }
 
+# Uninstall ZLUDA
+uninstall_zluda() {
+    sudo rm -rf $ZLUDA_PATH
+}
+
+# Install ROCm
 install_rocm() {
 
     cd /tmp
 
-    if [ -f "$DEB_FILE" ]; then
-        rm -f "$DEB_FILE"
+    if [ -f "$ROCM_FILE" ]; then
+        rm -f "$ROCM_FILE"
     fi
 
-    wget "$URL"
+    wget "$ROCM_URL"
 
-    sudo apt install -y ./$DEB_FILE
+    sudo apt install -y ./$ROCM_FILE
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
     sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+}
+
+# Install ZLUDA
+install_zluda() {
+    cd /tmp
+
+    if [ -d "zluda" ]; then
+        rm -rf "zluda"
+    fi
+
+    if [ -f $ZLUDA_FILE ]; then
+        rm -f $ZLUDA_FILE
+    fi
+
+    wget $ZLUDA_URL || { echo "Failed to download ZLUDA from $ZLUDA_URL" >&2; exit 1; }
+
+    tar -xvzf $ZLUDA_FILE
+
+    sudo mv zluda $ZLUDA_PATH || { echo "Failed to move ZLUDA to $ZLUDA_PATH" >&2; exit 1; }
 }
 
 set_installation_path() {
@@ -128,6 +158,7 @@ install(){
     sudo adduser `whoami` render
 
     uninstall_rocm
+    uninstall_zluda
 
     sudo apt install -y python3-dev python3-setuptools python3-wheel
     sudo apt install -y nodejs npm
@@ -135,9 +166,11 @@ install(){
     sudo apt install -y cmake
     sudo apt install -y curl wget
     sudo apt install -y git git-lfs
+    sudo apt install -y tar
     sudo apt install -y espeak
 
     install_rocm
+    install_zluda
 
     if [ -f /etc/ld.so.conf.d/rocm.conf ]; then
         sudo rm /etc/ld.so.conf.d/rocm.conf

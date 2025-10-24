@@ -45,7 +45,7 @@ actcheckbox=yellow,black
 show_menu() {
     choice=$(whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 17 100 10 \
     0 "Installation path ($installation_path)" \
-    1 "Install ROCm and required packages" \
+    1 "Install required packages" \
     2 "Text generation" \
     3 "Image & video generation" \
     4 "Music generation" \
