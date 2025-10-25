@@ -24,10 +24,6 @@
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export GFX=gfx1100
 
-# ROCm
-ROCM_URL="https://repo.radeon.com/amdgpu-install/7.0.2/ubuntu/noble/amdgpu-install_7.0.2.70002-1_all.deb"
-ROCM_FILE=$(basename "$ROCM_URL")
-
 #? Preparing for future support for ZLUDA
 #? https://github.com/vosen/ZLUDA
 #?
@@ -64,7 +60,7 @@ uninstall_rocm() {
     # Remove old ROCm packages
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
-    sudo apt purge -y amdgpu-install
+    sudo apt purge -y amdgpu*
 
     # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
@@ -102,19 +98,30 @@ uninstall_rocm() {
 # Install ROCm
 install_rocm() {
 
-    cd /tmp
-
-    if [ -f "$ROCM_FILE" ]; then
-        rm -f "$ROCM_FILE"
+    # Create the keyrings directory if it does not exist
+    if [ ! -d /etc/apt/keyrings ]; then
+        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
     fi
 
-    wget "$ROCM_URL"
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
+        gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-    sudo apt install -y ./$ROCM_FILE
+    # Register ROCm packages
+    sudo tee /etc/apt/sources.list.d/rocm.list << EOF
+deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.2 noble main
+deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0.2/ubuntu noble main
+EOF
+
+    sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF
+# Prefer AMD ROCm packages
+Package: rocm* hip* rocminfo rocm-cmake
+Pin: version *~24.04
+Pin-Priority: 1001
+EOF
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
-    sudo apt install -y amdgpu-dkms rocm rocminfo rocm-utils rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+    sudo apt install -y rocminfo rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
 #? Install ZLUDA
@@ -174,6 +181,7 @@ install(){
 
     nvm install 22
 
+    prefer_noble
     install_rocm
     #? install_zluda
 
