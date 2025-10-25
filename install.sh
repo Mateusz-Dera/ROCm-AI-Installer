@@ -164,13 +164,15 @@ install(){
     #? uninstall_zluda
 
     sudo apt install -y python3-dev python3-setuptools python3-wheel
-    sudo apt install -y nodejs npm
+    sudo apt install -y nodejs
     sudo apt install -y ffmpeg
     sudo apt install -y cmake
     sudo apt install -y curl wget
     sudo apt install -y git git-lfs
     sudo apt install -y tar
     sudo apt install -y espeak
+
+    nvm install 22
 
     install_rocm
     #? install_zluda
