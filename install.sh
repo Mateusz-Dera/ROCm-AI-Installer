@@ -170,7 +170,7 @@ install(){
     uninstall_rocm
     #? uninstall_zluda
 
-    sudo apt install -y python3-dev python3-setuptools python3-wheel
+    sudo apt install -y python3-dev python3-setuptools python3-wheel python3-tk
     sudo apt install -y nodejs
     sudo apt install -y ffmpeg
     sudo apt install -y cmake
