@@ -121,7 +121,7 @@ EOF
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
-    sudo apt install -y rocminfo rocm-cmake hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+    sudo apt install -y rocminfo rocm-cmake hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev 
 }
 
 #? Install ZLUDA
