@@ -124,7 +124,7 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_base "https://github.com/oobabooga/text-generation-webui.git" "771130532c02988352c456ecf8d0cb341d5f7dd3" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "fc67e5e692c2d627fe181d116e6d35a73d5e8b09" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
 
     # bitsandbytes
     uv pip install git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba

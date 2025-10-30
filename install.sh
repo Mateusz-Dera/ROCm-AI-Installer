@@ -106,6 +106,10 @@ install_rocm() {
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
         gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
+    # Register AMD GPU packages
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/7.0.2/ubuntu noble main" \
+    | sudo tee /etc/apt/sources.list.d/amdgpu.list
+
     # Register ROCm packages
     sudo tee /etc/apt/sources.list.d/rocm.list << EOF
 deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.2 noble main
@@ -114,14 +118,14 @@ EOF
 
     sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF
 # Prefer AMD ROCm packages
-Package: rocm* hip* rocminfo rocm-cmake
+Package: rocm* hip* rocminfo rocm-cmake amdgpu*
 Pin: version *~24.04
 Pin-Priority: 1001
 EOF
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
-    sudo apt install -y rocminfo rocm-cmake hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev 
+    sudo apt install -y amd-gpu rocminfo rocm-cmake hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev 
 }
 
 #? Install ZLUDA
