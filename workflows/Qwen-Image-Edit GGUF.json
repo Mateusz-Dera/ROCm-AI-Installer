@@ -1,8 +1,8 @@
 {
   "id": "91f6bbe2-ed41-4fd6-bac7-71d5b5864ecb",
   "revision": 0,
-  "last_node_id": 112,
-  "last_link_id": 213,
+  "last_node_id": 113,
+  "last_link_id": 214,
   "nodes": [
     {
       "id": 75,
@@ -115,7 +115,7 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        812591833177336,
+        1033814852955717,
         "randomize",
         8,
         1,
@@ -495,6 +495,79 @@
       ]
     },
     {
+      "id": 104,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -219.65512084960938,
+        -52.47721481323242
+      ],
+      "size": [
+        408.4258728027344,
+        83.04080200195312
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 214
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            196
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.56",
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+        1
+      ]
+    },
+    {
+      "id": 113,
+      "type": "LoaderGGUF",
+      "pos": [
+        -594.5220687394772,
+        -53.584316602803675
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            214
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "gguf",
+        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
+        "Node name for S&R": "LoaderGGUF"
+      },
+      "widgets_values": [
+        "qwen-image-edit-q4_k_s.gguf"
+      ]
+    },
+    {
       "id": 110,
       "type": "TextEncodeQwenImageEdit",
       "pos": [
@@ -542,7 +615,7 @@
         "Node name for S&R": "TextEncodeQwenImageEdit"
       },
       "widgets_values": [
-        "ugly, low quality"
+        "ugly, low quality, blurry, deformed, bad anatomy, extra limbs, artifacts, pixelated, wrong proportions"
       ]
     },
     {
@@ -593,80 +666,7 @@
         "Node name for S&R": "TextEncodeQwenImageEdit"
       },
       "widgets_values": [
-        "the anime girl with massive fennec ears is wearing pink dress. fields of grass in the background\n"
-      ]
-    },
-    {
-      "id": 104,
-      "type": "LoraLoaderModelOnly",
-      "pos": [
-        -219.65512084960938,
-        -52.47721481323242
-      ],
-      "size": [
-        408.4258728027344,
-        83.04080200195312
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 213
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            196
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.56",
-        "Node name for S&R": "LoraLoaderModelOnly"
-      },
-      "widgets_values": [
-        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
-        1
-      ]
-    },
-    {
-      "id": 112,
-      "type": "UnetLoaderGGUF",
-      "pos": [
-        -603.3231811523438,
-        -50.50309371948242
-      ],
-      "size": [
-        270,
-        58
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            213
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-GGUF",
-        "ver": "be2a08330d7ec232d684e50ab938870d7529471e",
-        "Node name for S&R": "UnetLoaderGGUF"
-      },
-      "widgets_values": [
-        "Qwen-Image-Edit-2509-Q4_K_S.gguf"
+        "change image to the anime girl with massive fennec ears, wearing pink dress, generate fields of grass in the background\n"
       ]
     }
   ],
@@ -816,8 +816,8 @@
       "CONDITIONING"
     ],
     [
-      213,
-      112,
+      214,
+      113,
       0,
       104,
       0,
@@ -828,13 +828,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7880671449202211,
+      "scale": 1.858221104717602,
       "offset": [
-        812.4704623314173,
-        524.2224299828342
+        258.77224526199603,
+        174.9379309833564
       ]
     },
-    "frontendVersion": "1.27.10",
+    "frontendVersion": "1.28.6",
     "ue_links": [],
     "links_added_by_ue": [],
     "VHS_latentpreview": false,

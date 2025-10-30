@@ -1,8 +1,8 @@
 {
   "id": "be5f7984-d311-4caf-b948-13c2cdf6126e",
   "revision": 0,
-  "last_node_id": 14,
-  "last_link_id": 13,
+  "last_node_id": 15,
+  "last_link_id": 14,
   "nodes": [
     {
       "id": 9,
@@ -232,40 +232,6 @@
       ]
     },
     {
-      "id": 12,
-      "type": "UnetLoaderGGUF",
-      "pos": [
-        435.699951171875,
-        43.91750717163086
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "slot_index": 0,
-          "links": [
-            12
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-GGUF",
-        "ver": "a2b75978fd50c0227a58316619b79d525b88e570",
-        "Node name for S&R": "UnetLoaderGGUF"
-      },
-      "widgets_values": [
-        "Flex.1-alpha-Q8_0.gguf"
-      ]
-    },
-    {
       "id": 3,
       "type": "KSampler",
       "pos": [
@@ -283,7 +249,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 12
+          "link": 14
         },
         {
           "name": "positive",
@@ -317,7 +283,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        956290630464177,
+        38332145976295,
         "randomize",
         25,
         1,
@@ -338,7 +304,7 @@
         58
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -358,6 +324,39 @@
       },
       "widgets_values": [
         "vae/diffusion_pytorch_model.safetensors"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "LoaderGGUF",
+      "pos": [
+        485.51798064117816,
+        43.78722584549903
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "gguf",
+        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
+        "Node name for S&R": "LoaderGGUF"
+      },
+      "widgets_values": [
+        "Flex.1-alpha-Q8_0.gguf"
       ]
     }
   ],
@@ -419,37 +418,37 @@
       "CLIP"
     ],
     [
-      12,
-      12,
-      0,
-      3,
-      0,
-      "MODEL"
-    ],
-    [
       13,
       14,
       0,
       8,
       1,
       "VAE"
+    ],
+    [
+      14,
+      15,
+      0,
+      3,
+      0,
+      "MODEL"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.8264462809917354,
+      "scale": 1.2100000000000002,
       "offset": [
-        167.3993505164232,
-        312.3659673911084
+        613.4835220854424,
+        349.0665660398777
       ]
     },
+    "frontendVersion": "1.28.6",
     "node_versions": {
       "comfy-core": "0.3.14",
       "ComfyUI-GGUF": "8e898fad4caab59bf4144e0cf11978b893de7e54\n"
-    },
-    "frontendVersion": "1.18.9"
+    }
   },
   "version": 0.4
 }

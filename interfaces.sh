@@ -351,10 +351,12 @@ install_comfyui() {
                 cd ComfyUI-AuraSR
                 git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4
 
-                cd $installation_path/ComfyUI/models/checkpoints
-                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
+                cd $installation_path/ComfyUI/models/upscale_models
+                
+                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/upscale_models
                 mv ./model.safetensors ./aura_sr_v2.safetensors
-                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
+
+                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/upscale_models
                 mv ./model.safetensors ./aura_sr.safetensors
 
                 pip install aura-sr==0.0.4
@@ -579,7 +581,7 @@ huggingface() {
     fi
         
     # Login to Hugging Face
-    huggingface-cli login --token "$HF_TOKEN"
+    hf auth login --token "$HF_TOKEN"
 
     # Check login status
     if [ $? -eq 0 ]; then
