@@ -123,8 +123,12 @@ EOF
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
 
+    if [ -f ./$ROCM_FILE ]; then
+        rm -f ./$ROCM_FILE
+    fi
+
     wget $ROCM_URL || { echo "Failed to download ROCm from $ROCM_URL" >&2; exit 1; }
-    sudo apt install -y $ROCM_FILE || { echo "Failed to install ROCm from $ROCM_FILE" >&2; exit 1; }
+    sudo apt install -y ./$ROCM_FILE || { echo "Failed to install ROCm from $ROCM_FILE" >&2; exit 1; }
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
