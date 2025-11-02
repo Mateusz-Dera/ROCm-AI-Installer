@@ -21,7 +21,7 @@ A script that automatically installs the required dependencies to run selected A
 |Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8e)|
 |OS|Debian 13.1|
 |Kernel|6.12.48+deb13-amd64|
-|ROCm|7.0.2|
+|ROCm|7.1|
 
 ###  Text generation
 |Name|Links|Additional information|
