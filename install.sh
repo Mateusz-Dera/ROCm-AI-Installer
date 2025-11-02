@@ -107,7 +107,10 @@ uninstall_rocm() {
 install_rocm() {
     cd /tmp
 
-# Force Ubuntu 24.04 packages
+    # echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
+    # | sudo tee /etc/apt/preferences.d/rocm-pin-600
+
+    # Force Ubuntu 24.04 packages
     sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF
 # Prefer AMD ROCm packages for Ubuntu 24.04
 Package: rocm* hip* rocminfo rocm-cmake amdgpu*
@@ -119,9 +122,6 @@ Package: *
 Pin: release o=repo.radeon.com
 Pin-Priority: 600
 EOF
-
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
-    | sudo tee /etc/apt/preferences.d/rocm-pin-600
 
     if [ -f ./$ROCM_FILE ]; then
         rm -f ./$ROCM_FILE
