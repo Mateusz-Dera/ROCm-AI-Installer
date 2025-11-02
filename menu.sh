@@ -340,10 +340,8 @@ image_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "ComfyUI" \
-            1 "Install Cinemo" \
-            2 "Install Ovis-U1-3B" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -355,12 +353,6 @@ image_generation() {
         case "$choice" in
             "0")
                 comfyui_addons
-                ;;
-            "1")
-                install_cinemo
-                ;;
-            "2")
-                install_ovis
                 ;;
             "")
                 echo "Previous menu..."
@@ -376,7 +368,7 @@ image_generation() {
 
 comfyui_addons(){
     
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 10 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 11 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
         2 "ComfyUI-AuraSR" ON \
@@ -386,7 +378,8 @@ comfyui_addons(){
         6 "Flex.1-alpha GGUF" ON \
         7 "Qwen-Image GGUF" ON \
         8 "Qwen-Image-Edit GGUF" ON \
-        9 "Qwen-Image-Edit-2509 GGUF" ON 3>&1 1>&2 2>&3)
+        9 "Qwen-Image-Edit-2509 GGUF" ON \
+        10 "Wan 2.2" ON  3>&1 1>&2 2>&3)
 
     status=$?
     

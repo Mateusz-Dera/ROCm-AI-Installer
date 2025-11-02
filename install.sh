@@ -97,6 +97,7 @@ uninstall_rocm() {
 
 # Install ROCm
 install_rocm() {
+    ROCM_VERSION="7.1"
 
     # Create the keyrings directory if it does not exist
     if [ ! -d /etc/apt/keyrings ]; then
@@ -107,13 +108,13 @@ install_rocm() {
         gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
     # Register AMD GPU packages
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/7.0.2/ubuntu noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/$ROCM_VERSION/ubuntu noble main" \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
 
     # Register ROCm packages
     sudo tee /etc/apt/sources.list.d/rocm.list << EOF
-deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.2 noble main
-deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.0.2/ubuntu noble main
+deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION noble main
+deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/$ROCM_VERSION/ubuntu noble main
 EOF
 
     sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF

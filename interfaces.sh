@@ -27,7 +27,7 @@ uv_base(){
     local git_commit=$2
     local start_command=$3
     local python_version=${4:-3.13}
-    local pytorch_version=${5:-rocm6.4}
+    local pytorch_version=${5:-'nightly/rocm7.0'}
     local flash_attn_version=${6:-2.8.3}
 
     # Check if git repo and commit are provided
@@ -124,7 +124,7 @@ install_koboldcpp() {
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_base "https://github.com/oobabooga/text-generation-webui.git" "fc67e5e692c2d627fe181d116e6d35a73d5e8b09" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "fc67e5e692c2d627fe181d116e6d35a73d5e8b09" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery' "3.13" "rocm6.4"
 
     # bitsandbytes
     uv pip install git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba
@@ -271,19 +271,6 @@ EOF
     chmod +x run.sh
 }
 
-# Cinemo
-install_cinemo() {
-    uv_base "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
-    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
-}
-
-# Ovis-U1
-install_ovis() {
-    uv_base "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "uv run app.py" "3.13" "rocm6.3" "2.7.4.post1"
-    sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
-    sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
-}
-
 # ComfyUI
 install_comfyui() {
     uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen" "3.13" "rocm6.3" "-1"
@@ -400,6 +387,39 @@ install_comfyui() {
                 qwen2509=1
                 # Qwen-Image-Edit-2509
                 hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
+                ;;
+            '"10"')
+                # Wan 2.2
+                cd /tmp
+                TEMP_DIR="ComfyUI-Wan2.2"
+                COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
+
+                if [ -d "$TEMP_DIR" ]; then
+                    rm -rf "$TEMP_DIR"
+                fi
+
+                mkdir $TEMP_DIR
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan_2.1_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/vae/wan_2.1_vae.safetensors $installation_path/ComfyUI/models/vae/wan_2.1_vae.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan2.2_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/vae/wan2.2_vae.safetensors $installation_path/ComfyUI/models/vae/wan2.2_vae.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors
+
+                rm -rf /tmp/$TEMP_DIR
+                
                 ;;
             "")
                 break
@@ -556,7 +576,7 @@ EOF
 }
 
 install_partcrafter(){
-    uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13" "nightly/rocm7.0"
+    uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py

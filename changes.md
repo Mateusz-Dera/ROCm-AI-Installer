@@ -14,7 +14,10 @@ Replaced Qwen2.5-VL-7B-Instruct GGUF by fp8 version
 
 Added Qwen-Image-Edit-2509
 Added espeak to basic installation
+Added Wan 2.2
 
 Replaced ComfyUI-GGUF by https://github.com/calcuis/gguf
 
 Drop TripoSG support
+Drop Ovis-U1-3B support
+Drop Cinemo Support
