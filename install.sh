@@ -107,7 +107,7 @@ uninstall_rocm() {
 install_rocm() {
     cd /tmp
 
-# Force packages for Ubuntu 24.04
+# Force Ubuntu 24.04 packages
     sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF
 # Prefer AMD ROCm packages for Ubuntu 24.04
 Package: rocm* hip* rocminfo rocm-cmake amdgpu*
