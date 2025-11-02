@@ -32,6 +32,10 @@ export GFX=gfx1100
 #? ZLUDA_FILE=$(basename "$ZLUDA_URL")
 #? export ZLUDA_PATH="/opt/zluda"
 
+# ROCm
+ROCM_URL="https://repo.radeon.com/amdgpu-install/7.1/ubuntu/noble/amdgpu-install_7.1.70100-1_all.deb"
+ROCM_FILE=$(basename "$ROCM_URL")
+
 # Version
 version="9.0"
 
@@ -119,8 +123,8 @@ EOF
     echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
 
-    wget https://repo.radeon.com/amdgpu-install/7.1/ubuntu/noble/amdgpu-install_7.1.70100-1_all.deb
-    sudo apt install -y ./amdgpu-install_7.1.70100-1_all.deb
+    wget $ROCM_URL || { echo "Failed to download ROCm from $ROCM_URL" >&2; exit 1; }
+    sudo apt install -y $ROCM_FILE || { echo "Failed to install ROCm from $ROCM_FILE" >&2; exit 1; }
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
