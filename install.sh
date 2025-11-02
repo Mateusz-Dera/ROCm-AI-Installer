@@ -84,6 +84,10 @@ uninstall_rocm() {
         sudo rm /etc/apt/preferences.d/rocm-pin-600
     fi
 
+    if [ -f /etc/apt/preferences.d/repo-radeon-pin-600 ]; then
+        sudo rm /etc/apt/preferences.d/repo-radeon-pin-600 
+    fi
+
     # Clean up the package cache
     sudo rm -rf /var/cache/apt/*
     sudo apt clean all
@@ -97,36 +101,32 @@ uninstall_rocm() {
 
 # Install ROCm
 install_rocm() {
-    ROCM_VERSION="7.1"
+    cd /tmp
 
-    # Create the keyrings directory if it does not exist
-    if [ ! -d /etc/apt/keyrings ]; then
-        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
-    fi
-
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
-        gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-
-    # Register AMD GPU packages
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/$ROCM_VERSION/ubuntu noble main" \
-    | sudo tee /etc/apt/sources.list.d/amdgpu.list
-
-    # Register ROCm packages
-    sudo tee /etc/apt/sources.list.d/rocm.list << EOF
-deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION noble main
-deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/$ROCM_VERSION/ubuntu noble main
-EOF
-
+# Force packages for Ubuntu 24.04
     sudo tee /etc/apt/preferences.d/rocm-pin-600 << EOF
-# Prefer AMD ROCm packages
+# Prefer AMD ROCm packages for Ubuntu 24.04
 Package: rocm* hip* rocminfo rocm-cmake amdgpu*
 Pin: version *~24.04
 Pin-Priority: 1001
+
+# Prefer AMD ROCm packages from repo.radeon.com
+Package: *
+Pin: release o=repo.radeon.com
+Pin-Priority: 600
 EOF
+
+    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
+    | sudo tee /etc/apt/preferences.d/rocm-pin-600
+
+    wget https://repo.radeon.com/amdgpu-install/7.1/ubuntu/noble/amdgpu-install_7.1.70100-1_all.deb
+    sudo apt install -y ./amdgpu-install_7.1.70100-1_all.deb
 
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
-    sudo apt install -y amdgpu rocminfo rocm-cmake hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev 
+    sudo apt install -y amdgpu-dkms 
+    sudo apt install -y rocm rocminfo rocm-cmake 
+    sudo apt install -y hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 
 #? Install ZLUDA
