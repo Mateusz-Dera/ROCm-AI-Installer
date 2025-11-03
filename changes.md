@@ -11,12 +11,13 @@ Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
 Updated Qwen-Image-Lightning to 2.0 for Qwen Image and Qwen Image Edit
 Replaced Qwen2.5-VL-7B-Instruct GGUF by fp8 version
-
-Added Qwen-Image-Edit-2509
 Added espeak to basic installation
-Added Wan 2.2
 
-Replaced ComfyUI-GGUF by https://github.com/calcuis/gguf
+ComfyUI:
+* Added Qwen-Image-Edit-2509
+* Added Wan2.2-TI2V-5B
+* Added VRAM reservation for the system (1GB).
+* Replaced ComfyUI-GGUF by https://github.com/calcuis/gguf
 
 Drop TripoSG support
 Drop Ovis-U1-3B support

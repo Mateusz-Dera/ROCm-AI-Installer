@@ -133,7 +133,7 @@ EOF
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
     sudo apt install -y amdgpu-dkms 
-    sudo apt install -y rocm rocminfo rocm-cmake 
+    sudo apt install -y rocm rocminfo rocm-cmake rocm-smi
     sudo apt install -y hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
 }
 

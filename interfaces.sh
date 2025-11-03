@@ -273,7 +273,8 @@ EOF
 
 # ComfyUI
 install_comfyui() {
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen" "3.13" "rocm6.3" "-1"
+    ROCM_VERSION="nightly/rocm7.0"
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "MIOPEN_FIND_MODE=2 MIOPEN_LOG_LEVEL=3 PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
 
     local gguf=0
     local flux=0
@@ -314,7 +315,7 @@ install_comfyui() {
         done
     fi
 
-    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/nightly/rocm7.0 --index-strategy unsafe-best-match
+    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$ROCM_VERSION --index-strategy unsafe-best-match
 
     install_flash_attention "2.8.3 "
 
@@ -411,12 +412,6 @@ install_comfyui() {
 
                 hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
                 mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors
 
                 rm -rf /tmp/$TEMP_DIR
                 
