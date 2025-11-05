@@ -65,6 +65,8 @@ uninstall_rocm() {
     sudo apt purge -y rocm*
     sudo apt purge -y hip*
     sudo apt purge -y amdgpu*
+    sudo apt purge -y amd-smi-lib
+    sudo apt purge -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev
 
     # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
@@ -133,8 +135,11 @@ EOF
     sudo apt update -y
     sudo apt install -y "linux-headers-$(uname -r)"
     sudo apt install -y amdgpu-dkms 
-    sudo apt install -y rocm rocminfo rocm-cmake rocm-smi
-    sudo apt install -y hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+    sudo apt install -y rocm rocminfo rocm-cmake rocm-smi hipblas hipcc hipify-clang rocm-hip-runtime rocm-hip-runtime-dev
+    # Fastfetch
+    sudo apt install -y amd-smi-lib
+    # VLLM
+    sudo apt install -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev
 }
 
 #? Install ZLUDA

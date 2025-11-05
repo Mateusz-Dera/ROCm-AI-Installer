@@ -61,7 +61,6 @@ packaging==25.0
 pandas==2.3.1
 peft==0.16.0
 pillow==10.4.0
-pip==25.2
 platformdirs==4.3.8
 propcache==0.3.2
 protobuf==6.31.1
