@@ -41,7 +41,6 @@ A script that automatically installs the required dependencies to run selected A
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
-|LightX2V|https://github.com/ModelTC/LightX2V||
 
 #### ComfyUI Addons
 

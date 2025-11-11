@@ -475,9 +475,7 @@ install_comfyui() {
 
 # vLLM
 install_vllm() {
-    git clone https://github.com/vllm-project/vllm
-    cd vllm
-    git checkout e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c
+    uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH python3 ./main.py'
 
     uv pip install -U setuptools==79.0.1
 
@@ -495,26 +493,7 @@ install_vllm() {
     export PYTORCH_ROCM_ARCH=$GFX
 
     cd ../
-    LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH python3 setup.py develop
-
-    exit 1
-}
-
-# LightX2V
-install_lightx2v() {
-    uv_base "https://github.com/ModelTC/LightX2V" "857dab1f2f4d6cb2a4624959298bf0f8aeb7ef9e" "uv run app/gradio_demo.py --model_path ./models/Wan2.2-Official-Models/wan2.2_i2v_A14b_high_noise_lightx2v.safetensors --model_cls wan2.1_distill --model_size 14b --task i2v --server_port 7860 --output_dir ./outputs" "3.12"
-
-    sed -i 's/demo\.launch(share=True/demo.launch(share=False/' ./app/gradio_demo.py
-
-    # TODO Dodać wybierałkę do modeli
-    # uv run app/gradio_demo.py --model_path ./models/Wan2.2-Official-Models/wan2.2_i2v_A14b_high_noise_lightx2v.safetensors --model_cls wan2.1_distill --model_size 14b --task i2v --server_port 7860 --output_dir ./outputs
-    
-    mkdir models
-    hf download lightx2v/Wan2.2-Official-Models wan2.2_i2v_A14b_high_noise_lightx2v.safetensors --revision "4644f12f6d151786e9ceadbc72c352bff5a28eb6" --local-dir ./models/Wan2.2-Official-Models
-
-    mkdir outputs
-
-    install_vllm
+    LD_LIBRARY_PATH=/opt/rocm-7.1.0/lib:$LD_LIBRARY_PATH python3 setup.py develop
 }
 
 # ACE-Step

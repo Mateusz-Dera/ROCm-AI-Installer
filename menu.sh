@@ -91,12 +91,13 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             0 "Install KoboldCPP" \
             1 "Text generation web UI" \
             2 "SillyTavern" \
             3 "Install llama.cpp" \
             4 "Ollama" \
+            5 "Install vLLM" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -120,6 +121,9 @@ text_generation() {
                 ;;
             "4")
                 ollama
+                ;;
+            "5")
+                install_vllm
                 ;;
             "")
                 echo "Previous menu..."
@@ -340,9 +344,8 @@ image_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "ComfyUI" \
-            1 "Install LightX2V" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -354,9 +357,6 @@ image_generation() {
         case "$choice" in
             "0")
                 comfyui_addons
-                ;;
-            "1")
-                install_lightx2v
                 ;;
             "")
                 echo "Previous menu..."

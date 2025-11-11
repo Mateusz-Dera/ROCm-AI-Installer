@@ -66,7 +66,7 @@ uninstall_rocm() {
     sudo apt purge -y hip*
     sudo apt purge -y amdgpu*
     sudo apt purge -y amd-smi-lib
-    sudo apt purge -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev
+    sudo apt purge -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev rocprofiler-sdk hsa-amd-aqlprofile
 
     # Remove old ROCm directories
     if [ -d /opt/rocm* ]; then
@@ -139,7 +139,7 @@ EOF
     # Fastfetch
     sudo apt install -y amd-smi-lib
     # VLLM
-    sudo apt install -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev
+    sudo apt install -y rocrand rocrand-dev hiprand hiprand-dev miopen-hip miopen-hip-dev hipfft hipfft-dev rocfft rocfft-dev hipsparse hipsparse-dev rocprim rocprim-dev hipcub hipcub-dev rocthrust rocthrust-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev rocprofiler-sdk hsa-amd-aqlprofile
 }
 
 #? Install ZLUDA
