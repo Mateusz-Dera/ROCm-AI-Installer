@@ -89,6 +89,7 @@ pandas==2.3.3
 partial-json-parser==0.2.1.1.post6
 peft==0.17.1
 pillow==12.0.0
+pip==25.2
 pluggy==1.6.0
 prometheus-client==0.23.1
 prometheus-fastapi-instrumentator==7.1.0
@@ -136,7 +137,6 @@ scipy==1.16.3
 sentencepiece==0.2.1
 sentry-sdk==2.44.0
 setproctitle==1.3.7
-setuptools==78.1.0
 setuptools-scm==9.2.2
 shellingham==1.5.4
 six==1.17.0
@@ -153,7 +153,6 @@ torch==2.10.0.dev20251110+rocm7.0
 torchvision==0.25.0.dev20251111+rocm7.0
 tqdm==4.67.1
 transformers==4.57.1
-triton==3.5.0
 typer==0.20.0
 typing-extensions==4.15.0
 typing-inspection==0.4.2
