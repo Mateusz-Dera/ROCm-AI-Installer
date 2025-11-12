@@ -475,7 +475,7 @@ install_comfyui() {
 
 # vLLM
 install_vllm() {
-    uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH python3 ./main.py'
+    uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH vllm serve ./model --cpu-offload-gb 32 --gpu-memory-utilization 0.95 --max-model-len=8192 --max-num-seqs=1 --host 0.0.0.0 --port 7860'
 
     uv pip install -U setuptools==79.0.1
 
@@ -493,31 +493,17 @@ install_vllm() {
     export PYTORCH_ROCM_ARCH=$GFX
 
     cd ../
-    LD_LIBRARY_PATH=/opt/rocm-7.1.0/lib:$LD_LIBRARY_PATH python3 setup.py develop
+    python3 setup.py develop
 }
 
 # ACE-Step
 install_ace_step() {
-    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0" "3.12"
+    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0' "3.13" "rocm6.4"
+    sed -i 's/spacy==3\.8\.4/spacy/g' "requirements.txt"
+    sed -i 's/datasets==3\.4\.1/datasets/g' "requirements.txt"
+    sed -i 's/matplotlib==3\.10\.1/matplotlib/g' "requirements.txt"
+    sed -i 's/transformers==4\.50\.0/transformers/g' "requirements.txt"
     uv pip install -e .
-}
-
-# YuE-UI
-install_yue_ui() {
-    uv_base "https://github.com/joeljuvel/YuE-UI" "c98cd6efd8c174680913fea831b687ad620c5e69" "uv run ./source/ui.py --server_name 0.0.0.0" "3.12" "rocm6.2.4" "2.7.4.post1"
-    git clone https://huggingface.co/m-a-p/xcodec_mini_infer
-
-    cd models
-    git clone https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2
-    git clone https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2
-    cd YuE-s1-7B-anneal-en-cot-exl2
-    git checkout b7037dcd1d1ec09a6df600424e8b6acdbca4d96b
-    cd ../YuE-s2-1B-general-exl2
-    git checkout 674b44b254f01516a256bebef45deb600bdf33f2
-    cd ../..
-
-    cd xcodec_mini_infer
-    git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
 }
 
 # WhisperSpeech web UI
@@ -527,14 +513,14 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    uv_base "https://github.com/SWivid/F5-TTS.git" "f2a4f8581fc9315487cfbbbc3c5ae454c97f59a7" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/SWivid/F5-TTS.git" "3eecd94baa74fa1eea44ba36f000b9e8d0b163f9" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.4"
     git submodule update --init --recursive
     uv pip install -e .
 }
 
 # Matcha-TTS
 install_matcha_tts(){
-    uv_base "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    uv_base "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "MIOPEN_LOG_LEVEL=3 matcha-tts-app" "3.13" "rocm6.4"
     cd ./matcha
     sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
     cd $installation_path/Matcha-TTS
@@ -547,19 +533,20 @@ install_matcha_tts(){
 
 # Dia
 install_dia(){
-    uv_base "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    uv_base "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py" "3.13" "nightly/rocm7.0" "0"
+    sed -i 's|url = "https://download.pytorch.org/whl/rocm6\.3"|url = "https://download.pytorch.org/whl/nightly/rocm7.0"|' pyproject.toml
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
 # IMS-Toucan
 install_ims_toucan(){
-    uv_base "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
+    uv_base "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" 'uv run run_simple_GUI_demo.py' "3.12" "rocm6.1" "2.7.4.post1"
     sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "uv run multilingual_app.py" "3.12" #"rocm6.2.4" "2.7.4.post1"
+    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "uv run multilingual_app.py" "3.12" "rocm6.4" #"2.7.4.post1"
     rm -rf ./multilingual_app.py
     cp $CUSTOM_FILES_DIR/chatterbox/multilingual_app.py ./
     

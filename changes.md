@@ -21,4 +21,5 @@ ComfyUI:
 
 Drop TripoSG support
 Drop Ovis-U1-3B support
-Drop Cinemo Support
+Drop Cinemo support
+Drop YuE-UI support

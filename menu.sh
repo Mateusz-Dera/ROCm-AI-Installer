@@ -399,17 +399,13 @@ music_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install ACE-Step" \
-            1 "Install YuE-UI" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
                 install_ace_step
-                ;;
-            "1")
-                install_yue_ui
                 ;;
             "")
                 echo "Previous menu..."

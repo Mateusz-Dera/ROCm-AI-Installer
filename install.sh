@@ -35,6 +35,7 @@ export GFX=gfx1100
 # ROCm
 ROCM_URL="https://repo.radeon.com/amdgpu-install/7.1/ubuntu/noble/amdgpu-install_7.1.70100-1_all.deb"
 ROCM_FILE=$(basename "$ROCM_URL")
+export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
 
 # Version
 version="9.0"
