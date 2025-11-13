@@ -546,7 +546,7 @@ install_ims_toucan(){
 
 # Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "uv run multilingual_app.py" "3.12" "rocm6.4" #"2.7.4.post1"
+    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "MIOPEN_LOG_LEVEL=3 uv run multilingual_app.py"
     rm -rf ./multilingual_app.py
     cp $CUSTOM_FILES_DIR/chatterbox/multilingual_app.py ./
     
