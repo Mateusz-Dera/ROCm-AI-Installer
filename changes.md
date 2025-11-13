@@ -23,3 +23,4 @@ Drop TripoSG support
 Drop Ovis-U1-3B support
 Drop Cinemo support
 Drop YuE-UI support
+Drop IMS-Toucan support

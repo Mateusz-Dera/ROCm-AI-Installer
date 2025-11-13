@@ -538,12 +538,6 @@ install_dia(){
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
 }
 
-# IMS-Toucan
-install_ims_toucan(){
-    uv_base "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" 'uv run run_simple_GUI_demo.py' "3.12" "rocm6.1" "2.7.4.post1"
-    sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
-}
-
 # Chatterbox Multilingual
 install_chatterbox(){
     uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "MIOPEN_LOG_LEVEL=3 uv run multilingual_app.py"
@@ -558,7 +552,7 @@ install_chatterbox(){
 
 # KaniTTS
 install_kanitts(){
-    uv_base "https://github.com/nineninesix-ai/kani-tts" "63df2212c069c4cc147a0dd9f7804672ef8a8cbb" "uv run fastapi_example/server.py"
+    uv_base "https://github.com/nineninesix-ai/kani-tts" "63df2212c069c4cc147a0dd9f7804672ef8a8cbb" "MIOPEN_LOG_LEVEL=3 uv run fastapi_example/server.py"
     cd fastapi_example
     mv ./client.html ./index.html
     sed -i '/if __name__ == "__main__":/,/uvicorn\.run(app, host="0\.0\.0\.0", port=8000, log_level="info")/d' server.py
