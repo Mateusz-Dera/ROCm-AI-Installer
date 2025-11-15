@@ -31,6 +31,7 @@ A script that automatically installs the required dependencies to run selected A
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
 |Ollama|https://github.com/ollama/ollama|You can use standard Ollama commands in terminal or run GGUF model.<br>1. Put model.gguf into Ollama folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. In run.sh file, customize model parameters.|
+<!-- |vLLM|https://github.com/vllm-project/vllm|Change the parameters in run.sh to match your hardware configuration.| -->
 
 #### SillyTavern Extensions
 |Name|Link|Additional information|
@@ -62,7 +63,7 @@ A script that automatically installs the required dependencies to run selected A
 |Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/QuantStack/Qwen-Image-Edit-2509-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b>|
 Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://huggingface.co/calcuis/qwen-image-edit-ggu<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b>|
 Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_0</b>|
-|Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://github.com/Wan-Video/Wan2.2<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged<br>|Text to video model.|
+<!-- |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://github.com/Wan-Video/Wan2.2<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged<br>|Text to video model.| -->
 
 ###  Music generation
 |Name|Links|Additional information|
@@ -79,7 +80,7 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox|Only Polish and English have been tested.<br> May not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the multilingual_app.py file.<br> For a better effect in Polish, I recommend using lowercase letters for the entire text.|
 |KaniTTS|https://github.com/nineninesix-ai/kani-tts|If you want to change the default model, edit the <b>kanitts/config.py</b> file.|
-|KaniTTS-vLLM|https://github.com/nineninesix-ai/kanitts-vllm||
+|KaniTTS-vLLM|https://github.com/nineninesix-ai/kanitts-vllm|If you want to change the default model, edit the <b>config.py</b> file.|
 
 ###  3D generation
 |Name|Links|Additional information|

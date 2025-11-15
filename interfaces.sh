@@ -276,6 +276,7 @@ install_comfyui() {
     ROCM_VERSION="nightly/rocm7.0"
     uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "MIOPEN_FIND_MODE=2 MIOPEN_LOG_LEVEL=3 PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
 
+
     local gguf=0
     local flux=0
     local qwen=0
@@ -473,28 +474,28 @@ install_comfyui() {
     fi
 }
 
-# vLLM
-install_vllm() {
-    uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH vllm serve ./model --cpu-offload-gb 32 --gpu-memory-utilization 0.95 --max-model-len=8192 --max-num-seqs=1 --host 0.0.0.0 --port 7860'
+# # vLLM
+# install_vllm() {
+#     uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH vllm serve ./model --cpu-offload-gb 32 --gpu-memory-utilization 0.8 --max-model-len=8192 --max-num-seqs=1 --host 0.0.0.0 --port 7860'
 
-    uv pip install -U setuptools==79.0.1
+#     uv pip install -U setuptools==79.0.1
 
-    uv pip uninstall triton
-    git clone https://github.com/ROCm/triton.git
-    cd triton
-    git checkout f9e5bf54
-    uv pip install -e . --no-build-isolation
+#     uv pip uninstall triton
+#     git clone https://github.com/ROCm/triton.git
+#     cd triton
+#     git checkout f9e5bf54
+#     uv pip install -e . --no-build-isolation
 
-    cd ../
-    cp  -r /opt/rocm/share/amd_smi ./
-    cd amd_smi
-    uv pip install .
+#     cd ../
+#     cp  -r /opt/rocm/share/amd_smi ./
+#     cd amd_smi
+#     uv pip install .
 
-    export PYTORCH_ROCM_ARCH=$GFX
+#     export PYTORCH_ROCM_ARCH=$GFX
 
-    cd ../
-    python3 setup.py develop
-}
+#     cd ../
+#     python3 setup.py develop
+# }
 
 # ACE-Step
 install_ace_step() {
@@ -504,6 +505,7 @@ install_ace_step() {
     sed -i 's/matplotlib==3\.10\.1/matplotlib/g' "requirements.txt"
     sed -i 's/transformers==4\.50\.0/transformers/g' "requirements.txt"
     uv pip install -e .
+    uv pip install torchcodec==0.8.1
 }
 
 # WhisperSpeech web UI

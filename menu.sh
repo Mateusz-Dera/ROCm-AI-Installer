@@ -91,13 +91,12 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
             0 "Install KoboldCPP" \
             1 "Text generation web UI" \
             2 "SillyTavern" \
             3 "Install llama.cpp" \
             4 "Ollama" \
-            5 "Install vLLM" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -121,9 +120,6 @@ text_generation() {
                 ;;
             "4")
                 ollama
-                ;;
-            "5")
-                install_vllm
                 ;;
             "")
                 echo "Previous menu..."
@@ -372,7 +368,7 @@ image_generation() {
 
 comfyui_addons(){
     
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 11 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 10 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
         2 "ComfyUI-AuraSR" ON \
@@ -382,8 +378,7 @@ comfyui_addons(){
         6 "Flex.1-alpha GGUF" ON \
         7 "Qwen-Image GGUF" ON \
         8 "Qwen-Image-Edit GGUF" ON \
-        9 "Qwen-Image-Edit-2509 GGUF" ON \
-        10 "Wan2.2-TI2V-5B" ON  3>&1 1>&2 2>&3)
+        9 "Qwen-Image-Edit-2509 GGUF" ON 3>&1 1>&2 2>&3)
 
     status=$?
     
