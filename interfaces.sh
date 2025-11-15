@@ -574,6 +574,44 @@ if __name__ == "__main__":
 EOF
 }
 
+install_kanitts_vllm(){
+    export FA_GFX_ARCHS=$GFX
+    export PYTORCH_ROCM_ARCH=$GFX
+    
+    uv_base "https://github.com/nineninesix-ai/kanitts-vllm" "0a0115be1e51efcf727962308320522b2a80bcf5" "MIOPEN_LOG_LEVEL=3 uv run server.py" "3.12"
+
+    cp  -r /opt/rocm/share/amd_smi ./
+    cd amd_smi
+    uv pip install .
+
+    cd ../
+    git clone https://github.com/vllm-project/vllm.git
+    cd vllm
+    git checkout "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c"
+    python3 setup.py develop
+
+    cd ../
+    cp $CUSTOM_FILES_DIR/kanitts-vllm/index.html ./index.html
+
+    sed -i '/if __name__ == "__main__":/,+4d' server.py
+    cat >> server.py << 'EOF'
+
+if __name__ == "__main__":
+    import http.server
+    import threading
+    import os
+    
+    # Change to fastapi_example folder and start HTML server
+    threading.Thread(target=lambda: http.server.HTTPServer(('', 7860), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+    print("HTML Server: http://0.0.0.0:7860")
+    
+    # Start FastAPI server
+    import uvicorn
+    print("🎤 Starting Kani TTS Server...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+EOF
+}
+
 install_partcrafter(){
     uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py

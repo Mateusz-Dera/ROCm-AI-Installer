@@ -11,7 +11,8 @@ Updated ComfyUI-Manager
 Updated ComfyUI-GGUF
 Updated Qwen-Image-Lightning to 2.0 for Qwen Image and Qwen Image Edit
 Replaced Qwen2.5-VL-7B-Instruct GGUF by fp8 version
-Added espeak to basic installation
+Added eSpeak to basic installation
+Added KaniTTS-vLLM
 
 ComfyUI:
 * Added Qwen-Image-Edit-2509

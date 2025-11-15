@@ -5,7 +5,7 @@ A script that automatically installs the required dependencies to run selected A
 [![Version](https://img.shields.io/badge/Version-9.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13.1 is recommended. Version 9.x is not tested on older systems.<br>
+> Debian 13.2 is recommended. Version 9.x is not tested on older systems.<br>
 > On other distros, most of the python based applications should work, but manual installation of ROCm will be required.<br>
 
 > [!Important]
@@ -19,8 +19,8 @@ A script that automatically installs the required dependencies to run selected A
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8e)|
-|OS|Debian 13.1|
-|Kernel|6.12.48+deb13-amd64|
+|OS|Debian 13.2|
+|Kernel|6.12.57+deb13-amd64|
 |ROCm|7.1|
 
 ###  Text generation
@@ -79,6 +79,7 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 |IMS-Toucan|https://github.com/DigitalPhonetics/IMS-Toucan.git|Interface PyTorch uses PyTorch 2.4.0|
 |Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox|Only Polish and English have been tested.<br> May not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the multilingual_app.py file.<br> For a better effect in Polish, I recommend using lowercase letters for the entire text.|
 |KaniTTS|https://github.com/nineninesix-ai/kani-tts|If you want to change the default model, edit the <b>kanitts/config.py</b> file.|
+|KaniTTS-vLLM|https://github.com/nineninesix-ai/kanitts-vllm||
 
 ###  3D generation
 |Name|Links|Additional information|
