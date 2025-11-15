@@ -1,4 +1,6 @@
 {
+  "id": "b2c8d802-309a-4e79-a5d3-b82c18b7a2c5",
+  "revision": 0,
   "last_node_id": 13,
   "last_link_id": 13,
   "nodes": [
@@ -27,13 +29,15 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             6
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
@@ -59,30 +63,32 @@
         {
           "name": "MODEL",
           "type": "MODEL",
+          "slot_index": 0,
           "links": [
             1
-          ],
-          "slot_index": 0
+          ]
         },
         {
           "name": "CLIP",
           "type": "CLIP",
+          "slot_index": 1,
           "links": [
             3,
             5
-          ],
-          "slot_index": 1
+          ]
         },
         {
           "name": "VAE",
           "type": "VAE",
+          "slot_index": 2,
           "links": [
             8
-          ],
-          "slot_index": 2
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
@@ -108,13 +114,15 @@
         {
           "name": "LATENT",
           "type": "LATENT",
+          "slot_index": 0,
           "links": [
             2
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
@@ -163,17 +171,19 @@
         {
           "name": "LATENT",
           "type": "LATENT",
+          "slot_index": 0,
           "links": [
             7
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        321578512722127,
+        142714621074238,
         "randomize",
         25,
         3.5,
@@ -205,6 +215,8 @@
       ],
       "outputs": [],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "PreviewImage"
       },
       "widgets_values": []
@@ -239,49 +251,19 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "slot_index": 0,
           "links": [
             11,
             13
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "VAEDecode"
       },
       "widgets_values": []
-    },
-    {
-      "id": 13,
-      "type": "LoadAuraSR",
-      "pos": [
-        865,
-        501
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "AURASR_MODEL",
-          "type": "AURASR_MODEL",
-          "links": [
-            12
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadAuraSR"
-      },
-      "widgets_values": [
-        "fal/AuraSR-v2"
-      ]
     },
     {
       "id": 11,
@@ -313,13 +295,15 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "slot_index": 0,
           "links": [
             10
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfyui-aurasr",
+        "ver": "29c97cf9d7bda74d3020678a03545d74dfccadf4",
         "Node name for S&R": "RunAuraSR"
       },
       "widgets_values": [
@@ -348,7 +332,10 @@
         }
       ],
       "outputs": [],
-      "properties": {},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65"
+      },
       "widgets_values": [
         "ComfyUI"
       ]
@@ -378,17 +365,53 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             4
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.65",
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
         "Beautiful scenery nature glass bottle landscape. Purple galaxy bottle."
+      ]
+    },
+    {
+      "id": 13,
+      "type": "LoadAuraSR",
+      "pos": [
+        865,
+        501
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AURASR_MODEL",
+          "type": "AURASR_MODEL",
+          "slot_index": 0,
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-aurasr",
+        "ver": "29c97cf9d7bda74d3020678a03545d74dfccadf4",
+        "Node name for S&R": "LoadAuraSR"
+      },
+      "widgets_values": [
+        "aura_sr_v2.safetensors"
       ]
     }
   ],
@@ -494,12 +517,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.9090909090909091,
+      "scale": 1,
       "offset": [
-        292.0188442678036,
-        341.6655882139876
+        399.04428431902227,
+        342.2194583295818
       ]
-    }
+    },
+    "frontendVersion": "1.28.6"
   },
   "version": 0.4
 }

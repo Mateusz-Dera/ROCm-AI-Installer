@@ -45,7 +45,7 @@ actcheckbox=yellow,black
 show_menu() {
     choice=$(whiptail --title "ROCm-AI-Installer $version" --menu "Choose an option:" 17 100 10 \
     0 "Installation path ($installation_path)" \
-    1 "Install ROCm and required packages" \
+    1 "Install required packages" \
     2 "Text generation" \
     3 "Image & video generation" \
     4 "Music generation" \
@@ -340,10 +340,8 @@ image_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             0 "ComfyUI" \
-            1 "Install Cinemo" \
-            2 "Install Ovis-U1-3B" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -355,12 +353,6 @@ image_generation() {
         case "$choice" in
             "0")
                 comfyui_addons
-                ;;
-            "1")
-                install_cinemo
-                ;;
-            "2")
-                install_ovis
                 ;;
             "")
                 echo "Previous menu..."
@@ -376,7 +368,7 @@ image_generation() {
 
 comfyui_addons(){
     
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 9 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 10 --cancel-button "Back" \
         0 "ComfyUI-Manager" ON \
         1 "ComfyUI-GGUF" ON \
         2 "ComfyUI-AuraSR" ON \
@@ -385,7 +377,8 @@ comfyui_addons(){
         5 "AnimePro FLUX GGUF" ON \
         6 "Flex.1-alpha GGUF" ON \
         7 "Qwen-Image GGUF" ON \
-        8 "Qwen-Image-Edit GGUF" ON 3>&1 1>&2 2>&3)
+        8 "Qwen-Image-Edit GGUF" ON \
+        9 "Qwen-Image-Edit-2509 GGUF" ON 3>&1 1>&2 2>&3)
 
     status=$?
     
@@ -401,17 +394,13 @@ music_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
             0 "Install ACE-Step" \
-            1 "Install YuE-UI" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
                 install_ace_step
-                ;;
-            "1")
-                install_yue_ui
                 ;;
             "")
                 echo "Previous menu..."
@@ -440,9 +429,9 @@ voice_generation() {
             1 "Install F5-TTS" \
             2 "Install Matcha-TTS" \
             3 "Install Dia" \
-            4 "Install IMS-Toucan" \
-            5 "Install Chatterbox Multilingual" \
-            6 "Install KaniTTS" \
+            4 "Install Chatterbox Multilingual" \
+            5 "Install KaniTTS" \
+            6 "Install KaniTTS-vLLM" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -459,13 +448,13 @@ voice_generation() {
                 install_dia
                 ;;
             "4")
-                install_ims_toucan
-                ;;
-            "5")
                 install_chatterbox
                 ;;
-            "6")
+            "5")
                 install_kanitts
+                ;;
+            "6")
+                install_kanitts_vllm
                 ;;
             "")
                 echo "Previous menu..."
@@ -489,16 +478,12 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
-            0 "Install TripoSG" \
-            1 "Install PartCrafter" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            0 "Install PartCrafter" \
             2>&1 > /dev/tty)
 
         case "$choice" in
             "0")
-                install_triposg
-                ;;
-            "1")
                 install_partcrafter
                 ;;
             "")

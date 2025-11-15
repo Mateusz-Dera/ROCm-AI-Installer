@@ -1,8 +1,8 @@
 {
   "id": "0d2edf94-5a9a-41fd-bad2-61bacb644fad",
   "revision": 0,
-  "last_node_id": 14,
-  "last_link_id": 13,
+  "last_node_id": 15,
+  "last_link_id": 14,
   "nodes": [
     {
       "id": 9,
@@ -171,7 +171,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 12
+          "link": 14
         },
         {
           "name": "positive",
@@ -205,7 +205,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        165763072753487,
+        1091833162194754,
         "randomize",
         35,
         1,
@@ -293,40 +293,6 @@
       ]
     },
     {
-      "id": 12,
-      "type": "UnetLoaderGGUF",
-      "pos": [
-        435.699951171875,
-        43.91750717163086
-      ],
-      "size": [
-        315,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "slot_index": 0,
-          "links": [
-            12
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-GGUF",
-        "ver": "a2b75978fd50c0227a58316619b79d525b88e570",
-        "Node name for S&R": "UnetLoaderGGUF"
-      },
-      "widgets_values": [
-        "animepro-Q5_K_M.gguf"
-      ]
-    },
-    {
       "id": 14,
       "type": "VAELoader",
       "pos": [
@@ -338,7 +304,7 @@
         58
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -358,6 +324,39 @@
       },
       "widgets_values": [
         "vae/diffusion_pytorch_model.safetensors"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "LoaderGGUF",
+      "pos": [
+        485.01715087890625,
+        36.51023483276367
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "calcuis/gguf",
+        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
+        "Node name for S&R": "LoaderGGUF"
+      },
+      "widgets_values": [
+        "animepro-Q5_K_M.gguf"
       ]
     }
   ],
@@ -419,33 +418,33 @@
       "CLIP"
     ],
     [
-      12,
-      12,
-      0,
-      3,
-      0,
-      "MODEL"
-    ],
-    [
       13,
       14,
       0,
       8,
       1,
       "VAE"
+    ],
+    [
+      14,
+      15,
+      0,
+      3,
+      0,
+      "MODEL"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.1,
+      "scale": 0.8264462809917354,
       "offset": [
-        460.4373260859851,
-        300.7624927594419
+        186.82278063143968,
+        177.5770382139874
       ]
     },
-    "frontendVersion": "1.18.9"
+    "frontendVersion": "1.27.10"
   },
   "version": 0.4
 }

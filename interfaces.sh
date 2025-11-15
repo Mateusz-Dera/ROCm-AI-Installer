@@ -27,7 +27,7 @@ uv_base(){
     local git_commit=$2
     local start_command=$3
     local python_version=${4:-3.13}
-    local pytorch_version=${5:-rocm6.4}
+    local pytorch_version=${5:-'nightly/rocm7.0'}
     local flash_attn_version=${6:-2.8.3}
 
     # Check if git repo and commit are provided
@@ -118,26 +118,22 @@ install_flash_attention() {
 
 # KoboldCPP
 install_koboldcpp() {
-    uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm.git" "dfcf78f27f29559ad4dbc4dad230dde391cc5874" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
+    uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm" "ee3f39fc7ce391d02eda407f828098f70488a6b7" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
     make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
 }
 
 # Text generation web UI
 install_text_generation_web_ui() {
-    uv_base "https://github.com/oobabooga/text-generation-webui.git" "45e2935e87f19aa3d5afec9a403203259cb1eacc" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery'
+    uv_base "https://github.com/oobabooga/text-generation-webui.git" "fc67e5e692c2d627fe181d116e6d35a73d5e8b09" 'uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery' "3.13" "rocm6.4"
 
     # bitsandbytes
-    uv pip install git+https://github.com/ROCm/bitsandbytes.git@48a551fd80995c3733ea65bb475d67cd40a6df31
+    uv pip install git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba
 
     # ExLlamaV2
-    git clone https://github.com/turboderp/exllamav2
-    cd exllamav2
-    git checkout 6a2d8311408aa23af34e8ec32e28085ea68dada7
-    uv pip install .
-    cd ..
+    uv pip install https://github.com/turboderp-org/exllamav2/releases/download/v0.3.2/exllamav2-0.3.2+rocm6.4.torch2.8.0-cp313-cp313-linux_x86_64.whl
 
     # llama_cpp
-    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.36.0/llama_cpp_binaries-0.36.0+vulkanavx-py3-none-linux_x86_64.whl
+    uv pip install https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.55.0/llama_cpp_binaries-0.55.0+vulkan-py3-none-linux_x86_64.whl
 }
 
 # SillyTavern
@@ -150,7 +146,7 @@ install_sillytavern() {
     fi
     git clone https://github.com/SillyTavern/SillyTavern.git
     cd SillyTavern
-    git checkout 12ac17197925ee1e1dba00a9505001e09e13dfde
+    git checkout 8f7b6b43c3f6402a8908d8d9bbf3134b2a43fb2c
 
     mv ./start.sh ./run.sh
 
@@ -259,7 +255,7 @@ install_llama_cpp() {
     fi
     git clone https://github.com/ggerganov/llama.cpp.git
     cd llama.cpp
-    git checkout 5e6229a8409ac786e62cb133d09f1679a9aec13e
+    git checkout 5f7e166cbf7b9ca928c7fad990098ef32358ac75
     
     HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release \
@@ -275,22 +271,11 @@ EOF
     chmod +x run.sh
 }
 
-# Cinemo
-install_cinemo() {
-    uv_base "https://huggingface.co/spaces/maxin-cn/Cinemo" "9a3fcb44aced3210e8b5e4cf164a8ad3ce3e07fd" "uv run demo.py" "3.12"
-    sed -i 's/demo.launch(debug=False, share=True)/demo.launch(debug=False, share=False, server_name="0.0.0.0")/' demo.py
-}
-
-# Ovis-U1
-install_ovis() {
-    uv_base "https://huggingface.co/spaces/AIDC-AI/Ovis-U1-3B" "cbc005ddff7376a20bc98a89136d088e0f7e1623" "uv run app.py" "3.13" "rocm6.3" "2.7.4.post1"
-    sed -i 's/demo.launch(share=True, ssr_mode=False)/demo.launch(share=False, ssr_mode=False, server_name="0.0.0.0")/' "app.py"
-    sed -i "/subprocess\.run('pip install flash-attn==2\.6\.3 --no-build-isolation', env={'FLASH_ATTENTION_SKIP_CUDA_BUILD': \"TRUE\"}, shell=True)/d" app.py
-}
-
 # ComfyUI
 install_comfyui() {
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "4449e147692366ac8b9bd3b8834c771bc81e91ac" "PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --use-split-cross-attention" "3.13" "rocm6.3" "-1"
+    ROCM_VERSION="nightly/rocm7.0"
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "MIOPEN_FIND_MODE=2 MIOPEN_LOG_LEVEL=3 PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
+
 
     local gguf=0
     local flux=0
@@ -331,7 +316,7 @@ install_comfyui() {
         done
     fi
 
-    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/rocm6.4 --index-strategy unsafe-best-match
+    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$ROCM_VERSION --index-strategy unsafe-best-match
 
     install_flash_attention "2.8.3 "
 
@@ -343,7 +328,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 104ae77f7a22304743e425d53f908e34cb89bc7e
+                git checkout 393839b3ab497522fac489d84119dd362d90dae1
                 ;;
             '"1"')
                 gguf=1
@@ -355,10 +340,12 @@ install_comfyui() {
                 cd ComfyUI-AuraSR
                 git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4
 
-                cd $installation_path/ComfyUI/models/checkpoints
-                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/checkpoints
+                cd $installation_path/ComfyUI/models/upscale_models
+                
+                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/upscale_models
                 mv ./model.safetensors ./aura_sr_v2.safetensors
-                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/checkpoints
+
+                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/upscale_models
                 mv ./model.safetensors ./aura_sr.safetensors
 
                 pip install aura-sr==0.0.4
@@ -395,9 +382,40 @@ install_comfyui() {
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V1.0.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
-                hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V1.1.safetensors --revision 430a8879074ce23ac1e2784f778401c97ac2fee7 --local-dir $installation_path/ComfyUI/models/loras
                 hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
+                ;;
+            '"9"')
+                gguf=1
+                qwen2509=1
+                # Qwen-Image-Edit-2509
+                hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
+                ;;
+            '"10"')
+                # Wan 2.2
+                cd /tmp
+                TEMP_DIR="ComfyUI-Wan2.2"
+                COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
+
+                if [ -d "$TEMP_DIR" ]; then
+                    rm -rf "$TEMP_DIR"
+                fi
+
+                mkdir $TEMP_DIR
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan_2.1_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/vae/wan_2.1_vae.safetensors $installation_path/ComfyUI/models/vae/wan_2.1_vae.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan2.2_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/vae/wan2.2_vae.safetensors $installation_path/ComfyUI/models/vae/wan2.2_vae.safetensors
+
+                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
+                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors
+
+                rm -rf /tmp/$TEMP_DIR
+                
                 ;;
             "")
                 break
@@ -409,19 +427,10 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
-        uv pip install gguf-node==0.2.8
-        uv pip install gguf==0.17.1
-        uv pip install protobuf==6.32.0
-        
         cd $installation_path/ComfyUI/custom_nodes
         git clone https://github.com/calcuis/gguf
         cd gguf
-        git checkout caabdcaece21f4247a38810530f6e82d8609d90a
-        
-        cd $installation_path/ComfyUI/custom_nodes
-        git clone https://github.com/city96/ComfyUI-GGUF
-        cd ComfyUI-GGUF
-        git checkout cf0573351ac260d629d460d97f09b09ac17d3726
+        git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309
     fi
     
     if [ $flux -eq 1 ]; then
@@ -436,38 +445,67 @@ install_comfyui() {
     fi
 
     if [ $qwen -eq 1 ]; then
-        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF Qwen2.5-VL-7B-Instruct-UD-Q5_K_XL.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-        hf download unsloth/Qwen2.5-VL-7B-Instruct-GGUF mmproj-BF16.gguf --revision 68bb8bc4b7df5289c143aaec0ab477a7d4051aab --local-dir $installation_path/ComfyUI/models/text_encoders
-        mv $installation_path/ComfyUI/models/text_encoders/mmproj-BF16.gguf $installation_path/ComfyUI/models/text_encoders/Qwen2.5-VL-7B-Instruct-mmproj-F16.gguf
+        # Lightning
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+    fi
 
+    if [ $qwen2509 -eq 1 ]; then
+        # Lightning
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+
+        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors
+        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors
+
+        rm -rf $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509
+    fi
+
+    if [ $qwen -eq 1 -o $qwen2509 -eq 1 ]; then
+        # VL-7B
+        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/"
+        mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+        rm -rf $installation_path/ComfyUI/models/split_files
+    
+        # vae
         hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
     fi
 }
 
+# # vLLM
+# install_vllm() {
+#     uv_base "https://github.com/vllm-project/vllm.git" "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH vllm serve ./model --cpu-offload-gb 32 --gpu-memory-utilization 0.8 --max-model-len=8192 --max-num-seqs=1 --host 0.0.0.0 --port 7860'
+
+#     uv pip install -U setuptools==79.0.1
+
+#     uv pip uninstall triton
+#     git clone https://github.com/ROCm/triton.git
+#     cd triton
+#     git checkout f9e5bf54
+#     uv pip install -e . --no-build-isolation
+
+#     cd ../
+#     cp  -r /opt/rocm/share/amd_smi ./
+#     cd amd_smi
+#     uv pip install .
+
+#     export PYTORCH_ROCM_ARCH=$GFX
+
+#     cd ../
+#     python3 setup.py develop
+# }
+
 # ACE-Step
 install_ace_step() {
-    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" "acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0" "3.12"
+    uv_base "https://github.com/ace-step/ACE-Step" "6ae0852b1388de6dc0cca26b31a86d711f723cb3" 'LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0' "3.13" "rocm6.4"
+    sed -i 's/spacy==3\.8\.4/spacy/g' "requirements.txt"
+    sed -i 's/datasets==3\.4\.1/datasets/g' "requirements.txt"
+    sed -i 's/matplotlib==3\.10\.1/matplotlib/g' "requirements.txt"
+    sed -i 's/transformers==4\.50\.0/transformers/g' "requirements.txt"
     uv pip install -e .
-}
-
-# YuE-UI
-install_yue_ui() {
-    uv_base "https://github.com/joeljuvel/YuE-UI" "c98cd6efd8c174680913fea831b687ad620c5e69" "uv run ./source/ui.py --server_name 0.0.0.0" "3.12" "rocm6.2.4" "2.7.4.post1"
-    git clone https://huggingface.co/m-a-p/xcodec_mini_infer
-
-    cd models
-    git clone https://huggingface.co/Doctor-Shotgun/YuE-s1-7B-anneal-en-cot-exl2
-    git clone https://huggingface.co/Doctor-Shotgun/YuE-s2-1B-general-exl2
-    cd YuE-s1-7B-anneal-en-cot-exl2
-    git checkout b7037dcd1d1ec09a6df600424e8b6acdbca4d96b
-    cd ../YuE-s2-1B-general-exl2
-    git checkout 674b44b254f01516a256bebef45deb600bdf33f2
-    cd ../..
-
-    cd xcodec_mini_infer
-    git checkout fe781a67815ab47b4a3a5fce1e8d0a692da7e4e5
+    uv pip install torchcodec==0.8.1
 }
 
 # WhisperSpeech web UI
@@ -477,14 +515,14 @@ install_whisperspeech_web_ui(){
 
 # F5-TTS
 install_f5_tts(){
-    uv_base "https://github.com/SWivid/F5-TTS.git" "605fa13b42b40e860961bac8ce30fe49f02dfa0d" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/SWivid/F5-TTS.git" "3eecd94baa74fa1eea44ba36f000b9e8d0b163f9" "f5-tts_infer-gradio --host 0.0.0.0" "3.12" "rocm6.4"
     git submodule update --init --recursive
     uv pip install -e .
 }
 
 # Matcha-TTS
 install_matcha_tts(){
-    uv_base "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "matcha-tts-app"
+    uv_base "https://github.com/shivammehta25/Matcha-TTS" "108906c603fad5055f2649b3fd71d2bbdf222eac" "MIOPEN_LOG_LEVEL=3 matcha-tts-app" "3.13" "rocm6.4"
     cd ./matcha
     sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name="0.0.0.0")/' "app.py"
     cd $installation_path/Matcha-TTS
@@ -497,19 +535,14 @@ install_matcha_tts(){
 
 # Dia
 install_dia(){
-    uv_base "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    uv_base "https://github.com/tralamazza/dia.git" "8da0c755661e3cb71dc81583400012be6c3f62be" "MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py" "3.13" "nightly/rocm7.0" "0"
+    sed -i 's|url = "https://download.pytorch.org/whl/rocm6\.3"|url = "https://download.pytorch.org/whl/nightly/rocm7.0"|' pyproject.toml
     sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name="0.0.0.0")/' "app.py"
-}
-
-# IMS-Toucan
-install_ims_toucan(){
-    uv_base "https://github.com/DigitalPhonetics/IMS-Toucan.git" "dab8fe99199e707f869a219e836b69e53f13c528" "python3 run_simple_GUI_demo.py" "3.12" "rocm6.1" "2.7.4.post1"
-    sed -i 's/self.iface.launch()/self.iface.launch(share=False, server_name="0.0.0.0")/' "run_simple_GUI_demo.py"
 }
 
 # Chatterbox Multilingual
 install_chatterbox(){
-    uv_base "https://github.com/resemble-ai/chatterbox" "1b5ae50585c8fa4d30ca6a7b304d787b4f802a42" "uv run multilingual_app.py" "3.12" #"rocm6.2.4" "2.7.4.post1"
+    uv_base "https://github.com/resemble-ai/chatterbox" "bf169fe5f518760cb0b6c6a6eba3f885e10fa86f" "MIOPEN_LOG_LEVEL=3 uv run multilingual_app.py"
     rm -rf ./multilingual_app.py
     cp $CUSTOM_FILES_DIR/chatterbox/multilingual_app.py ./
     
@@ -521,7 +554,7 @@ install_chatterbox(){
 
 # KaniTTS
 install_kanitts(){
-    uv_base "https://github.com/nineninesix-ai/kani-tts" "63df2212c069c4cc147a0dd9f7804672ef8a8cbb" "uv run fastapi_example/server.py"
+    uv_base "https://github.com/nineninesix-ai/kani-tts" "63df2212c069c4cc147a0dd9f7804672ef8a8cbb" "MIOPEN_LOG_LEVEL=3 uv run fastapi_example/server.py"
     cd fastapi_example
     mv ./client.html ./index.html
     sed -i '/if __name__ == "__main__":/,/uvicorn\.run(app, host="0\.0\.0\.0", port=8000, log_level="info")/d' server.py
@@ -543,18 +576,46 @@ if __name__ == "__main__":
 EOF
 }
 
-# TripoSG
-install_triposg(){
-    uv_base "https://github.com/VAST-AI-Research/TripoSG" "88cfe7101001ad6eefdb6c459c7034f1ceb70d72" "uv run triposg_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
-    cp $CUSTOM_FILES_DIR/triposg_webui.py ./
-    git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm
-    cd ./pytorch_cluster_rocm
-    git checkout 6be490d08df52755684b7ccfe10d55463070f13d
+install_kanitts_vllm(){
+    export FA_GFX_ARCHS=$GFX
+    export PYTORCH_ROCM_ARCH=$GFX
+    
+    uv_base "https://github.com/nineninesix-ai/kanitts-vllm" "0a0115be1e51efcf727962308320522b2a80bcf5" "MIOPEN_LOG_LEVEL=3 uv run server.py" "3.12"
+
+    cp  -r /opt/rocm/share/amd_smi ./
+    cd amd_smi
     uv pip install .
+
+    cd ../
+    git clone https://github.com/vllm-project/vllm.git
+    cd vllm
+    git checkout "e261d37c9a5e88a6c86d32decf39f1fab7ca1f2c"
+    python3 setup.py develop
+
+    cd ../
+    cp $CUSTOM_FILES_DIR/kanitts-vllm/index.html ./index.html
+
+    sed -i '/if __name__ == "__main__":/,+4d' server.py
+    cat >> server.py << 'EOF'
+
+if __name__ == "__main__":
+    import http.server
+    import threading
+    import os
+    
+    # Change to fastapi_example folder and start HTML server
+    threading.Thread(target=lambda: http.server.HTTPServer(('', 7860), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+    print("HTML Server: http://0.0.0.0:7860")
+    
+    # Start FastAPI server
+    import uvicorn
+    print("🎤 Starting Kani TTS Server...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+EOF
 }
 
 install_partcrafter(){
-    uv_base "https://github.com/wgsxm/PartCrafter" "f38187bba35c0b3a86a95fa85e567adbf3743b69" "uv run partcrafter_webui.py" "3.12" "rocm6.3" "2.7.4.post1"
+    uv_base "https://github.com/wgsxm/PartCrafter" "269bd4164fbe35b17a6e58f8d6934262822082eb" "uv run partcrafter_webui.py" "3.13"
     cp $CUSTOM_FILES_DIR/partcrafter/inference_partcrafter.py ./scripts/inference_partcrafter.py
     cp $CUSTOM_FILES_DIR/partcrafter/render_utils.py ./src/utils/render_utils.py
     cp $CUSTOM_FILES_DIR/partcrafter/partcrafter_webui.py ./partcrafter_webui.py
@@ -579,7 +640,7 @@ huggingface() {
     fi
         
     # Login to Hugging Face
-    huggingface-cli login --token "$HF_TOKEN"
+    hf auth login --token "$HF_TOKEN"
 
     # Check login status
     if [ $? -eq 0 ]; then
