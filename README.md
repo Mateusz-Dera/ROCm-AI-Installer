@@ -2,7 +2,7 @@
 A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs (default: RX 7900 XTX). For other cards and architectures, the <b>HSA_OVERRIDE_GFX_VERSION</b> and <b>GFX</b> variables in the <b>install.sh</b> file should be modified accordingly (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-9.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-9.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Debian 13.2 is recommended. Version 9.x is not tested on older systems.<br>
@@ -97,9 +97,11 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 
 > [!Important] 
 > If app does not download any default models, download your own.
+> 
 
 > [!Caution]
 > If you update, back up your settings and models. Reinstallation deletes the previous directories.
+> If you have <v>/etc/apt/preferences.d/fallback</b> configured, make sure it does not override ROCm from <b>/etc/apt/preferences.d/rocm-pin-600</b>.
 
 1\. If you have installed uv other than through <b>pipx</b>, uninstall <b>uv</b> first.
 

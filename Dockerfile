@@ -1,5 +1,5 @@
 # Base Image: Debian Trixie as requested
-FROM debian:trixie-20250811
+FROM debian:trixie-20251117
 
 # Set non-interactive frontend for package managers
 ENV DEBIAN_FRONTEND=noninteractive
