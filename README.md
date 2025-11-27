@@ -23,7 +23,7 @@ A script that automatically installs the required dependencies to run selected A
 |Kernel|6.12.57+deb13-amd64|
 |ROCm|7.1|
 
-###  Text generation
+###  Text generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
@@ -33,17 +33,17 @@ A script that automatically installs the required dependencies to run selected A
 |Ollama|https://github.com/ollama/ollama|You can use standard Ollama commands in terminal or run GGUF model.<br>1. Put model.gguf into Ollama folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. In run.sh file, customize model parameters.|
 <!-- |vLLM|https://github.com/vllm-project/vllm|Change the parameters in run.sh to match your hardware configuration.| -->
 
-#### SillyTavern Extensions
+#### SillyTavern Extensions:
 |Name|Link|Additional information|
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui|Install and run WhisperSpeech web UI first.|
 
-###  Image & video generation
+###  Image & video generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.|
 
-#### ComfyUI Addons
+#### ComfyUI Addons:
 
 > [!Important]
 > For GGUF Flux and Flux based models:<br>
@@ -65,12 +65,12 @@ Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://hug
 Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_0</b>|
 <!-- |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://github.com/Wan-Video/Wan2.2<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged<br>|Text to video model.| -->
 
-###  Music generation
+###  Music generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ACE-Step|https://github.com/ace-step/ACE-Step||
 
-###  Voice generation
+###  Voice generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
@@ -81,17 +81,17 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 |KaniTTS|https://github.com/nineninesix-ai/kani-tts|If you want to change the default model, edit the <b>kanitts/config.py</b> file.|
 |KaniTTS-vLLM|https://github.com/nineninesix-ai/kanitts-vllm|If you want to change the default model, edit the <b>config.py</b> file.|
 
-###  3D generation
+###  3D generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
 
-###  Tools
+###  Tools:
 |Name|Links|Additional information|
 |:---|:---|:---|
 |Fastfetch|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.<br> Supports also NVIDIA graphics cards (nvidia-smi needed).<br>If you want your own logo, place the *asci.txt* file in the *~/.config/fastfetch directory.*|
 
-## Instalation:
+## Instalation
 > [!Note]
 > First startup after installation of the selected app may take longer.
 
@@ -128,5 +128,5 @@ bash ./install.sh
 ./run.sh
 ```
 
-## Docker:
+## Docker
 Check DOCKER.md

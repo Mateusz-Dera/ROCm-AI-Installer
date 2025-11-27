@@ -36,19 +36,17 @@ During the Docker build process, you can select one of the following application
 
 ### Build Process:
 
-1\. Edit the Dockerfile to select your desired application:
+1\. Edit the Dockerfile to select your desired application (The INSTALL_APP section defines which applications will be installed):
 ```bash
 nano Dockerfile
 ```
 
-2\. Edit the INSTALL_APP section in the Dockerfile to specify which application to install.
-
-3\. Uncomment the corresponding service section in docker-compose.yml:
+2\. Uncomment the corresponding service section in docker-compose.yml:
 ```bash
 nano docker-compose.yml
 ```
 
-4\. Build the Docker image:
+3\. Build the Docker image:
 ```bash
 docker compose build
 ```
