@@ -127,3 +127,6 @@ bash ./install.sh
 ```bash
 ./run.sh
 ```
+
+## Docker:
+Check DOCKER.md

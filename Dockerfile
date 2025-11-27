@@ -60,7 +60,7 @@ RUN apt-get update && \
 
 RUN apt-get install -y build-essential
 
-# Instala uv para o root e garante que está no PATH
+# Install uv as root and ensure it is in PATH
 RUN pipx install uv --force --include-in-path && \
     ln -s ~/.local/bin/uv /usr/local/bin/uv || true
 
