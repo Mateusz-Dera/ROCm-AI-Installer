@@ -38,7 +38,7 @@ ROCM_FILE=$(basename "$ROCM_URL")
 export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
 
 # Version
-version="9.0"
+version="9.1"
 
 # Default installation path
 default_installation_path="$HOME/AI"
