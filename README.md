@@ -2,7 +2,7 @@
 A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs (default: RX 7900 XTX). For other cards and architectures, the <b>HSA_OVERRIDE_GFX_VERSION</b> and <b>GFX</b> variables in the <b>install.sh</b> file should be modified accordingly (Not tested).
 
 ## Info
-[![Version](https://img.shields.io/badge/Version-9.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-9.2-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
 > Debian 13.2 is recommended. Version 9.x is not tested on older systems.<br>
@@ -15,13 +15,13 @@ A script that automatically installs the required dependencies to run selected A
 ### Test platform:
 |Name|Info|
 |:---|:---|
-|CPU|AMD Ryzen 5 7500F|
+|CPU|AMD Ryzen 9 9950X3D|
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
-|Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8e)|
+|Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8)|
 |OS|Debian 13.2|
 |Kernel|6.12.57+deb13-amd64|
-|ROCm|7.1|
+|ROCm|7.1.1|
 
 ###  Text generation:
 |Name|Links|Additional information|

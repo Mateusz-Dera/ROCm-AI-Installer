@@ -149,6 +149,9 @@ install_sillytavern() {
     git checkout 8f7b6b43c3f6402a8908d8d9bbf3134b2a43fb2c
 
     mv ./start.sh ./run.sh
+    #sed -i '1i export NVM_DIR="$HOME/.nvm"' run.sh
+    #sed -i '2i $NVM_DIR/nvm.sh' run.sh
+    sed -i 's|node "server\.js" "\$@"|/usr/bin/node "server.js" "$@"|' run.sh
 
     # Default config
     cd ./default
