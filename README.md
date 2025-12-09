@@ -107,7 +107,7 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 
 2\. Clone repository 
 ```bash
-git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
+git clone https://github.com/thebestryan/ROCm-AI-Installer.git
 ```
 
 3\. Run installer 
