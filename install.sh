@@ -21,8 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 # GPU Variables
-export HSA_OVERRIDE_GFX_VERSION=11.0.0
-export GFX=gfx1100
+export HSA_OVERRIDE_GFX_VERSION=10.3.0
+export GFX=gfx1030
 
 #? Preparing for future support for ZLUDA
 #? https://github.com/vosen/ZLUDA
