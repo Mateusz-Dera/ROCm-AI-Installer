@@ -61,7 +61,6 @@ RUN wget https://repo.radeon.com/amdgpu-install/7.1.1/ubuntu/noble/amdgpu-instal
 RUN apt-get update
 
 # AMDGPU
-# RUN apt install -y "linux-headers-$(uname -r)"
 RUN apt install -y amdgpu-dkms 
 
 # ROCM
@@ -107,6 +106,7 @@ RUN pipx install uv --force && \
 # Add pipx binaries to PATH for this user
 ENV PATH="/home/${AI_USER}/.local/bin:${PATH}"
 
+# Ports
 EXPOSE 5000 7860 7865 8000 8003 8080 8188 11434
 
 # Default command to verify ROCm installation

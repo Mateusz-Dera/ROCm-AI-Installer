@@ -51,6 +51,9 @@ checkbox=white,black
 actcheckbox=yellow,black
 '
 
+# Files
+source $SCRIPT_DIR/interfaces.sh
+
 # Load existing configuration if available
 load_config() {
     if [ -f "$CONFIG_FILE" ]; then
@@ -186,11 +189,60 @@ create_container() {
     fi
 }
 
+# Text generation
+text_generation() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+            0 "Install KoboldCPP" \
+            1 "Text generation web UI" \
+            2 "SillyTavern" \
+            3 "Install llama.cpp" \
+            4 "Ollama" \
+            2>&1 > /dev/tty)
+        status=$?
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "0")
+                podman exec -it rocm install_koboldcpp
+                ;;
+            "1")
+                text_generation_web_ui
+                ;;
+            "2")
+                sillytavern
+                ;;
+            "3")
+                install_llama_cpp
+
+                ;;
+            "4")
+                ollama
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 17 100 3 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 17 100 4 \
     1 "Variables" \
     2 "Create a container" \
+    3 "Text generation" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -200,6 +252,9 @@ show_menu() {
             ;;
         2)
             create_container
+            ;;
+        3)
+            text_generation
             ;;
         *)
             exit 0
