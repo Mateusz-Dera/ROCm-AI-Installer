@@ -210,7 +210,7 @@ text_generation() {
 
         case "$choice" in
             "0")
-                podman exec -it rocm install_koboldcpp
+                install_koboldcpp
                 ;;
             "1")
                 text_generation_web_ui

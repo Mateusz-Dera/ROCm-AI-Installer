@@ -77,7 +77,6 @@ services:
 
     # Mount volumes for persistent data
     volumes:
-      - ./workspace:/workspace
       - ${AI_HOST_DIR}:/home/${AI_USER:-ai}/AI  # AI workspace directory from host
       - /etc/localtime:/etc/localtime:ro  # Inherit timezone from host
 
