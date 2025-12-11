@@ -1,194 +1,113 @@
-# Base Image: Debian Trixie as requested
-FROM debian:trixie-20251117
+# ROCM-AI-Installer
+# Copyright © 2023-2025 Mateusz Dera
 
-# Set non-interactive frontend for package managers
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+FROM ubuntu:24.04
+
+# Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# --- Build-time Arguments ---
-# GFX allows specifying the target AMD GPU architecture during build.
-# Examples: "gfx1100" for RDNA3, "gfx1030" for RDNA2, "gfx906" for Vega
-ARG GFX="gfx1100"
-ARG GFX_VERSION="11.0.0"
+# Define build argument for AI user (can be overridden during build)
+ARG AI_USER=ai
 
-# --- Environment Variables ---
-# Set GPU environment variables for ROCm and PyTorch
-ENV HSA_OVERRIDE_GFX_VERSION=${GFX_VERSION}
-ENV PYTORCH_ROCM_ARCH=${GFX}
-ENV GFX=${GFX}
-
-# Define the main installation path
-ENV AI_PATH=/AI
-ENV PATH="${AI_PATH}/.local/bin:${PATH}"
-ENV installation_path="${AI_PATH}"
-
-# Backup
-ENV SCRIPT_DIR=/AI
-ENV source="$SCRIPT_DIR/backup.sh"
-
-# Set user and home directory
-ENV APP_USER=aiuser
-ENV REQUIREMENTS_DIR="$SCRIPT_DIR/requirements"
-ENV CUSTOM_FILES_DIR="$SCRIPT_DIR/custom_files"
-
-# --- System Setup and Dependency Installation (as root) ---
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Core utilities
-    git \
-    sudo \
-    curl \
+# Update and install basic dependencies
+RUN apt-get update && apt-get install -y \
+    nano \
     wget \
-    gpg \
-    # Build tools
-    cmake \
-    # Python and Node.js
+    curl \
+    tar \
+    git \
+    git-lfs \
+    gnupg2 \
+    ca-certificates \
+    sudo \
     python3-dev \
-    nodejs \
-    npm \
+    python3-setuptools \
+    python3-wheel \
+    python3-tk \
     pipx \
-    # Media
+    cmake \
+    make \
     ffmpeg \
-    # ROCm dependencies
-    libnuma-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    espeak \
+    nodejs \
+    npm
+    # && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && \
-    apt-get install -y pipx && \
-    pipx install uv --force && \
-    pipx upgrade uv && \
-    pipx ensurepath
+# Download and install AMD GPU installer package for ROCm 7.1.1
+RUN wget https://repo.radeon.com/amdgpu-install/7.1.1/ubuntu/noble/amdgpu-install_7.1.1.70101-1_all.deb \
+    && apt-get update \
+    && apt-get install -y ./amdgpu-install_7.1.1.70101-1_all.deb \
+    && rm amdgpu-install_7.1.1.70101-1_all.deb
 
-RUN apt-get install -y build-essential
+# Update package list with AMD repositories
+RUN apt-get update
 
-# Install uv as root and ensure it is in PATH
-RUN pipx install uv --force --include-in-path && \
-    ln -s ~/.local/bin/uv /usr/local/bin/uv || true
+# AMDGPU
+# RUN apt install -y "linux-headers-$(uname -r)"
+RUN apt install -y amdgpu-dkms 
 
-RUN ln -sf /home/${APP_USER}/.local/bin/uv /usr/local/bin/uv || true
-ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
+# ROCM
+RUN apt-get install -y \
+    rocm rocminfo rocm-cmake rocm-smi rocm-smi-lib rocm-hip-sdk rocm-hip-runtime rocm-hip-runtime-dev \
+    hipblas hipcc hipify-clang hiprand hiprand-dev hipfft hipfft-dev hipsparse hipsparse-dev \
+    hipcub hipcub-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev \
+    amd-smi-lib \
+    rocrand rocrand-dev rocfft rocfft-dev rocprim rocprim-dev rocthrust rocthrust-dev rocprofiler-sdk hsa-amd-aqlprofile \
+    miopen-hip miopen-hip-dev
+    # && rm -rf /var/lib/apt/lists/*
 
-# Add video and render groups for GPU access
-RUN groupadd --gid 109 aiuser && groupadd --gid 108 render
+# Create render group if it doesn't exist (for GPU access)
+RUN getent group render || groupadd -r render
 
-# Create the non-root application user and add to groups
-RUN useradd --create-home --uid 1000 --gid aiuser --shell /bin/bash -G video,render ${APP_USER}
-# Allow passwordless sudo
-RUN echo "${APP_USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/aiuser && chmod 0440 /etc/sudoers.d/aiuser
+# Create AI user with GPU access and no password
+# Adding user to video and render groups for ROCm GPU access
+# User can run sudo without password for system administration
+RUN useradd -m -s /bin/bash ${AI_USER} && \
+    usermod -a -G video,render,sudo ${AI_USER} && \
+    echo "${AI_USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Switch to the non-root user
-USER ${APP_USER}
-WORKDIR ${CUSTOM_FILES_DIR}
+# Folder
+RUN mkdir -p /home/${AI_USER}/AI
+RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}
+RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}/AI
 
-# Install uv using pipx
-RUN pipx install uv --force && pipx ensurepath
-RUN ln -sf /home/${APP_USER}/.local/bin/uv /usr/local/bin/uv || true
-ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
+# Set ROCm environment variables
+ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
+ENV ROCM_PATH="/opt/rocm"
 
-# Copy installer scripts into the container
-COPY --chown=${APP_USER}:${APP_USER} . ${AI_PATH}/
+# Set working directory
+WORKDIR /home/${AI_USER}
 
-# As root, install system-wide components
-USER root
-COPY --chown=root:root interfaces.sh /tmp/
-COPY --chown=root:root install.sh /tmp/
-COPY --chown=root:root menu.sh /tmp/
-COPY --chown=root:root backup.sh /tmp/
+# Switch to AI user
+USER ${AI_USER}
 
-##############################################
-# Please Select your first app before build
-##############################################
-ARG INSTALL_APP="install_partcrafter"
-# install_comfyui
-# install_text_generation_web_ui
-# install_sillytavern
-# install_llama_cpp
-# install_koboldcpp
-# install_ollama
-# install_whisperspeech_web_ui
-# install_ace_step
-# install_f5_tts
-# install_matcha_tts
-# install_dia
-# install_ims_toucan
-# install_chatterbox
-# install_partcrafter
-##############################################
+# Install uv via pipx and add to PATH
+RUN pipx install uv --force && \
+    pipx ensurepath --force
 
-# Run the Interactive installer during build
-RUN /bin/bash -c "source /tmp/install.sh && install"
-ENV INSTALL_APP=${INSTALL_APP}
-RUN bash -c "if [ -n \"$INSTALL_APP\" ]; then \
-    echo 'Auto-installing $INSTALL_APP...' && \
-    source /tmp/interfaces.sh && \
-    $INSTALL_APP; \
-    else \
-    echo 'No INSTALL_APP specified. Skipping installation.'; \
-    fi"
+# Add pipx binaries to PATH for this user
+ENV PATH="/home/${AI_USER}/.local/bin:${PATH}"
 
-##############################################
-# Please Select your Second app before build
-##############################################
-# ARG INSTALL_APP="install_dia"
-# install_comfyui
-# install_text_generation_web_ui
-# install_sillytavern
-# install_llama_cpp
-# install_koboldcpp
-# install_ollama
-# install_whisperspeech_web_ui
-# install_ace_step
-# install_f5_tts
-# install_matcha_tts
-# install_dia
-# install_ims_toucan
-# install_chatterbox
-# install_partcrafter
-##############################################
-
-# # Run the Interactive installer during build
-# ENV INSTALL_APP=${INSTALL_APP}
-# RUN bash -c "if [ -n \"$INSTALL_APP\" ]; then \
-#     echo 'Auto-installing $INSTALL_APP...' && \
-#     source /tmp/interfaces.sh && \
-#     $INSTALL_APP; \
-#     else \
-#     echo 'No INSTALL_APP specified. Skipping installation.'; \
-#     fi"
-
-##############################################
-# Please Select your third app before build
-##############################################
-# ARG INSTALL_APP="install_ollama"
-# install_comfyui
-# install_text_generation_web_ui
-# install_sillytavern
-# install_llama_cpp
-# install_koboldcpp
-# install_ollama
-# install_whisperspeech_web_ui
-# install_ace_step
-# install_f5_tts
-# install_matcha_tts
-# install_dia
-# install_ims_toucan
-# install_chatterbox
-# install_partcrafter
-##############################################
-
-# # Run the Interactive installer during build
-# ENV INSTALL_APP=${INSTALL_APP}
-# RUN bash -c "if [ -n \"$INSTALL_APP\" ]; then \
-#     echo 'Auto-installing $INSTALL_APP...' && \
-#     source /tmp/interfaces.sh && \
-#     $INSTALL_APP; \
-#     else \
-#     echo 'No INSTALL_APP specified. Skipping installation.'; \
-#     fi"
-##############################################
-
-# --- Networking ---
-# Ports (ComfyUI, Gradio, APIs, etc.)
 EXPOSE 5000 7860 7865 8000 8003 8080 8188 11434
 
-# --- Runtime ---
-CMD ["/bin/bash", "-c", "echo 'This image is designed to be used with the provided docker compose.yml. Please start a service, e.g., `docker compose up comfyui`'"]
+# Default command to verify ROCm installation
+CMD ["/bin/bash"]
