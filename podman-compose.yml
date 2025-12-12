@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile
       args:
         AI_USER: ${AI_USER:-ai}
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
     image: rocm-ubuntu:7.1.1
     container_name: rocm
     hostname: rocm
@@ -77,7 +79,8 @@ services:
 
     # Mount volumes for persistent data
     volumes:
-      - ${AI_HOST_DIR}:/home/${AI_USER:-ai}/AI  # AI workspace directory from host
+      # Direct mount without :U - userns_mode: host handles UID/GID mapping
+      - ${AI_HOST_DIR}:/home/${AI_USER:-ai}/AI
       - /etc/localtime:/etc/localtime:ro  # Inherit timezone from host
 
     # Set working directory

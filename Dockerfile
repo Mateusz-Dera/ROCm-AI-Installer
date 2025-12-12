@@ -24,8 +24,10 @@ FROM ubuntu:24.04
 # Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Define build argument for AI user (can be overridden during build)
+# Define build arguments for AI user (can be overridden during build)
 ARG AI_USER=ai
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 # Update and install basic dependencies
 RUN apt-get update && apt-get install -y \
@@ -79,17 +81,11 @@ RUN getent group render || groupadd -r render
 # Remove default ubuntu user to avoid UID conflicts in rootless podman
 RUN userdel -r ubuntu 2>/dev/null || true
 
-# Create AI user with GPU access and no password
-# Adding user to video and render groups for ROCm GPU access
-# User can run sudo without password for system administration
-RUN useradd -m -s /bin/bash ${AI_USER} && \
-    usermod -a -G video,render,sudo ${AI_USER} && \
-    echo "${AI_USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Folder
-RUN mkdir -p /home/${AI_USER}/AI
-RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}
-RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}/AI
+# In rootless podman, root in container (UID 0) is mapped to host user (e.g. 1000)
+# So we'll create home directory for AI_USER that will be accessed as root in container
+# but will be owned by host user outside container
+RUN mkdir -p /home/${AI_USER}/AI && \
+    chmod 777 /home/${AI_USER}/AI
 
 # Copy entrypoint script
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/
@@ -102,10 +98,8 @@ ENV ROCM_PATH="/opt/rocm"
 # Set working directory
 WORKDIR /home/${AI_USER}
 
-# Switch to AI user
-USER ${AI_USER}
-
-# Install uv via pipx and add to PATH
+# Note: We run as root in container, which maps to host user in rootless podman
+# Install uv via pipx and add to PATH (as root)
 RUN pipx install uv --force && \
     pipx ensurepath --force
 

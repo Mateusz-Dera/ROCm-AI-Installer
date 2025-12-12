@@ -155,15 +155,28 @@ configure_path() {
         AI_DIR="$new_path"
 
         # Create directory if it doesn't exist
+        # Note: Ownership will be managed by Podman's :U option during container runtime
         if [ ! -d "$AI_DIR" ]; then
             if whiptail --title "Create Directory" --yesno "Directory '$AI_DIR' does not exist.\n\nDo you want to create it?" 10 60 2>&1 > /dev/tty; then
-                mkdir -p "$AI_DIR"
+                if ! mkdir -p "$AI_DIR"; then
+                    whiptail --title "Error" --msgbox "Failed to create directory: ${AI_DIR}\n\nPlease check permissions." 10 60 2>&1 > /dev/tty
+                    return 1
+                fi
+
+                # Set proper permissions (ownership handled by Podman :U)
+                chmod 775 "$AI_DIR" 2>/dev/null || true
+
                 save_config
-                whiptail --title "Success" --msgbox "Directory created: ${AI_DIR}" 8 50 2>&1 > /dev/tty
+                whiptail --title "Success" --msgbox "Directory created: ${AI_DIR}\nPermissions: 775\n\nNote: Ownership will be managed by Podman when container starts." 12 70 2>&1 > /dev/tty
+            else
+                return 0
             fi
         else
+            # Ensure existing directory has proper permissions
+            chmod 775 "$AI_DIR" 2>/dev/null || true
+
             save_config
-            whiptail --title "Success" --msgbox "Path set to: ${AI_DIR}" 8 50 2>&1 > /dev/tty
+            whiptail --title "Success" --msgbox "Path set to: ${AI_DIR}\n\nNote: Ownership will be managed by Podman when container starts." 10 70 2>&1 > /dev/tty
         fi
     fi
 }
@@ -176,6 +189,30 @@ create_container() {
     fi
 
     if whiptail --title "Create Container" --yesno "This will:\n1. Stop existing container (podman-compose down)\n2. Build new container (podman-compose build)\n3. Start container (podman-compose up -d)\n\nContinue?" 14 60 2>&1 > /dev/tty; then
+        # Export host user UID/GID for container user mapping
+        export USER_UID=$(id -u)
+        export USER_GID=$(id -g)
+
+        # Ensure AI_DIR exists
+        # Note: Ownership will be managed automatically by Podman's :U volume option
+        if [ -n "$AI_DIR" ]; then
+            if [ ! -d "$AI_DIR" ]; then
+                echo "Creating directory $AI_DIR..."
+                if ! mkdir -p "$AI_DIR"; then
+                    whiptail --title "Error" --msgbox "Failed to create directory: ${AI_DIR}\n\nCannot proceed with container creation." 10 60 2>&1 > /dev/tty
+                    return 1
+                fi
+            fi
+
+            echo "Setting permissions on $AI_DIR..."
+            # Set permissions (ownership will be handled by Podman :U option)
+            if ! chmod -R 775 "$AI_DIR" 2>/dev/null; then
+                echo "Warning: Could not set permissions on $AI_DIR, but continuing..."
+            fi
+
+            echo "Directory $AI_DIR ready for container mount"
+        fi
+
         echo "Stopping existing containers..."
         podman-compose down
 

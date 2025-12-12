@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Fix AI directory permissions if needed
-if [ -d "$HOME/AI" ]; then
-    sudo chown -R $(id -u):$(id -g) "$HOME/AI" 2>/dev/null || true
-fi
+# Set umask to ensure new files are group-writable
+# umask 0002 means: remove write permission for others only
+# Result: new files will be 664 (rw-rw-r--), new dirs will be 775 (rwxrwxr-x)
+umask 0002
+
+echo "Container started with umask 0002 for shared file access"
 
 # Execute the main command
 exec "$@"
