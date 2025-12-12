@@ -67,6 +67,7 @@ services:
       - ROCM_PATH=/opt/rocm
       - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}  # Configurable via setup.sh
       - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Configurable via setup.sh
+      - PYTORCH_ROCM_ARCH=${TARGET_GFX:-gfx1100}  # PyTorch ROCm architecture
       - GPU_DEVICE_ORDINAL=0
 
     # Keep container running

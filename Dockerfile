@@ -90,6 +90,13 @@ ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
 ENV ROCM_PATH="/opt/rocm"
 
+# Set GPU and PyTorch environment variables
+ENV HIP_VISIBLE_DEVICES=0
+ENV TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+ENV TORCH_BLAS_PREFER_HIPBLASLT=0
+ENV FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
+ENV MIOPEN_LOG_LEVEL=3
+
 # Set working directory
 WORKDIR /AI
 
