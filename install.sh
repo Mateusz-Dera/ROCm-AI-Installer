@@ -195,11 +195,11 @@ text_generation() {
     while $second; do
         
         choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
-            0 "Install KoboldCPP" \
-            1 "Text generation web UI" \
-            2 "SillyTavern" \
-            3 "Install llama.cpp" \
-            4 "Ollama" \
+            1 "Install KoboldCPP" \
+            2 "Text generation web UI" \
+            3 "SillyTavern" \
+            4 "Install llama.cpp" \
+            5 "Ollama" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -209,20 +209,19 @@ text_generation() {
         fi
 
         case "$choice" in
-            "0")
+            "1")
                 install_koboldcpp
                 ;;
-            "1")
+            "2")
                 text_generation_web_ui
                 ;;
-            "2")
+            "3")
                 sillytavern
                 ;;
-            "3")
-                install_llama_cpp
-
-                ;;
             "4")
+                install_llama_cpp
+                ;;
+            "5")
                 ollama
                 ;;
             "")

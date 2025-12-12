@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # ROCM-AI-Installer
 # Copyright © 2023-2025 Mateusz Dera
 
