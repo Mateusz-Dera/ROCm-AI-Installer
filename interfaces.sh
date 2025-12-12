@@ -27,8 +27,9 @@ basic_git(){
     local COMMIT=$2
     FOLDER=$(basename "$REPO")
 
-    podman exec -u $AI_USERNAME -t rocm bash -c "cd $DEFAULT_AI_DIR && [ -d $FOLDER ] && rm -rf $FOLDER;"
-    podman exec -u $AI_USERNAME -t rocm bash -c "cd $DEFAULT_AI_DIR && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
+    # Use login shell (-i) to load user's environment
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI && [ -d $FOLDER ] && rm -rf $FOLDER"
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
 }
 
 # VENV
@@ -36,7 +37,9 @@ basic_venv(){
     local REPO=$1
     local PYTHON=${2:-3.13}
     FOLDER=$(basename "$REPO")
-    podman exec -u $AI_USERNAME -t rocm bash -c "cd $DEFAULT_AI_DIR/$FOLDER && uv venv --python $PYTHON"
+
+    # Use login shell (-i) to load user's PATH with uv binary
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI/$FOLDER && uv venv --python $PYTHON"
 }
 
 # REQUREMENTS
@@ -49,8 +52,8 @@ basic_requirements(){
 
 # KoboldCPP
 install_koboldcpp() {
-    $REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
-    $COMMIT="b4fa4f897f0c75a1e8d45e8247a14c6053548a61"
+    REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
+    COMMIT="b4fa4f897f0c75a1e8d45e8247a14c6053548a61"
 
     basic_git $REPO $COMMIT
     basic_venv $REPO

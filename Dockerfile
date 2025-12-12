@@ -76,6 +76,9 @@ RUN apt-get install -y \
 # Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render
 
+# Remove default ubuntu user to avoid UID conflicts in rootless podman
+RUN userdel -r ubuntu 2>/dev/null || true
+
 # Create AI user with GPU access and no password
 # Adding user to video and render groups for ROCm GPU access
 # User can run sudo without password for system administration
@@ -87,6 +90,9 @@ RUN useradd -m -s /bin/bash ${AI_USER} && \
 RUN mkdir -p /home/${AI_USER}/AI
 RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}
 RUN chown -R ${AI_USER}:${AI_USER} /home/${AI_USER}/AI
+
+# Copy entrypoint script
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/
 
 # Set ROCm environment variables
 ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
@@ -109,5 +115,8 @@ ENV PATH="/home/${AI_USER}/.local/bin:${PATH}"
 # Ports
 EXPOSE 5000 7860 7865 8000 8003 8080 8188 11434
 
-# Default command to verify ROCm installation
+# Set entrypoint to fix permissions on startup
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Default command
 CMD ["/bin/bash"]
