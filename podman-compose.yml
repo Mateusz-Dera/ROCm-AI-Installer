@@ -69,6 +69,7 @@ services:
       - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Configurable via setup.sh
       - PYTORCH_ROCM_ARCH=${TARGET_GFX:-gfx1100}  # PyTorch ROCm architecture
       - GPU_DEVICE_ORDINAL=0
+      - DISPLAY=${DISPLAY}  # X11 display for GUI applications
 
     # Keep container running
     stdin_open: true
@@ -80,6 +81,7 @@ services:
       # In rootless podman, root in container (UID 0) maps to host user
       - ${AI_HOST_DIR}:/AI
       - /etc/localtime:/etc/localtime:ro  # Inherit timezone from host
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 socket for GUI applications
 
     # Set working directory
     working_dir: /AI

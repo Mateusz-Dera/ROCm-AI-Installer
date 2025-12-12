@@ -74,6 +74,6 @@ install_koboldcpp() {
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
-    # podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
     basic_run "$REPO" "$COMMAND"
 }
