@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 # ROCM-AI-Installer
 # Copyright © 2023-2025 Mateusz Dera
 
@@ -44,7 +46,7 @@ basic_venv(){
 basic_requirements(){
     local REPO=$1
     FOLDER=$(basename "$REPO")
-    REQUIREMENTS="$(< $SCRIPT_DIR/requirements/$FOLDER.txt)"
+    REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$FOLDER.txt")
 
     podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
 }
@@ -55,13 +57,11 @@ basic_run(){
     local COMMAND="$2"
     FOLDER=$(basename "$REPO")
 
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && cat > run.sh <<'RUNEOF'
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << RUNEOF
 #!/bin/bash
-SCRIPT_DIR=\$(cd \"\$(dirname \"\${BASH_SOURCE[0]}\")\" && pwd)
-source \$SCRIPT_DIR/.venv/bin/activate
+podman exec -t rocm bash -c \"cd /AI/$FOLDER && source .venv/bin/activate && $COMMAND\"
 RUNEOF
-echo '$COMMAND' >> run.sh
-chmod +x run.sh"
+chmod +x /AI/$FOLDER/run.sh"
 }
 
 # KoboldCPP
@@ -71,9 +71,9 @@ install_koboldcpp() {
     COMMAND="uv run koboldcpp.py"
     FOLDER=$(basename "$REPO")
 
-    basic_git $REPO $COMMIT
-    basic_venv $REPO
-    basic_requirements $REPO
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$((nproc - 1))"
-    basic_run $REPO $COMMAND
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+    # podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
+    basic_run "$REPO" "$COMMAND"
 }
