@@ -24,11 +24,6 @@ FROM ubuntu:24.04
 # Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Define build arguments for AI user (can be overridden during build)
-ARG AI_USER=ai
-ARG USER_UID=1000
-ARG USER_GID=1000
-
 # Update and install basic dependencies
 RUN apt-get update && apt-get install -y \
     nano \
@@ -81,11 +76,11 @@ RUN getent group render || groupadd -r render
 # Remove default ubuntu user to avoid UID conflicts in rootless podman
 RUN userdel -r ubuntu 2>/dev/null || true
 
-# In rootless podman, root in container (UID 0) is mapped to host user (e.g. 1000)
-# So we'll create home directory for AI_USER that will be accessed as root in container
-# but will be owned by host user outside container
-RUN mkdir -p /home/${AI_USER}/AI && \
-    chmod 777 /home/${AI_USER}/AI
+# Create AI directory
+# In rootless podman, root in container (UID 0) is mapped to host user
+# Files created here will be owned by host user outside container
+RUN mkdir -p /AI && \
+    chmod 777 /AI
 
 # Copy entrypoint script
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/
@@ -96,15 +91,14 @@ ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
 ENV ROCM_PATH="/opt/rocm"
 
 # Set working directory
-WORKDIR /home/${AI_USER}
+WORKDIR /AI
 
-# Note: We run as root in container, which maps to host user in rootless podman
-# Install uv via pipx and add to PATH (as root)
-RUN pipx install uv --force && \
-    pipx ensurepath --force
+# Install uv for root user
+# In rootless podman, this root user is mapped to host user
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install uv
 
-# Add pipx binaries to PATH for this user
-ENV PATH="/home/${AI_USER}/.local/bin:${PATH}"
+# Add uv to PATH
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Ports
 EXPOSE 5000 7860 7865 8000 8003 8080 8188 11434

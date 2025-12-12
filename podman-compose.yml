@@ -26,10 +26,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        AI_USER: ${AI_USER:-ai}
-        USER_UID: ${USER_UID:-1000}
-        USER_GID: ${USER_GID:-1000}
     image: rocm-ubuntu:7.1.1
     container_name: rocm
     hostname: rocm
@@ -79,12 +75,13 @@ services:
 
     # Mount volumes for persistent data
     volumes:
-      # Direct mount without :U - userns_mode: host handles UID/GID mapping
-      - ${AI_HOST_DIR}:/home/${AI_USER:-ai}/AI
+      # Mount host directory to /AI in container
+      # In rootless podman, root in container (UID 0) maps to host user
+      - ${AI_HOST_DIR}:/AI
       - /etc/localtime:/etc/localtime:ro  # Inherit timezone from host
 
     # Set working directory
-    working_dir: /home/${AI_USER:-ai}
+    working_dir: /AI
 
     # Restart policy
     restart: unless-stopped

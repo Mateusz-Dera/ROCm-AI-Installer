@@ -33,7 +33,6 @@ CONFIG_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_HSA_VERSION="11.0.0"
 DEFAULT_GFX="gfx1100"
 DEFAULT_AI_DIR="${HOME}/AI"
-DEFAULT_USERNAME="ai"
 
 # Colors
 export NEWT_COLORS='
@@ -61,12 +60,10 @@ load_config() {
         HSA_VERSION="${HSA_OVERRIDE_GFX_VERSION:-$DEFAULT_HSA_VERSION}"
         GFX_VERSION="${TARGET_GFX:-$DEFAULT_GFX}"
         AI_DIR="${AI_HOST_DIR:-$DEFAULT_AI_DIR}"
-        AI_USERNAME="${AI_USER:-$DEFAULT_USERNAME}"
     else
         HSA_VERSION="$DEFAULT_HSA_VERSION"
         GFX_VERSION="$DEFAULT_GFX"
         AI_DIR="$DEFAULT_AI_DIR"
-        AI_USERNAME="$DEFAULT_USERNAME"
     fi
 }
 
@@ -84,9 +81,6 @@ TARGET_GFX=${GFX_VERSION}
 
 # AI Workspace Directory (host path)
 AI_HOST_DIR=${AI_DIR}
-
-# AI Username
-AI_USER=${AI_USERNAME}
 EOF
     echo "Configuration saved to: $CONFIG_FILE"
 }
@@ -128,25 +122,11 @@ configure_hsa() {
     fi
 }
 
-# Configure Username
-configure_username() {
-    local new_username
-    new_username=$(whiptail --title "AI Username" \
-        --inputbox "Enter username for AI container:\n\nCurrent value: ${AI_USERNAME}" \
-        12 70 "$AI_USERNAME" 2>&1 > /dev/tty)
-
-    if [ $? -eq 0 ] && [ -n "$new_username" ]; then
-        AI_USERNAME="$new_username"
-        save_config
-        whiptail --title "Success" --msgbox "Username set to: ${AI_USERNAME}" 8 50 2>&1 > /dev/tty
-    fi
-}
-
 # Configure Path
 configure_path() {
     local new_path
     new_path=$(whiptail --title "AI Workspace Directory" \
-        --inputbox "Enter the host directory to mount as /home/ai/AI:\n\nThis directory will be created if it doesn't exist.\n\nCurrent value: ${AI_DIR}" \
+        --inputbox "Enter the host directory to mount as container workspace:\n\nThis directory will be created if it doesn't exist.\n\nCurrent value: ${AI_DIR}" \
         14 70 "$AI_DIR" 2>&1 > /dev/tty)
 
     if [ $? -eq 0 ] && [ -n "$new_path" ]; then
@@ -189,12 +169,7 @@ create_container() {
     fi
 
     if whiptail --title "Create Container" --yesno "This will:\n1. Stop existing container (podman-compose down)\n2. Build new container (podman-compose build)\n3. Start container (podman-compose up -d)\n\nContinue?" 14 60 2>&1 > /dev/tty; then
-        # Export host user UID/GID for container user mapping
-        export USER_UID=$(id -u)
-        export USER_GID=$(id -g)
-
         # Ensure AI_DIR exists
-        # Note: Ownership will be managed automatically by Podman's :U volume option
         if [ -n "$AI_DIR" ]; then
             if [ ! -d "$AI_DIR" ]; then
                 echo "Creating directory $AI_DIR..."
@@ -302,15 +277,14 @@ show_menu() {
 variables() {
     second=true
     while $second; do
-        
-        choice=$(whiptail --title "Variables" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+
+        choice=$(whiptail --title "Variables" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             "1" "GFX" \
             "2" "HSA_OVERRIDE_GFX_VERSION" \
-            "3" "USERNAME" \
-            "4" "PATH" \
+            "3" "PATH" \
             2>&1 > /dev/tty)
         status=$?
-        
+
         if [ $status -ne 0 ]; then
             return 0
         fi
@@ -323,9 +297,6 @@ variables() {
                 configure_hsa
                 ;;
             "3")
-                configure_username
-                ;;
-            "4")
                 configure_path
                 ;;
             *)
