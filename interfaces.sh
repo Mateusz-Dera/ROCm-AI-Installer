@@ -27,7 +27,6 @@ basic_git(){
     local COMMIT=$2
     FOLDER=$(basename "$REPO")
 
-    # Use login shell (-i) to load user's environment
     podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI && [ -d $FOLDER ] && rm -rf $FOLDER"
     podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
 }
@@ -38,7 +37,6 @@ basic_venv(){
     local PYTHON=${2:-3.13}
     FOLDER=$(basename "$REPO")
 
-    # Use login shell (-i) to load user's PATH with uv binary
     podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI/$FOLDER && uv venv --python $PYTHON"
 }
 
@@ -46,18 +44,30 @@ basic_venv(){
 basic_requirements(){
     local REPO=$1
     FOLDER=$(basename "$REPO")
-    # REQUREMENTS=""
-    # podman exec -t rocm bash -c "cd $DEFAULT_AI_DIR/$FOLDER && uv venv --python $PYTHON"
+    REQUREMENTS="$(< $SCRIPT_DIR/requirements/$FOLDER.txt)"
+
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
+}
+
+# RUN
+basic_run(){
+    local REPO=$1
+    local COMMAND=$2
+    FOLDER=$(basename "$REPO")
+    EXP='SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\nsource $SCRIPT_DIR/.venv/bin/activate\nexport HIP_VISIBLE_DEVICES=0\nexport PYTORCH_ROCM_ARCH=$GFX\nexport TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1\nexport TORCH_BLAS_PREFER_HIPBLASLT=0\nexport FLASH_ATTENTION_TRITON_AMD_ENABLE="TRUE"\nexport MIOPEN_LOG_LEVEL=3\n' 
+
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI/$FOLDER && echo -e $EXP > ./run.sh && echo -e $COMMAND >> ./run.sh && chmod +x ./run.sh"
 }
 
 # KoboldCPP
 install_koboldcpp() {
     REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
     COMMIT="b4fa4f897f0c75a1e8d45e8247a14c6053548a61"
+    COMMAND="uv run koboldcpp.py"
 
     basic_git $REPO $COMMIT
     basic_venv $REPO
-    
-    # uv_base "https://github.com/YellowRoseCx/koboldcpp-rocm" "ee3f39fc7ce391d02eda407f828098f70488a6b7" "uv run koboldcpp.py" "3.13" "rocm6.4" "0"
-    # make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))
+    basic_requirements $REPO
+    podman exec -t rocm sudo -H -i -u "$AI_USERNAME" bash -c "cd ~/AI/$FOLDER && make LLAMA_HIPBLAS=1 -j$(($(nproc) - 1))"
+    basic_run $REPO $COMMAND
 }
