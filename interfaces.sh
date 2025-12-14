@@ -29,7 +29,7 @@ basic_git(){
     local COMMIT=$2
     FOLDER=$(basename "$REPO")
 
-    podman exec -t rocm bash -c "cd /AI && [ -d $FOLDER ] && rm -rf $FOLDER"
+    podman exec -t rocm bash -c "cd /AI && echo $FOLDER && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
     podman exec -t rocm bash -c "cd /AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
 }
 
@@ -75,5 +75,19 @@ install_koboldcpp() {
     basic_venv "$REPO"
     basic_requirements "$REPO"
     podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
+    basic_run "$REPO" "$COMMAND"
+}
+
+# llama.cpp
+install_llama_cpp() {
+    REPO="https://github.com/ggml-org/llama.cpp"
+    COMMIT="9e6649ecf244a99749dacc28fc4f49f7d6ad6f60"
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1"
+    FOLDER=$(basename "$REPO")
+    
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && $PODMAN"
     basic_run "$REPO" "$COMMAND"
 }
