@@ -201,6 +201,76 @@ create_container() {
     fi
 }
 
+# Text generation web UI
+text_generation_web_ui() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+            1 "Backup" \
+            2 "Install" \
+            3 "Restore" \
+            2>&1 > /dev/tty)
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                text_generation_web_ui_backup
+                ;;
+            "2")
+                install_text_generation_web_ui
+                ;;
+            "3")
+                text_generation_web_ui_restore
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
+text_generation_web_ui_backup() {
+    CHOICES=$(whiptail --checklist "Backup:" 14 50 4 --cancel-button "Back" \
+        1 "Backup models" ON \
+        2 "Backup characters" ON \
+        3 "Backup presets" ON \
+        4 "Backup instruction-templates" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+    
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_textgen_backup "$CHOICES"
+}
+
+text_generation_web_ui_restore() {
+    CHOICES=$(whiptail --checklist "Restore:" 14 50 4 --cancel-button "Back" \
+        1 "Restore models" ON \
+        2 "Restore characters" ON \
+        3 "Restore presets" ON \
+        4 "Restore instruction-templates" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+    
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_textgen_restore "$CHOICES"
+}
+
 # Text generation
 text_generation() {
     second=true

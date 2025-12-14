@@ -64,6 +64,15 @@ RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
 
+# PIP
+basic_pip(){
+    local REPO=$1
+    local LINK=$2
+    FOLDER=$(basename "$REPO")
+
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $LINK"
+}
+
 # KoboldCPP
 install_koboldcpp() {
     REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
@@ -89,5 +98,28 @@ install_llama_cpp() {
     basic_venv "$REPO"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -t rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+    basic_run "$REPO" "$COMMAND"
+}
+
+# Text generation web UI
+install_text_generation_web_ui() {
+    REPO="https://github.com/oobabooga/text-generation-webui"
+    COMMIT="bb004bacb1c8d2ee48a734a154c716ef27d9bc40"
+    COMMAND="uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
+    FOLDER=$(basename "$REPO")
+    
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+
+    # bitsandbytes
+    basic_pip "$REPO" "git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba"
+
+    # ExLlamaV2
+    basic_pip "$REPO" "https://github.com/turboderp-org/exllamav2/releases/download/v0.3.2/exllamav2-0.3.2+rocm6.4.torch2.8.0-cp313-cp313-linux_x86_64.whl"
+
+    # llama_cpp
+    basic_pip "$REPO" "https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.69.0/llama_cpp_binaries-0.69.0+rocm6.4.4-py3-none-linux_x86_64.whl"
+
     basic_run "$REPO" "$COMMAND"
 }
