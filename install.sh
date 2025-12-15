@@ -52,6 +52,7 @@ actcheckbox=yellow,black
 
 # Files
 source $SCRIPT_DIR/interfaces.sh
+source $SCRIPT_DIR/backup.sh
 
 # Load existing configuration if available
 load_config() {

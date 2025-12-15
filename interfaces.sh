@@ -23,6 +23,15 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+# CONTAINER
+basic_container(){
+    # Check if rocm container is running
+    if ! podman ps --format "{{.Names}}" | grep -q "^rocm$"; then
+        echo "Container rocm is not running. Starting..."
+        podman start rocm
+    fi
+}
+
 # GIT
 basic_git(){
     local REPO=$1
@@ -59,6 +68,11 @@ basic_run(){
 
     podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << RUNEOF
 #!/bin/bash
+# Check if rocm container is running
+if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\\\$\"; then
+    echo \"Container rocm is not running. Starting...\"
+    podman start rocm
+fi
 podman exec -t rocm bash -c \"cd /AI/$FOLDER && source .venv/bin/activate && $COMMAND\"
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
@@ -80,6 +94,7 @@ install_koboldcpp() {
     COMMAND="uv run koboldcpp.py"
     FOLDER=$(basename "$REPO")
 
+    basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
@@ -94,6 +109,7 @@ install_llama_cpp() {
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1"
     FOLDER=$(basename "$REPO")
     
+    basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
@@ -107,7 +123,8 @@ install_text_generation_web_ui() {
     COMMIT="bb004bacb1c8d2ee48a734a154c716ef27d9bc40"
     COMMAND="uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
     FOLDER=$(basename "$REPO")
-    
+
+    basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
