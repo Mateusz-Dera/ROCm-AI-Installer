@@ -64,6 +64,7 @@ basic_requirements(){
 basic_run(){
     local REPO=$1
     local COMMAND="$2"
+    local VENV=${3:-"&& source .venv/bin/activate &&"}
     FOLDER=$(basename "$REPO")
 
     podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << RUNEOF
@@ -73,7 +74,7 @@ if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\\\$\"; then
     echo \"Container rocm is not running. Starting...\"
     podman start rocm
 fi
-podman exec -t rocm bash -c \"cd /AI/$FOLDER && source .venv/bin/activate && $COMMAND\"
+podman exec -t rocm bash -c \"cd /AI/$FOLDER $VENV $COMMAND\"
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
@@ -111,10 +112,9 @@ install_llama_cpp() {
     
     basic_container
     basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -t rocm bash -c "cd /AI/$FOLDER && $PODMAN"
-    basic_run "$REPO" "$COMMAND"
+    basic_run "$REPO" "$COMMAND" "&&"
 }
 
 # Text generation web UI
@@ -139,6 +139,22 @@ install_text_generation_web_ui() {
     basic_pip "$REPO" "https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.69.0/llama_cpp_binaries-0.69.0+rocm6.4.4-py3-none-linux_x86_64.whl"
 
     basic_run "$REPO" "$COMMAND"
+}
+
+# SillyTavern
+install_sillytavern(){
+    REPO="https://github.com/SillyTavern/SillyTavern"
+    COMMIT="088ce0e962b138bb60958f8d32b549a4123f6508"
+    COMMAND="bash start.sh"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_run "$REPO" "$COMMAND" "&&"
+
+    podman exec -t rocm bash -c "cd $FOLDER/default && sed -i 's/listen: false/listen: true/' config.yaml"
+    podman exec -t rocm bash -c "cd $FOLDER/default && sed -i 's/whitelistMode: true/whitelistMode: false/' config.yaml"
+    podman exec -t rocm bash -c "cd $FOLDER/default && sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml"
 }
 
 # Backup and Restore Manager
