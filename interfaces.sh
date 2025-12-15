@@ -120,7 +120,7 @@ install_llama_cpp() {
 # Text generation web UI
 install_text_generation_web_ui() {
     REPO="https://github.com/oobabooga/text-generation-webui"
-    COMMIT="bb004bacb1c8d2ee48a734a154c716ef27d9bc40"
+    COMMIT="34804f93540ca5dffd86e27ce8af55184d2b5096"
     COMMAND="uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
     FOLDER=$(basename "$REPO")
 
@@ -185,7 +185,7 @@ install_sillytavern_whisperspeech_web_ui() {
 # ComfyUI
 install_comfyui() {
     ROCM_VERSION="nightly/rocm7.0"
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "1c10b33f9bbc75114053bc041851b60767791783" "MIOPEN_FIND_MODE=2 MIOPEN_LOG_LEVEL=3 PYTORCH_TUNABLEOP_ENABLED=1 TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
+    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "a5e85017d8574cb99024d320f7a53a77a9e6aa5a" "MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
 
 
     local gguf=0
@@ -239,7 +239,7 @@ install_comfyui() {
                 cd $installation_path/ComfyUI/custom_nodes
                 git clone https://github.com/ltdrdata/ComfyUI-Manager
                 cd ComfyUI-Manager
-                git checkout 393839b3ab497522fac489d84119dd362d90dae1
+                git checkout c7f03ad64e70ddda3b6e015e807f111b4ace45cf
                 ;;
             '"2"')
                 gguf=1
@@ -382,6 +382,33 @@ install_comfyui() {
         hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
         mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
         rm -rf $installation_path/ComfyUI/models/vae/split_files 
+    fi
+}
+
+# Login to HuggingFace
+huggingface() {
+    local is_last_attempt=${1:-0}
+    
+    HF_TOKEN=$(whiptail --title "Hugging Face Login" --inputbox "Enter your Hugging Face access token:" 10 60 3>&1 1>&2 2>&3)
+    
+    # Check if user cancelled or token is empty
+    if [ $? -ne 0 ] || [ -z "$HF_TOKEN" ]; then
+        whiptail --title "Error" --msgbox "No token provided. Login cancelled." 8 50
+        return 1
+    fi
+        
+    # Login to Hugging Face
+    hf auth login --token "$HF_TOKEN"
+
+    # Check login status
+    if [ $? -eq 0 ]; then
+        whiptail --title "Success" --msgbox "Successfully logged into Hugging Face!" 8 50
+        return 0
+    else
+        if [ $is_last_attempt -eq 0 ]; then
+            whiptail --title "Error" --msgbox "Login failed. Please check your token and try again." 8 50
+        fi
+        return 1
     fi
 }
 
