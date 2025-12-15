@@ -140,3 +140,8 @@ install_text_generation_web_ui() {
 
     basic_run "$REPO" "$COMMAND"
 }
+
+# Backup and Restore Manager
+run_backup() {
+    bash "$SCRIPT_DIR/backup.sh"
+}

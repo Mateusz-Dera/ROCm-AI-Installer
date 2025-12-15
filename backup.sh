@@ -21,6 +21,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source "$SCRIPT_DIR/interfaces.sh"
+
+# Check if rocm container is running and start it if needed
+basic_container
+
 # Global variables for tracking backup results
 declare -a successful_backups=()
 declare -a failed_backups=()
@@ -37,44 +43,44 @@ backup_directory() {
     local source_path="$1"
     local dest_path="$2"
     local item_name="$3"
-    
+
     # Validate inputs
     if [[ -z "$source_path" || -z "$dest_path" || -z "$item_name" ]]; then
         log_message "ERROR" "backup_directory: Missing required parameters"
         return 1
     fi
-    
+
     # Check if source exists
-    if [[ ! -e "$source_path" ]]; then
+    if ! podman exec -t rocm bash -c "[ -e '$source_path' ]" 2>/dev/null; then
         log_message "WARNING" "Source path does not exist: $source_path"
         failed_backups+=("$item_name (source not found)")
         return 1
     fi
-    
+
     # Create parent directory for destination
     local dest_parent
     dest_parent="$(dirname "$dest_path")"
-    if ! mkdir -p "$dest_parent"; then
+    if ! podman exec -t rocm bash -c "mkdir -p '$dest_parent'" 2>/dev/null; then
         log_message "ERROR" "Failed to create parent directory: $dest_parent"
         failed_backups+=("$item_name (parent dir creation failed)")
         return 1
     fi
-    
+
     # Remove existing destination if it exists
-    if [[ -e "$dest_path" ]]; then
-        if ! rm -rf "$dest_path"; then
+    if podman exec -t rocm bash -c "[ -e '$dest_path' ]" 2>/dev/null; then
+        if ! podman exec -t rocm bash -c "rm -rf '$dest_path'" 2>/dev/null; then
             log_message "ERROR" "Failed to remove existing destination: $dest_path"
             failed_backups+=("$item_name (cleanup failed)")
             return 1
         fi
     fi
-    
+
     # Perform the backup using cp with verbose output
     log_message "INFO" "Backing up: $source_path -> $dest_path"
-    
-    if [[ -d "$source_path" ]]; then
+
+    if podman exec -t rocm bash -c "[ -d '$source_path' ]" 2>/dev/null; then
         # Directory backup
-        if cp -r "$source_path" "$dest_path" 2>/dev/null; then
+        if podman exec -t rocm bash -c "cp -r '$source_path' '$dest_path'" 2>/dev/null; then
             log_message "SUCCESS" "Successfully backed up directory: $item_name"
             successful_backups+=("$item_name")
             return 0
@@ -85,7 +91,7 @@ backup_directory() {
         fi
     else
         # File backup
-        if cp "$source_path" "$dest_path" 2>/dev/null; then
+        if podman exec -t rocm bash -c "cp '$source_path' '$dest_path'" 2>/dev/null; then
             log_message "SUCCESS" "Successfully backed up file: $item_name"
             successful_backups+=("$item_name")
             return 0
@@ -103,34 +109,34 @@ backup_file() {
     local dest_dir="$2"
     local filename="$3"
     local item_name="$4"
-    
+
     # Validate inputs
     if [[ -z "$source_dir" || -z "$dest_dir" || -z "$filename" || -z "$item_name" ]]; then
         log_message "ERROR" "backup_file: Missing required parameters"
         return 1
     fi
-    
+
     local source_path="$source_dir/$filename"
     local dest_path="$dest_dir/$filename"
-    
+
     # Check if source file exists
-    if [[ ! -f "$source_path" ]]; then
+    if ! podman exec -t rocm bash -c "[ -f '$source_path' ]" 2>/dev/null; then
         log_message "WARNING" "Source file does not exist: $source_path"
         failed_backups+=("$item_name (file not found)")
         return 1
     fi
-    
+
     # Create destination directory
-    if ! mkdir -p "$dest_dir"; then
+    if ! podman exec -t rocm bash -c "mkdir -p '$dest_dir'" 2>/dev/null; then
         log_message "ERROR" "Failed to create destination directory: $dest_dir"
         failed_backups+=("$item_name (dest dir creation failed)")
         return 1
     fi
-    
+
     # Backup the file
     log_message "INFO" "Backing up file: $source_path -> $dest_path"
-    
-    if cp "$source_path" "$dest_path" 2>/dev/null; then
+
+    if podman exec -t rocm bash -c "cp '$source_path' '$dest_path'" 2>/dev/null; then
         log_message "SUCCESS" "Successfully backed up file: $item_name"
         successful_backups+=("$item_name")
         return 0
@@ -146,44 +152,44 @@ restore_directory() {
     local source_path="$1"
     local dest_path="$2"
     local item_name="$3"
-    
+
     # Validate inputs
     if [[ -z "$source_path" || -z "$dest_path" || -z "$item_name" ]]; then
         log_message "ERROR" "restore_directory: Missing required parameters"
         return 1
     fi
-    
+
     # Check if backup source exists
-    if [[ ! -e "$source_path" ]]; then
+    if ! podman exec -t rocm bash -c "[ -e '$source_path' ]" 2>/dev/null; then
         log_message "WARNING" "Backup source does not exist: $source_path"
         failed_backups+=("$item_name (backup not found)")
         return 1
     fi
-    
+
     # Create parent directory for destination
     local dest_parent
     dest_parent="$(dirname "$dest_path")"
-    if ! mkdir -p "$dest_parent"; then
+    if ! podman exec -t rocm bash -c "mkdir -p '$dest_parent'" 2>/dev/null; then
         log_message "ERROR" "Failed to create parent directory: $dest_parent"
         failed_backups+=("$item_name (parent dir creation failed)")
         return 1
     fi
-    
+
     # Remove existing destination if it exists
-    if [[ -e "$dest_path" ]]; then
-        if ! rm -rf "$dest_path"; then
+    if podman exec -t rocm bash -c "[ -e '$dest_path' ]" 2>/dev/null; then
+        if ! podman exec -t rocm bash -c "rm -rf '$dest_path'" 2>/dev/null; then
             log_message "ERROR" "Failed to remove existing destination: $dest_path"
             failed_backups+=("$item_name (cleanup failed)")
             return 1
         fi
     fi
-    
+
     # Perform the restore
     log_message "INFO" "Restoring: $source_path -> $dest_path"
-    
-    if [[ -d "$source_path" ]]; then
+
+    if podman exec -t rocm bash -c "[ -d '$source_path' ]" 2>/dev/null; then
         # Directory restore
-        if cp -r "$source_path" "$dest_path" 2>/dev/null; then
+        if podman exec -t rocm bash -c "cp -r '$source_path' '$dest_path'" 2>/dev/null; then
             log_message "SUCCESS" "Successfully restored directory: $item_name"
             successful_backups+=("$item_name")
             return 0
@@ -194,7 +200,7 @@ restore_directory() {
         fi
     else
         # File restore
-        if cp "$source_path" "$dest_path" 2>/dev/null; then
+        if podman exec -t rocm bash -c "cp '$source_path' '$dest_path'" 2>/dev/null; then
             log_message "SUCCESS" "Successfully restored file: $item_name"
             successful_backups+=("$item_name")
             return 0
@@ -212,34 +218,34 @@ restore_file() {
     local dest_dir="$2"
     local filename="$3"
     local item_name="$4"
-    
+
     # Validate inputs
     if [[ -z "$source_dir" || -z "$dest_dir" || -z "$filename" || -z "$item_name" ]]; then
         log_message "ERROR" "restore_file: Missing required parameters"
         return 1
     fi
-    
+
     local source_path="$source_dir/$filename"
     local dest_path="$dest_dir/$filename"
-    
+
     # Check if backup file exists
-    if [[ ! -f "$source_path" ]]; then
+    if ! podman exec -t rocm bash -c "[ -f '$source_path' ]" 2>/dev/null; then
         log_message "WARNING" "Backup file does not exist: $source_path"
         failed_backups+=("$item_name (backup not found)")
         return 1
     fi
-    
+
     # Create destination directory
-    if ! mkdir -p "$dest_dir"; then
+    if ! podman exec -t rocm bash -c "mkdir -p '$dest_dir'" 2>/dev/null; then
         log_message "ERROR" "Failed to create destination directory: $dest_dir"
         failed_backups+=("$item_name (dest dir creation failed)")
         return 1
     fi
-    
+
     # Restore the file
     log_message "INFO" "Restoring file: $source_path -> $dest_path"
-    
-    if cp "$source_path" "$dest_path" 2>/dev/null; then
+
+    if podman exec -t rocm bash -c "cp '$source_path' '$dest_path'" 2>/dev/null; then
         log_message "SUCCESS" "Successfully restored file: $item_name"
         successful_backups+=("$item_name")
         return 0
@@ -306,46 +312,46 @@ perform_sillytavern_backup() {
     for choice in $choices; do
         case $choice in
             '"0"')
-                backup_file "$installation_path/SillyTavern" "$installation_path/Backups/SillyTavern" "config.yaml" "config.yaml"
+                backup_file "/AI/SillyTavern" "/AI/Backups/SillyTavern" "config.yaml" "config.yaml"
                 ;;
             '"1"')
-                backup_file "$installation_path/SillyTavern/data/default-user" "$installation_path/Backups/SillyTavern/data/default-user" "settings.json" "settings.json"
+                backup_file "/AI/SillyTavern/data/default-user" "/AI/Backups/SillyTavern/data/default-user" "settings.json" "settings.json"
                 ;;
             '"2"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/characters" "$installation_path/Backups/SillyTavern/data/default-user/characters" "characters folder"
+                backup_directory "/AI/SillyTavern/data/default-user/characters" "/AI/Backups/SillyTavern/data/default-user/characters" "characters folder"
                 ;;
             '"3"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/groups" "$installation_path/Backups/SillyTavern/data/default-user/groups" "groups folder"
+                backup_directory "/AI/SillyTavern/data/default-user/groups" "/AI/Backups/SillyTavern/data/default-user/groups" "groups folder"
                 ;;
             '"4"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/worlds" "$installation_path/Backups/SillyTavern/data/default-user/worlds" "worlds folder"
+                backup_directory "/AI/SillyTavern/data/default-user/worlds" "/AI/Backups/SillyTavern/data/default-user/worlds" "worlds folder"
                 ;;
             '"5"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/chats" "$installation_path/Backups/SillyTavern/data/default-user/chats" "chats folder"
+                backup_directory "/AI/SillyTavern/data/default-user/chats" "/AI/Backups/SillyTavern/data/default-user/chats" "chats folder"
                 ;;
             '"6"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/group chats" "$installation_path/Backups/SillyTavern/data/default-user/group chats" "group chats folder"
+                backup_directory "/AI/SillyTavern/data/default-user/group chats" "/AI/Backups/SillyTavern/data/default-user/group chats" "group chats folder"
                 ;;
             '"7"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/User Avatars" "$installation_path/Backups/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
+                backup_directory "/AI/SillyTavern/data/default-user/User Avatars" "/AI/Backups/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
                 ;;
             '"8"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/backgrounds" "$installation_path/Backups/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
+                backup_directory "/AI/SillyTavern/data/default-user/backgrounds" "/AI/Backups/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
                 ;;
             '"9"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/themes" "$installation_path/Backups/SillyTavern/data/default-user/themes" "themes folder"
+                backup_directory "/AI/SillyTavern/data/default-user/themes" "/AI/Backups/SillyTavern/data/default-user/themes" "themes folder"
                 ;;
             '"10"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/TextGen Settings" "$installation_path/Backups/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
+                backup_directory "/AI/SillyTavern/data/default-user/TextGen Settings" "/AI/Backups/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
                 ;;
             '"11"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/context" "$installation_path/Backups/SillyTavern/data/default-user/context" "context folder"
+                backup_directory "/AI/SillyTavern/data/default-user/context" "/AI/Backups/SillyTavern/data/default-user/context" "context folder"
                 ;;
             '"12"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/instruct" "$installation_path/Backups/SillyTavern/data/default-user/instruct" "instruct folder"
+                backup_directory "/AI/SillyTavern/data/default-user/instruct" "/AI/Backups/SillyTavern/data/default-user/instruct" "instruct folder"
                 ;;
             '"13"')
-                backup_directory "$installation_path/SillyTavern/data/default-user/sysprompt" "$installation_path/Backups/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
+                backup_directory "/AI/SillyTavern/data/default-user/sysprompt" "/AI/Backups/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
                 ;;
         esac
     done
@@ -366,46 +372,46 @@ perform_sillytavern_restore() {
     for choice in $choices; do
         case $choice in
             '"0"')
-                restore_file "$installation_path/Backups/SillyTavern" "$installation_path/SillyTavern" "config.yaml" "config.yaml"
+                restore_file "/AI/Backups/SillyTavern" "/AI/SillyTavern" "config.yaml" "config.yaml"
                 ;;
             '"1"')
-                restore_file "$installation_path/Backups/SillyTavern/data/default-user" "$installation_path/SillyTavern/data/default-user" "settings.json" "settings.json"
+                restore_file "/AI/Backups/SillyTavern/data/default-user" "/AI/SillyTavern/data/default-user" "settings.json" "settings.json"
                 ;;
             '"2"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/characters" "$installation_path/SillyTavern/data/default-user/characters" "characters folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/characters" "/AI/SillyTavern/data/default-user/characters" "characters folder"
                 ;;
             '"3"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/groups" "$installation_path/SillyTavern/data/default-user/groups" "groups folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/groups" "/AI/SillyTavern/data/default-user/groups" "groups folder"
                 ;;
             '"4"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/worlds" "$installation_path/SillyTavern/data/default-user/worlds" "worlds folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/worlds" "/AI/SillyTavern/data/default-user/worlds" "worlds folder"
                 ;;
             '"5"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/chats" "$installation_path/SillyTavern/data/default-user/chats" "chats folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/chats" "/AI/SillyTavern/data/default-user/chats" "chats folder"
                 ;;
             '"6"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/group chats" "$installation_path/SillyTavern/data/default-user/group chats" "group chats folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/group chats" "/AI/SillyTavern/data/default-user/group chats" "group chats folder"
                 ;;
             '"7"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/User Avatars" "$installation_path/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/User Avatars" "/AI/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
                 ;;
             '"8"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/backgrounds" "$installation_path/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/backgrounds" "/AI/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
                 ;;
             '"9"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/themes" "$installation_path/SillyTavern/data/default-user/themes" "themes folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/themes" "/AI/SillyTavern/data/default-user/themes" "themes folder"
                 ;;
             '"10"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/TextGen Settings" "$installation_path/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/TextGen Settings" "/AI/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
                 ;;
             '"11"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/context" "$installation_path/SillyTavern/data/default-user/context" "context folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/context" "/AI/SillyTavern/data/default-user/context" "context folder"
                 ;;
             '"12"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/instruct" "$installation_path/SillyTavern/data/default-user/instruct" "instruct folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/instruct" "/AI/SillyTavern/data/default-user/instruct" "instruct folder"
                 ;;
             '"13"')
-                restore_directory "$installation_path/Backups/SillyTavern/data/default-user/sysprompt" "$installation_path/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
+                restore_directory "/AI/Backups/SillyTavern/data/default-user/sysprompt" "/AI/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
                 ;;
         esac
     done
@@ -426,16 +432,16 @@ perform_textgen_backup() {
     for choice in $choices; do
         case $choice in
             '"0"')
-                backup_directory "$installation_path/text-generation-webui/user_data/models" "$installation_path/Backups/text-generation-webui/user_data/models" "models folder"
+                backup_directory "/AI/text-generation-webui/user_data/models" "/AI/Backups/text-generation-webui/user_data/models" "models folder"
                 ;;
             '"1"')
-                backup_directory "$installation_path/text-generation-webui/user_data/characters" "$installation_path/Backups/text-generation-webui/user_data/characters" "characters folder"
+                backup_directory "/AI/text-generation-webui/user_data/characters" "/AI/Backups/text-generation-webui/user_data/characters" "characters folder"
                 ;;
             '"2"')
-                backup_directory "$installation_path/text-generation-webui/user_data/presets" "$installation_path/Backups/text-generation-webui/user_data/presets" "presets folder"
+                backup_directory "/AI/text-generation-webui/user_data/presets" "/AI/Backups/text-generation-webui/user_data/presets" "presets folder"
                 ;;
             '"3"')
-                backup_directory "$installation_path/text-generation-webui/user_data/instruction-templates" "$installation_path/Backups/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
+                backup_directory "/AI/text-generation-webui/user_data/instruction-templates" "/AI/Backups/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
                 ;;
         esac
     done
@@ -456,16 +462,16 @@ perform_textgen_restore() {
     for choice in $choices; do
         case $choice in
             '"0"')
-                restore_directory "$installation_path/Backups/text-generation-webui/user_data/models" "$installation_path/text-generation-webui/user_data/models" "models folder"
+                restore_directory "/AI/Backups/text-generation-webui/user_data/models" "/AI/text-generation-webui/user_data/models" "models folder"
                 ;;
             '"1"')
-                restore_directory "$installation_path/Backups/text-generation-webui/user_data/characters" "$installation_path/text-generation-webui/user_data/characters" "characters folder"
+                restore_directory "/AI/Backups/text-generation-webui/user_data/characters" "/AI/text-generation-webui/user_data/characters" "characters folder"
                 ;;
             '"2"')
-                restore_directory "$installation_path/Backups/text-generation-webui/user_data/presets" "$installation_path/text-generation-webui/user_data/presets" "presets folder"
+                restore_directory "/AI/Backups/text-generation-webui/user_data/presets" "/AI/text-generation-webui/user_data/presets" "presets folder"
                 ;;
             '"3"')
-                restore_directory "$installation_path/Backups/text-generation-webui/user_data/instruction-templates" "$installation_path/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
+                restore_directory "/AI/Backups/text-generation-webui/user_data/instruction-templates" "/AI/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
                 ;;
         esac
     done
