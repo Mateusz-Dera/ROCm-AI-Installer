@@ -272,6 +272,105 @@ text_generation_web_ui_restore() {
     perform_textgen_restore "$CHOICES"
 }
 
+# SillyTavern
+sillytavern() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "SillyTavern" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+            1 "Backup" \
+            2 "Install" \
+            3 "Install WhisperSpeech web UI extension" \
+            4 "Restore" \
+            2>&1 > /dev/tty)
+        status=$?
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+        
+        case "$choice" in
+            "1")
+                sillytavern_backup
+                ;;
+            "2")
+                install_sillytavern
+                ;;
+            "3")
+                install_sillytavern_whisperspeech_web_ui
+                ;;
+            "4")
+                sillytavern_restore
+                ;;
+            "")
+                echo "Previous menu..."
+                second=true
+                ;;
+            *)
+                echo "Invalid selection."
+                second=true
+                ;;
+        esac
+    done
+}
+
+
+
+# Backup SillyTavern
+sillytavern_backup() {
+    CHOICES=$(whiptail --checklist "Backup:" 21 50 14 --cancel-button "Back" \
+        1 "Backup config.yaml" ON \
+        2 "Backup settings.json" ON \
+        3 "Backup characters" ON \
+        4 "Backup groups" ON \
+        5 "Backup worlds" ON \
+        6 "Backup chats" ON \
+        7 "Backup group chats" ON \
+        8 "Backup user avatars images" ON \
+        9 "Backup backgrounds images" ON \
+        10 "Backup themes" ON \
+        11 "Backup presets" ON \
+        12 "Backup context" ON \
+        13 "Backup instruct" ON \
+        14 "Backup sysprompt" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+    
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_sillytavern_backup "$CHOICES"
+}
+
+# Restore SillyTavern
+sillytavern_restore() {
+    CHOICES=$(whiptail --checklist "Restore:" 21 50 14 --cancel-button "Back" \
+        1 "Restore config.yaml" ON \
+        2 "Restore settings.json" ON \
+        3 "Restore characters" ON \
+        4 "Restore groups" ON \
+        5 "Restore worlds" ON \
+        6 "Restore chats" ON \
+        7 "Restore group chats" ON \
+        8 "Restore user avatars images" ON \
+        9 "Restore backgrounds images" ON \
+        10 "Restore themes" ON \
+        11 "Restore presets" ON \
+        12 "Restore context" ON \
+        13 "Restore instruct" ON \
+        14 "Restore sysprompt" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+    
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_sillytavern_restore "$CHOICES"
+}
+
 # Text generation
 text_generation() {
     second=true

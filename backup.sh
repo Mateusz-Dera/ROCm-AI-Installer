@@ -311,46 +311,46 @@ perform_sillytavern_backup() {
     
     for choice in $choices; do
         case $choice in
-            '"0"')
+            '"1"')
                 backup_file "/AI/SillyTavern" "/AI/Backups/SillyTavern" "config.yaml" "config.yaml"
                 ;;
-            '"1"')
+            '"2"')
                 backup_file "/AI/SillyTavern/data/default-user" "/AI/Backups/SillyTavern/data/default-user" "settings.json" "settings.json"
                 ;;
-            '"2"')
+            '"3"')
                 backup_directory "/AI/SillyTavern/data/default-user/characters" "/AI/Backups/SillyTavern/data/default-user/characters" "characters folder"
                 ;;
-            '"3"')
+            '"4"')
                 backup_directory "/AI/SillyTavern/data/default-user/groups" "/AI/Backups/SillyTavern/data/default-user/groups" "groups folder"
                 ;;
-            '"4"')
+            '"5"')
                 backup_directory "/AI/SillyTavern/data/default-user/worlds" "/AI/Backups/SillyTavern/data/default-user/worlds" "worlds folder"
                 ;;
-            '"5"')
+            '"6"')
                 backup_directory "/AI/SillyTavern/data/default-user/chats" "/AI/Backups/SillyTavern/data/default-user/chats" "chats folder"
                 ;;
-            '"6"')
+            '"7"')
                 backup_directory "/AI/SillyTavern/data/default-user/group chats" "/AI/Backups/SillyTavern/data/default-user/group chats" "group chats folder"
                 ;;
-            '"7"')
+            '"8"')
                 backup_directory "/AI/SillyTavern/data/default-user/User Avatars" "/AI/Backups/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
                 ;;
-            '"8"')
+            '"9"')
                 backup_directory "/AI/SillyTavern/data/default-user/backgrounds" "/AI/Backups/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
                 ;;
-            '"9"')
+            '"10"')
                 backup_directory "/AI/SillyTavern/data/default-user/themes" "/AI/Backups/SillyTavern/data/default-user/themes" "themes folder"
                 ;;
-            '"10"')
+            '"11"')
                 backup_directory "/AI/SillyTavern/data/default-user/TextGen Settings" "/AI/Backups/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
                 ;;
-            '"11"')
+            '"12"')
                 backup_directory "/AI/SillyTavern/data/default-user/context" "/AI/Backups/SillyTavern/data/default-user/context" "context folder"
                 ;;
-            '"12"')
+            '"13"')
                 backup_directory "/AI/SillyTavern/data/default-user/instruct" "/AI/Backups/SillyTavern/data/default-user/instruct" "instruct folder"
                 ;;
-            '"13"')
+            '"14"')
                 backup_directory "/AI/SillyTavern/data/default-user/sysprompt" "/AI/Backups/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
                 ;;
         esac
@@ -371,46 +371,46 @@ perform_sillytavern_restore() {
     
     for choice in $choices; do
         case $choice in
-            '"0"')
+            '"1"')
                 restore_file "/AI/Backups/SillyTavern" "/AI/SillyTavern" "config.yaml" "config.yaml"
                 ;;
-            '"1"')
+            '"2"')
                 restore_file "/AI/Backups/SillyTavern/data/default-user" "/AI/SillyTavern/data/default-user" "settings.json" "settings.json"
                 ;;
-            '"2"')
+            '"3"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/characters" "/AI/SillyTavern/data/default-user/characters" "characters folder"
                 ;;
-            '"3"')
+            '"4"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/groups" "/AI/SillyTavern/data/default-user/groups" "groups folder"
                 ;;
-            '"4"')
+            '"5"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/worlds" "/AI/SillyTavern/data/default-user/worlds" "worlds folder"
                 ;;
-            '"5"')
+            '"6"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/chats" "/AI/SillyTavern/data/default-user/chats" "chats folder"
                 ;;
-            '"6"')
+            '"7"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/group chats" "/AI/SillyTavern/data/default-user/group chats" "group chats folder"
                 ;;
-            '"7"')
+            '"8"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/User Avatars" "/AI/SillyTavern/data/default-user/User Avatars" "User Avatars folder"
                 ;;
-            '"8"')
+            '"9"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/backgrounds" "/AI/SillyTavern/data/default-user/backgrounds" "backgrounds folder"
                 ;;
-            '"9"')
+            '"10"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/themes" "/AI/SillyTavern/data/default-user/themes" "themes folder"
                 ;;
-            '"10"')
+            '"11"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/TextGen Settings" "/AI/SillyTavern/data/default-user/TextGen Settings" "TextGen Settings folder"
                 ;;
-            '"11"')
+            '"12"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/context" "/AI/SillyTavern/data/default-user/context" "context folder"
                 ;;
-            '"12"')
+            '"13"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/instruct" "/AI/SillyTavern/data/default-user/instruct" "instruct folder"
                 ;;
-            '"13"')
+            '"14"')
                 restore_directory "/AI/Backups/SillyTavern/data/default-user/sysprompt" "/AI/SillyTavern/data/default-user/sysprompt" "sysprompt folder"
                 ;;
         esac
@@ -431,16 +431,16 @@ perform_textgen_backup() {
     
     for choice in $choices; do
         case $choice in
-            '"0"')
+            '"1"')
                 backup_directory "/AI/text-generation-webui/user_data/models" "/AI/Backups/text-generation-webui/user_data/models" "models folder"
                 ;;
-            '"1"')
+            '"2"')
                 backup_directory "/AI/text-generation-webui/user_data/characters" "/AI/Backups/text-generation-webui/user_data/characters" "characters folder"
                 ;;
-            '"2"')
+            '"3"')
                 backup_directory "/AI/text-generation-webui/user_data/presets" "/AI/Backups/text-generation-webui/user_data/presets" "presets folder"
                 ;;
-            '"3"')
+            '"4"')
                 backup_directory "/AI/text-generation-webui/user_data/instruction-templates" "/AI/Backups/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
                 ;;
         esac
@@ -461,16 +461,16 @@ perform_textgen_restore() {
     
     for choice in $choices; do
         case $choice in
-            '"0"')
+            '"1"')
                 restore_directory "/AI/Backups/text-generation-webui/user_data/models" "/AI/text-generation-webui/user_data/models" "models folder"
                 ;;
-            '"1"')
+            '"2"')
                 restore_directory "/AI/Backups/text-generation-webui/user_data/characters" "/AI/text-generation-webui/user_data/characters" "characters folder"
                 ;;
-            '"2"')
+            '"3"')
                 restore_directory "/AI/Backups/text-generation-webui/user_data/presets" "/AI/text-generation-webui/user_data/presets" "presets folder"
                 ;;
-            '"3"')
+            '"4"')
                 restore_directory "/AI/Backups/text-generation-webui/user_data/instruction-templates" "/AI/text-generation-webui/user_data/instruction-templates" "instruction-templates folder"
                 ;;
         esac
