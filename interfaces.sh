@@ -74,7 +74,7 @@ if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\\\$\"; then
     echo \"Container rocm is not running. Starting...\"
     podman start rocm
 fi
-exec podman exec -it rocm bash -c \"cd /AI/$FOLDER $VENV $COMMAND\"
+podman exec -it rocm bash -c \"cd /AI/$FOLDER $VENV $COMMAND\"
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
