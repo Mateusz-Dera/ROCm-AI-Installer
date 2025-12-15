@@ -412,12 +412,68 @@ text_generation() {
     done
 }
 
+# Image & Video generation
+
+image_generation() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+            1 "ComfyUI" \
+            2>&1 > /dev/tty)
+        status=$?
+        
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                comfyui_addons
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
+comfyui_addons(){
+    
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 10 --cancel-button "Back" \
+        1 "ComfyUI-Manager" ON \
+        2 "ComfyUI-GGUF" ON \
+        3 "ComfyUI-AuraSR" ON \
+        4 "AuraFlow-v0.3" ON \
+        5 "FLUX.1-schnell GGUF" ON \
+        6 "AnimePro FLUX GGUF" ON \
+        7 "Flex.1-alpha GGUF" ON \
+        8 "Qwen-Image GGUF" ON \
+        9 "Qwen-Image-Edit GGUF" ON \
+        10 "Qwen-Image-Edit-2509 GGUF" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+    
+
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    install_comfyui $CHOICES
+}
+
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 17 100 4 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 17 100 5 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
+    4 "Image & video generation" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -430,6 +486,9 @@ show_menu() {
             ;;
         3)
             text_generation
+            ;;
+        4)
+            image_generation
             ;;
         *)
             exit 0
