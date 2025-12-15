@@ -184,149 +184,91 @@ install_sillytavern_whisperspeech_web_ui() {
 
 # ComfyUI
 install_comfyui() {
-    ROCM_VERSION="nightly/rocm7.0"
-    uv_base "https://github.com/comfyanonymous/ComfyUI.git" "a5e85017d8574cb99024d320f7a53a77a9e6aa5a" "MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 python3 ./main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram" "3.13" "$ROCM_VERSION" "-1"
+    REPO="https://github.com/comfyanonymous/ComfyUI"
+    COMMIT="a5e85017d8574cb99024d320f7a53a77a9e6aa5a"
+    COMMAND="MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 uv run main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram"
+    FOLDER=$(basename "$REPO")
 
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
 
     local gguf=0
-    local flux=0
     local qwen=0
-    local needs_hf_login=0
-
-    # Check if HF login is needed for any selected choices
-    for choice in $CHOICES; do
-        case $choice in
-            '"4"'|'"5"'|'"6"')
-                needs_hf_login=1
-                ;;
-        esac
-    done
-
-    # LOGIN to HF if needed
-    if [ $needs_hf_login -eq 1 ]; then
-        retry_count=0
-        max_retries=3
-        while [ $retry_count -lt $max_retries ]; do
-            retry_count=$((retry_count + 1))
-            is_last_attempt=0
-            if [ $retry_count -eq $max_retries ]; then
-                is_last_attempt=1
-            fi
-            
-            if huggingface $is_last_attempt; then
-                break
-            else
-                if [ $retry_count -lt $max_retries ]; then
-                    echo "Login failed. Retrying attempt ($retry_count/$max_retries)..."
-                    sleep 2
-                else
-                    whiptail --title "Login Failed" --msgbox "Failed to login after $max_retries attempts. Exiting." 8 60
-                    exit 1
-                fi
-            fi
-        done
-    fi
-
-    uv pip install -r $REQUIREMENTS_DIR/ComfyUI_post.txt --index-url https://pypi.org/simple --extra-index-url https://download.pytorch.org/whl/$ROCM_VERSION --index-strategy unsafe-best-match
-
-    install_flash_attention "2.8.3 "
+    local qwen2509=0
 
     # Process each selected choice
     for choice in $CHOICES; do
         case $choice in
             '"1"')
                 # ComfyUI-Manager
-                cd $installation_path/ComfyUI/custom_nodes
-                git clone https://github.com/ltdrdata/ComfyUI-Manager
-                cd ComfyUI-Manager
-                git checkout c7f03ad64e70ddda3b6e015e807f111b4ace45cf
+                podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+                    git clone https://github.com/ltdrdata/ComfyUI-Manager && \
+                    cd ComfyUI-Manager && \
+                    git checkout c7f03ad64e70ddda3b6e015e807f111b4ace45cf"
                 ;;
             '"2"')
                 gguf=1
                 ;;
             '"3"')
                 # AuraSR
-                cd $installation_path/ComfyUI/custom_nodes
-                git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive
-                cd ComfyUI-AuraSR
-                git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4
+                podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+                    git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive && \
+                    cd ComfyUI-AuraSR && \
+                    git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4"
 
-                cd $installation_path/ComfyUI/models/upscale_models
-                
-                hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir $installation_path/ComfyUI/models/upscale_models
-                mv ./model.safetensors ./aura_sr_v2.safetensors
-
-                hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir $installation_path/ComfyUI/models/upscale_models
-                mv ./model.safetensors ./aura_sr.safetensors
-
-                pip install aura-sr==0.0.4
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir /AI/$FOLDER/models/upscale_models && \
+                    mv /AI/$FOLDER/models/upscale_models/model.safetensors /AI/$FOLDER/models/upscale_models/aura_sr_v2.safetensors && \
+                    hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir /AI/$FOLDER/models/upscale_models && \
+                    mv /AI/$FOLDER/models/upscale_models/model.safetensors /AI/$FOLDER/models/upscale_models/aura_sr.safetensors && \
+                    uv pip install aura-sr==0.0.4"
                 ;;
             '"4"')
                 # AuraFlow
-                hf download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir $installation_path/ComfyUI/models/checkpoints
-                ;;
-            '"5"')
-                gguf=1
-                flux=1
-                # Flux
-                hf download city96/FLUX.1-schnell-gguf flux1-schnell-Q8_0.gguf --revision f495746ed9c5efcf4661f53ef05401dceadc17d2 --local-dir $installation_path/ComfyUI/models/unet
-                ;;
-            '"6"')
-                gguf=1
-                flux=1
-                # AnimePro FLUX
-                hf download advokat/AnimePro-FLUX animepro-Q5_K_M.gguf --revision be1cbbe8280e6d038836df868c79cdf7687ad39d --local-dir $installation_path/ComfyUI/models/unet
-                ;;
-            '"7"')
-                gguf=1
-                flux=1
-                # Flex.1-alpha 
-                hf download hum-ma/Flex.1-alpha-GGUF Flex.1-alpha-Q8_0.gguf --revision 2ccb9cb781dfbafdf707e21b915c654c4fa6a07d --local-dir $installation_path/ComfyUI/models/unet
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    hf download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir /AI/$FOLDER/models/checkpoints"
                 ;;
             '"8"')
                 gguf=1
                 qwen=1
                 # Qwen-Image
-                hf download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir $installation_path/ComfyUI/models/diffusion_models
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    hf download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"9"')
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir $installation_path/ComfyUI/models/diffusion_models
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"10"')
                 gguf=1
                 qwen2509=1
                 # Qwen-Image-Edit-2509
-                hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir $installation_path/ComfyUI/models/diffusion_models
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"11"')
                 # Wan 2.2
-                cd /tmp
                 TEMP_DIR="ComfyUI-Wan2.2"
-                COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
+                WAN_COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
 
-                if [ -d "$TEMP_DIR" ]; then
-                    rm -rf "$TEMP_DIR"
-                fi
-
-                mkdir $TEMP_DIR
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan_2.1_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/vae/wan_2.1_vae.safetensors $installation_path/ComfyUI/models/vae/wan_2.1_vae.safetensors
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan2.2_vae.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/vae/wan2.2_vae.safetensors $installation_path/ComfyUI/models/vae/wan2.2_vae.safetensors
-
-                hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $COMMIT --local-dir /tmp/$TEMP_DIR
-                mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors $installation_path/ComfyUI/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors
-
-                rm -rf /tmp/$TEMP_DIR
-                
+                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    cd /tmp && \
+                    if [ -d '$TEMP_DIR' ]; then rm -rf '$TEMP_DIR'; fi && \
+                    mkdir $TEMP_DIR && \
+                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors /AI/$FOLDER/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors && \
+                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan_2.1_vae.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/vae/wan_2.1_vae.safetensors /AI/$FOLDER/models/vae/wan_2.1_vae.safetensors && \
+                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan2.2_vae.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/vae/wan2.2_vae.safetensors /AI/$FOLDER/models/vae/wan2.2_vae.safetensors && \
+                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors /AI/$FOLDER/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors && \
+                    rm -rf /tmp/$TEMP_DIR"
                 ;;
             "")
                 break
@@ -338,78 +280,58 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
-        cd $installation_path/ComfyUI/custom_nodes
-        git clone https://github.com/calcuis/gguf
-        cd gguf
-        git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309
-    fi
-    
-    if [ $flux -eq 1 ]; then
-        cd $installation_path/ComfyUI/models/text_encoders
-        hf download city96/t5-v1_1-xxl-encoder-bf16 model.safetensors --revision 1b9c856aadb864af93c1dcdc226c2774fa67bc86 --local-dir $installation_path/ComfyUI/models/text_encoders
-        mv ./model.safetensors ./t5-v1_1-xxl-encoder-bf16.safetensors
-        hf download openai/clip-vit-large-patch14 model.safetensors --revision 32bd64288804d66eefd0ccbe215aa642df71cc41 --local-dir $installation_path/ComfyUI/models/text_encoders
-        mv ./model.safetensors ./clip-vit-large-patch14.safetensors
-
-        cd $installation_path/ComfyUI/models/vae
-        hf download black-forest-labs/FLUX.1-schnell vae/diffusion_pytorch_model.safetensors --revision 741f7c3ce8b383c54771c7003378a50191e9efe9 --local-dir $installation_path/ComfyUI/models/vae
+        podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+            git clone https://github.com/calcuis/gguf && \
+            cd gguf && \
+            git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309"
     fi
 
     if [ $qwen -eq 1 ]; then
         # Lightning
-        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
-        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
+        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
+            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras"
     fi
 
     if [ $qwen2509 -eq 1 ]; then
         # Lightning
-        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
-        hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir $installation_path/ComfyUI/models/loras
-
-        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors
-        mv $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors
-
-        rm -rf $installation_path/ComfyUI/models/loras/Qwen-Image-Edit-2509
+        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
+            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
+            mv /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors && \
+            mv /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors && \
+            rm -rf /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509"
     fi
 
     if [ $qwen -eq 1 -o $qwen2509 -eq 1 ]; then
         # VL-7B
-        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir "$installation_path/ComfyUI/models/"
-        mv $installation_path/ComfyUI/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors $installation_path/ComfyUI/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
-        rm -rf $installation_path/ComfyUI/models/split_files
-    
-        # vae
-        hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir "$installation_path/ComfyUI/models/vae"
-        mv $installation_path/ComfyUI/models/vae/split_files/vae/qwen_image_vae.safetensors $installation_path/ComfyUI/models/vae/qwen_image_vae.safetensors
-        rm -rf $installation_path/ComfyUI/models/vae/split_files 
+        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+            hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir /AI/$FOLDER/models/ && \
+            mv /AI/$FOLDER/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors /AI/$FOLDER/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors && \
+            rm -rf /AI/$FOLDER/models/split_files && \
+            hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir /AI/$FOLDER/models/vae && \
+            mv /AI/$FOLDER/models/vae/split_files/vae/qwen_image_vae.safetensors /AI/$FOLDER/models/vae/qwen_image_vae.safetensors && \
+            rm -rf /AI/$FOLDER/models/vae/split_files"
     fi
-}
 
-# Login to HuggingFace
-huggingface() {
-    local is_last_attempt=${1:-0}
-    
-    HF_TOKEN=$(whiptail --title "Hugging Face Login" --inputbox "Enter your Hugging Face access token:" 10 60 3>&1 1>&2 2>&3)
-    
-    # Check if user cancelled or token is empty
-    if [ $? -ne 0 ] || [ -z "$HF_TOKEN" ]; then
-        whiptail --title "Error" --msgbox "No token provided. Login cancelled." 8 50
-        return 1
-    fi
-        
-    # Login to Hugging Face
-    hf auth login --token "$HF_TOKEN"
+    # Create wrapper script for AMD optimization
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/main_amd.py << 'AMDEOF'
+import torch
+# Disable cuDNN for better AMD performance
+torch.backends.cudnn.enabled = False
 
-    # Check login status
-    if [ $? -eq 0 ]; then
-        whiptail --title "Success" --msgbox "Successfully logged into Hugging Face!" 8 50
-        return 0
-    else
-        if [ $is_last_attempt -eq 0 ]; then
-            whiptail --title "Error" --msgbox "Login failed. Please check your token and try again." 8 50
-        fi
-        return 1
-    fi
+# Import and run the original main.py
+import sys
+import os
+
+# Execute main.py
+exec(open('main.py').read())
+AMDEOF"
+
+    # Update COMMAND to use the wrapper
+    COMMAND="MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 uv run main_amd.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram"
+
+    basic_run "$REPO" "$COMMAND"
 }
 
 # Backup and Restore Manager
