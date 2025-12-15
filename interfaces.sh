@@ -39,7 +39,7 @@ basic_git(){
     FOLDER=$(basename "$REPO")
 
     podman exec -t rocm bash -c "cd /AI && echo $FOLDER && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -t rocm bash -c "cd /AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
+    podman exec -it rocm bash -c "cd /AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
 }
 
 # VENV
@@ -48,7 +48,7 @@ basic_venv(){
     local PYTHON=${2:-3.13}
     FOLDER=$(basename "$REPO")
 
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && uv venv --python $PYTHON"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && uv venv --python $PYTHON"
 }
 
 # REQUIREMENTS
@@ -57,7 +57,7 @@ basic_requirements(){
     FOLDER=$(basename "$REPO")
     REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$FOLDER.txt")
 
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
 }
 
 # RUN
@@ -85,7 +85,7 @@ basic_pip(){
     local LINK=$2
     FOLDER=$(basename "$REPO")
 
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $LINK"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $LINK"
 }
 
 # KoboldCPP
@@ -99,7 +99,7 @@ install_koboldcpp() {
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
     basic_run "$REPO" "$COMMAND"
 }
 
@@ -109,11 +109,11 @@ install_llama_cpp() {
     COMMIT="9e6649ecf244a99749dacc28fc4f49f7d6ad6f60"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1"
     FOLDER=$(basename "$REPO")
-    
+
     basic_container
     basic_git "$REPO" "$COMMIT"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
     basic_run "$REPO" "$COMMAND" "&&"
 }
 
@@ -171,7 +171,7 @@ install_sillytavern_whisperspeech_web_ui() {
     fi
 
     # Install WhisperSpeech web UI extension
-    podman exec -t rocm bash -c "cd /AI/SillyTavern/public/scripts/extensions/third-party && \
+    podman exec -it rocm bash -c "cd /AI/SillyTavern/public/scripts/extensions/third-party && \
         if [ -d whisperspeech-webui ]; then rm -rf whisperspeech-webui; fi && \
         git clone $REPO && \
         mv ./whisperspeech-webui ./whisperspeech-webui-temp && \
@@ -203,7 +203,7 @@ install_comfyui() {
         case $choice in
             '"1"')
                 # ComfyUI-Manager
-                podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
                     git clone https://github.com/ltdrdata/ComfyUI-Manager && \
                     cd ComfyUI-Manager && \
                     git checkout c7f03ad64e70ddda3b6e015e807f111b4ace45cf"
@@ -213,12 +213,12 @@ install_comfyui() {
                 ;;
             '"3"')
                 # AuraSR
-                podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
                     git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive && \
                     cd ComfyUI-AuraSR && \
                     git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4"
 
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir /AI/$FOLDER/models/upscale_models && \
                     mv /AI/$FOLDER/models/upscale_models/model.safetensors /AI/$FOLDER/models/upscale_models/aura_sr_v2.safetensors && \
                     hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir /AI/$FOLDER/models/upscale_models && \
@@ -227,28 +227,28 @@ install_comfyui() {
                 ;;
             '"4"')
                 # AuraFlow
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     hf download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir /AI/$FOLDER/models/checkpoints"
                 ;;
             '"8"')
                 gguf=1
                 qwen=1
                 # Qwen-Image
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     hf download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"9"')
                 gguf=1
                 qwen=1
                 # Qwen-Image-Edit
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"10"')
                 gguf=1
                 qwen2509=1
                 # Qwen-Image-Edit-2509
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir /AI/$FOLDER/models/diffusion_models"
                 ;;
             '"11"')
@@ -256,7 +256,7 @@ install_comfyui() {
                 TEMP_DIR="ComfyUI-Wan2.2"
                 WAN_COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
 
-                podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
                     cd /tmp && \
                     if [ -d '$TEMP_DIR' ]; then rm -rf '$TEMP_DIR'; fi && \
                     mkdir $TEMP_DIR && \
@@ -280,7 +280,7 @@ install_comfyui() {
     done
 
     if [ $gguf -eq 1 ]; then
-        podman exec -t rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
             git clone https://github.com/calcuis/gguf && \
             cd gguf && \
             git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309"
@@ -288,14 +288,14 @@ install_comfyui() {
 
     if [ $qwen -eq 1 ]; then
         # Lightning
-        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
             hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
             hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras"
     fi
 
     if [ $qwen2509 -eq 1 ]; then
         # Lightning
-        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
             hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
             hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
             mv /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors && \
@@ -305,7 +305,7 @@ install_comfyui() {
 
     if [ $qwen -eq 1 -o $qwen2509 -eq 1 ]; then
         # VL-7B
-        podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
             hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir /AI/$FOLDER/models/ && \
             mv /AI/$FOLDER/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors /AI/$FOLDER/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors && \
             rm -rf /AI/$FOLDER/models/split_files && \
