@@ -98,7 +98,7 @@ ls /dev/kfd
 ```
 
 > [!Important]
-> If not, you need to properly configure <b>amdgpu</b> for your distribution.
+> Your distribution must have <b>amdgpu</b> configured.
 
 3\. Make sure that your user has permissions for the <b>video</b> and render <b>groups</b>.
 

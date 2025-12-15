@@ -157,6 +157,31 @@ install_sillytavern(){
     podman exec -t rocm bash -c "cd $FOLDER/default && sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml"
 }
 
+# SillyTavern WhisperSpeech web UI
+install_sillytavern_whisperspeech_web_ui() {
+    REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
+    COMMIT="37e2ddf59664dd1604cc41b2660f48d1fa1af173"
+
+    basic_container
+
+    # Check if SillyTavern is installed
+    if ! podman exec -t rocm bash -c "[ -d /AI/SillyTavern ]"; then
+        echo "SillyTavern is not installed. Please install SillyTavern first."
+        return 1
+    fi
+
+    # Install WhisperSpeech web UI extension
+    podman exec -t rocm bash -c "cd /AI/SillyTavern/public/scripts/extensions/third-party && \
+        if [ -d whisperspeech-webui ]; then rm -rf whisperspeech-webui; fi && \
+        git clone $REPO && \
+        mv ./whisperspeech-webui ./whisperspeech-webui-temp && \
+        cd whisperspeech-webui-temp && \
+        git checkout $COMMIT && \
+        mv ./whisperspeech-webui ../ && \
+        cd .. && \
+        rm -rf whisperspeech-webui-temp"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"
