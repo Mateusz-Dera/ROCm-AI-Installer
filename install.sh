@@ -315,8 +315,6 @@ sillytavern() {
     done
 }
 
-
-
 # Backup SillyTavern
 sillytavern_backup() {
     CHOICES=$(whiptail --checklist "Backup:" 21 50 14 --cancel-button "Back" \
@@ -376,12 +374,11 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "Text generation web UI" \
             3 "SillyTavern" \
             4 "Install llama.cpp" \
-            5 "Ollama" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -402,9 +399,6 @@ text_generation() {
                 ;;
             "4")
                 install_llama_cpp
-                ;;
-            "5")
-                ollama
                 ;;
             "")
                 echo "Previous menu..."

@@ -1,15 +1,15 @@
 # ROCm-AI-Installer
-A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs (default: RX 7900 XTX). For other cards and architectures, the <b>HSA_OVERRIDE_GFX_VERSION</b> and <b>GFX</b> variables in the <b>install.sh</b> file should be modified accordingly (Not tested).
+A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs.
 
-## Info
-[![Version](https://img.shields.io/badge/Version-9.2-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+## Info:
+[![Version](https://img.shields.io/badge/Version-10.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> Debian 13.2 is recommended. Version 9.x is not tested on older systems.<br>
-> On other distros, most of the python based applications should work, but manual installation of ROCm will be required.<br>
+> From version 10.0, the script is distribution-independent thanks to the use of Podman. 
+> If the distribution supports <b>Podman</b> and <b>amdgpu</b> is correctly configured, the script should work properly.
 
 > [!Important]
-> All models and applications are tested on a GPU with 24GB of VVRAM.<br>
+> All models and applications are tested on a GPU with 24GB of VRAM.<br>
 > Some applications may not work on GPUs with less VRAM.
 
 ### Test platform:
@@ -30,8 +30,6 @@ A script that automatically installs the required dependencies to run selected A
 |Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
-|Ollama|https://github.com/ollama/ollama|You can use standard Ollama commands in terminal or run GGUF model.<br>1. Put model.gguf into Ollama folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. In run.sh file, customize model parameters.|
-<!-- |vLLM|https://github.com/vllm-project/vllm|Change the parameters in run.sh to match your hardware configuration.| -->
 
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
@@ -63,7 +61,6 @@ A script that automatically installs the required dependencies to run selected A
 |Qwen-Image GGUF|https://huggingface.co/Qwen/Qwen-Image<br> https://huggingface.co/QuantStack/Qwen-Image-Edit-2509-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant: <b>Q6_K</b>|
 Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://huggingface.co/calcuis/qwen-image-edit-ggu<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b>|
 Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_0</b>|
-<!-- |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://github.com/Wan-Video/Wan2.2<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged<br>|Text to video model.| -->
 
 ###  Music generation:
 |Name|Links|Additional information|
@@ -86,47 +83,51 @@ Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> h
 |:---|:---|:---|
 |PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
 
-###  Tools:
-|Name|Links|Additional information|
-|:---|:---|:---|
-|Fastfetch|https://github.com/fastfetch-cli/fastfetch|Custom Fastfetch configuration with GPU memory info.<br> Supports also NVIDIA graphics cards (nvidia-smi needed).<br>If you want your own logo, place the *asci.txt* file in the *~/.config/fastfetch directory.*|
+## Instalation:
 
-## Instalation
+1\. Install Podman.
+
 > [!Note]
-> First startup after installation of the selected app may take longer.
+> If you are using Debian 13.2, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 24.04)
 
-> [!Important] 
-> If app does not download any default models, download your own.
-> 
 
-> [!Caution]
-> If you update, back up your settings and models. Reinstallation deletes the previous directories.
-> If you have <v>/etc/apt/preferences.d/fallback</b> configured, make sure it does not override ROCm from <b>/etc/apt/preferences.d/rocm-pin-600</b>.
+2\. Make sure that <b>/dev/dri</b> and <b>/dev/kfd</b> are accessible.
+```bash
+ls /dev/dri
+ls /dev/kfd
+```
 
-1\. If you have installed uv other than through <b>pipx</b>, uninstall <b>uv</b> first.
+> [!Important]
+> If not, you need to properly configure <b>amdgpu</b> for your distribution.
 
-2\. Clone repository 
+3\. Make sure that your user has permissions for the <b>video</b> and render <b>groups</b>.
+
+```bash
+sudo usermod -aG video,render $USER
+```
+
+> [!Important]
+> If not, you need reboot after this step.
+
+4\. Clone repository.
 ```bash
 git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 ```
 
-3\. Run installer 
+5\. By default, the script is configured for AMD Radeon 7900XTX. For other cards and architectures, edit <b>GFX_VERSION</b> and <b>GFX</b> variables in the <b>Dockerfile</b> (not tested).
+
+6\. Run installer. 
 ```bash
 bash ./install.sh
 ```
 
-4\. Select installation path.
+7\. Set variables
 
-5\. Select <b>Install required packages</b> if you are upgrading or running the script for the first time.
+8\. Create container if you are upgrading or running the script for the first time.
 
-6\. If you are installing the script for the first time, restart system after this step.
+9\. Install selected app.
 
-7\. Install selected app.
-
-8\. Go to the installation path with the selected app and run:
+10\. Go to the installation path with the selected app and run:
 ```bash
 ./run.sh
 ```
-
-## Docker
-Check DOCKER.md
