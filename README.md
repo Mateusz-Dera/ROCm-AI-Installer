@@ -5,8 +5,8 @@ A script that automatically installs the required dependencies to run selected A
 [![Version](https://img.shields.io/badge/Version-10.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 > [!Note]
-> From version 10.0, the script is distribution-independent thanks to the use of Podman. 
-> If the distribution supports <b>Podman</b> and <b>amdgpu</b> is correctly configured, the script should work properly.
+> From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
+> All you need is a correctly configured <b>Podman</b> and <b>amdgpu</b>.
 
 > [!Important]
 > All models and applications are tested on a GPU with 24GB of VRAM.<br>
@@ -27,7 +27,7 @@ A script that automatically installs the required dependencies to run selected A
 |Name|Links|Additional information|
 |:---|:---|:---|
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
-|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, Transformers using ROCm and llama.cpp using Vulkan.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
+|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, llama.cpp and Transformers.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
 
