@@ -108,7 +108,7 @@ git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 
 5\. Run installer. 
 ```bash
-bash ./install.sh
+./install.sh
 ```
 6\. Set variables
 
