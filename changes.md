@@ -2,6 +2,7 @@ New version is based on Podman
 
 Drop Ollama support
 Drop KaniTTS-vLLM support
+Drop Fastfetch support
 Drop Flux based models
 
 Updated:

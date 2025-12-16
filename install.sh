@@ -547,13 +547,14 @@ voice_generation() {
 
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 19 100 7 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 20 100 8 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
     4 "Image & video generation" \
     5 "Music generation" \
     6 "Voice generation" \
+    7 "3D generation" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -576,10 +577,45 @@ show_menu() {
         6)
             voice_generation
             ;;
+        7)
+            d3_generation
+            ;;
         *)
             exit 0
             ;;
     esac
+}
+
+# 3D generation
+
+d3_generation() {
+    second=true
+    while $second; do
+        
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            1 "Install PartCrafter" \
+            2>&1 > /dev/tty)
+
+        case "$choice" in
+            "1")
+                install_partcrafter
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+        status=$?
+        
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+    done
 }
 
 # Variables

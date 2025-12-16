@@ -521,6 +521,31 @@ EOF"
     basic_run "$REPO" "$COMMAND"
 }
 
+# PartCrafter
+install_partcrafter(){
+    REPO="https://github.com/wgsxm/PartCrafter"
+    COMMIT="269bd4164fbe35b17a6e58f8d6934262822082eb"
+    COMMAND="uv run partcrafter_webui.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Copy custom files
+    podman cp "$SCRIPT_DIR/custom_files/partcrafter/inference_partcrafter.py" "rocm:/AI/$FOLDER/scripts/inference_partcrafter.py"
+    podman cp "$SCRIPT_DIR/custom_files/partcrafter/render_utils.py" "rocm:/AI/$FOLDER/src/utils/render_utils.py"
+    podman cp "$SCRIPT_DIR/custom_files/partcrafter/partcrafter_webui.py" "rocm:/AI/$FOLDER/partcrafter_webui.py"
+
+    basic_requirements "$REPO"
+
+    # Clone and install pytorch_cluster_rocm
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm && cd pytorch_cluster_rocm && git checkout 6be490d08df52755684b7ccfe10d55463070f13d"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/pytorch_cluster_rocm && rm -rf requirements.txt && touch requirements.txt && source ../.venv/bin/activate && uv pip install ."
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"
