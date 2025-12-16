@@ -24,9 +24,6 @@
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$SCRIPT_DIR/interfaces.sh"
 
-# Check if rocm container is running and start it if needed
-basic_container
-
 # Global variables for tracking backup results
 declare -a successful_backups=()
 declare -a failed_backups=()
@@ -303,10 +300,13 @@ generate_backup_summary() {
 # SillyTavern backup function
 perform_sillytavern_backup() {
     local choices="$1"
-    
+
+    # Ensure container is running
+    basic_container || return 1
+
     # Reset tracking arrays
     reset_backup_tracking
-    
+
     log_message "INFO" "Starting SillyTavern backup operation"
     
     for choice in $choices; do
@@ -363,10 +363,13 @@ perform_sillytavern_backup() {
 # SillyTavern restore function
 perform_sillytavern_restore() {
     local choices="$1"
-    
+
+    # Ensure container is running
+    basic_container || return 1
+
     # Reset tracking arrays
     reset_backup_tracking
-    
+
     log_message "INFO" "Starting SillyTavern restore operation"
     
     for choice in $choices; do
@@ -423,10 +426,13 @@ perform_sillytavern_restore() {
 # Text Generation Web UI backup function
 perform_textgen_backup() {
     local choices="$1"
-    
+
+    # Ensure container is running
+    basic_container || return 1
+
     # Reset tracking arrays
     reset_backup_tracking
-    
+
     log_message "INFO" "Starting Text Generation Web UI backup operation"
     
     for choice in $choices; do
@@ -453,10 +459,13 @@ perform_textgen_backup() {
 # Text Generation Web UI restore function
 perform_textgen_restore() {
     local choices="$1"
-    
+
+    # Ensure container is running
+    basic_container || return 1
+
     # Reset tracking arrays
     reset_backup_tracking
-    
+
     log_message "INFO" "Starting Text Generation Web UI restore operation"
     
     for choice in $choices; do

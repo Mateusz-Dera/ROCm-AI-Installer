@@ -147,3 +147,15 @@ To enter the container's bash shell:
 ```bash
 podman exec -it rocm bash
 ```
+
+### Removing the container
+To stop and remove the container:
+```bash
+podman stop rocm
+podman rm rocm
+```
+
+Or force remove (stop and remove in one command):
+```bash
+podman rm -f rocm
+```

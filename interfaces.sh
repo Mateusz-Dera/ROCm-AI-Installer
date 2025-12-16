@@ -25,6 +25,14 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # CONTAINER
 basic_container(){
+    # Check if rocm container exists
+    if ! podman ps -a --format "{{.Names}}" | grep -q "^rocm$"; then
+        echo "Error: Container 'rocm' does not exist."
+        echo "Please create the container first using option '2. Create a container' from the main menu."
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+
     # Check if rocm container is running
     if ! podman ps --format "{{.Names}}" | grep -q "^rocm$"; then
         echo "Container rocm is not running. Starting..."
@@ -69,6 +77,13 @@ basic_run(){
 
     podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << RUNEOF
 #!/bin/bash
+# Check if rocm container exists
+if ! podman ps -a --format \"{{.Names}}\" | grep -q \"^rocm\\\$\"; then
+    echo \"Error: Container 'rocm' does not exist.\"
+    echo \"Please create the container first.\"
+    exit 1
+fi
+
 # Check if rocm container is running
 if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\\\$\"; then
     echo \"Container rocm is not running. Starting...\"
