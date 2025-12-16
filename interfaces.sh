@@ -334,6 +334,34 @@ AMDEOF"
     basic_run "$REPO" "$COMMAND"
 }
 
+# ACE-Step
+install_ace_step() {
+    REPO="https://github.com/ace-step/ACE-Step"
+    COMMIT="6ae0852b1388de6dc0cca26b31a86d711f723cb3"
+    COMMAND="uv run acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Modify requirements.txt from repo (used by pip install -e .)
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/spacy==3\.8\.4/spacy/g' requirements.txt && \
+        sed -i 's/datasets==3\.4\.1/datasets/g' requirements.txt && \
+        sed -i 's/matplotlib==3\.10\.1/matplotlib/g' requirements.txt && \
+        sed -i 's/transformers==4\.50\.0/transformers/g' requirements.txt"
+
+    basic_requirements "$REPO"
+
+    # Install package in editable mode and torchcodec
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install -e . && \
+        uv pip install torchcodec==0.8.1"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"

@@ -1,5 +1,5 @@
 # ROCm-AI-Installer
-Installation scripts for an AI application using ROCm on Linux.
+Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
 [![Version](https://img.shields.io/badge/Version-10.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)

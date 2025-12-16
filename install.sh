@@ -413,7 +413,6 @@ text_generation() {
 }
 
 # Image & Video generation
-
 image_generation() {
     second=true
     while $second; do
@@ -464,13 +463,45 @@ comfyui_addons(){
     install_comfyui $CHOICES
 }
 
+# Music generation
+music_generation() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            1 "Install ACE-Step" \
+            2>&1 > /dev/tty)
+        status=$?
+
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                install_ace_step
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 17 100 5 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 18 100 6 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
     4 "Image & video generation" \
+    5 "Music generation" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -486,6 +517,9 @@ show_menu() {
             ;;
         4)
             image_generation
+            ;;
+        5)
+            music_generation
             ;;
         *)
             exit 0
