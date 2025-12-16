@@ -494,14 +494,70 @@ music_generation() {
     done
 }
 
+# Voice generation
+voice_generation() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
+            1 "Install WhisperSpeech web UI" \
+            2 "Install F5-TTS" \
+            3 "Install Matcha-TTS" \
+            4 "Install Dia" \
+            5 "Install Chatterbox Multilingual" \
+            6 "Install KaniTTS" \
+            7 "Install KaniTTS-vLLM" \
+            2>&1 > /dev/tty)
+        status=$?
+
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                install_whisperspeech_web_ui
+                ;;
+            "2")
+                install_f5_tts
+                ;;
+            "3")
+                install_matcha_tts
+                ;;
+            "4")
+                install_dia
+                ;;
+            "5")
+                install_chatterbox
+                ;;
+            "6")
+                install_kanitts
+                ;;
+            "7")
+                install_kanitts_vllm
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+    done
+}
+
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 18 100 6 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 19 100 7 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
     4 "Image & video generation" \
     5 "Music generation" \
+    6 "Voice generation" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -520,6 +576,9 @@ show_menu() {
             ;;
         5)
             music_generation
+            ;;
+        6)
+            voice_generation
             ;;
         *)
             exit 0

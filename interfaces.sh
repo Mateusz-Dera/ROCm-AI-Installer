@@ -362,6 +362,45 @@ install_ace_step() {
     basic_run "$REPO" "$COMMAND"
 }
 
+# WhisperSpeech web UI
+install_whisperspeech_web_ui(){
+    REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
+    COMMIT="37e2ddf59664dd1604cc41b2660f48d1fa1af173"
+    COMMAND="uv run --extra rocm webui.py --listen --api"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Install dependencies with ROCm support using uv sync
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv sync --extra rocm"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
+# F5-TTS
+install_f5_tts(){
+    REPO="https://github.com/SWivid/F5-TTS"
+    COMMIT="9ae46c8360303417489d2c1071f29972cd8ab171"
+    COMMAND="f5-tts_infer-gradio --host 0.0.0.0"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Initialize git submodules
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && git submodule update --init --recursive"
+
+    basic_requirements "$REPO"
+
+    # Install package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"
