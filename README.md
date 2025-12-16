@@ -106,20 +106,24 @@ sudo usermod -aG video,render $USER
 git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 ```
 
-5\. By default, the script is configured for AMD Radeon 7900XTX. For other cards and architectures, edit <b>GFX_VERSION</b> and <b>GFX</b> variables in the <b>Dockerfile</b> (not tested).
-
-6\. Run installer. 
+5\. Run installer. 
 ```bash
 bash ./install.sh
 ```
+6\. Set variables
 
-7\. Set variables
+> [!NOTE]
+> By default, the script is configured for AMD Radeon 7900XTX.<br>
+> For other cards and architectures, edit <b>GFX</b> and <b>HSA_OVERRIDE_GFX_VERSION</b>.
 
-8\. Create container if you are upgrading or running the script for the first time.
+7\. Create container if you are upgrading or running the script for the first time.
 
-9\. Install selected app.
+8\. Install selected app.
 
-10\. Go to the installation path with the selected app and run:
+9\. Go to the application folder and run:
 ```bash
 ./run.sh
 ```
+
+> [!NOTE]
+> Everything is configured to start from the host side (You don’t need to enter the container).
