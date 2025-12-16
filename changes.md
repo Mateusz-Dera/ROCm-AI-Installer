@@ -9,3 +9,6 @@ Updated:
 - Text generation web UI
 - ComfyUI 
 - ComfyUI-Manager
+
+Added:
+- Wan 2.2 5B workflows

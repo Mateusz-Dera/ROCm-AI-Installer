@@ -452,7 +452,7 @@ comfyui_addons(){
         8 "Qwen-Image GGUF" ON \
         9 "Qwen-Image-Edit GGUF" ON \
         10 "Qwen-Image-Edit-2509 GGUF" ON \
-        11 "Wan 2.2" ON 3>&1 1>&2 2>&3)
+        11 "Wan2.2-TI2V-5B" ON 3>&1 1>&2 2>&3)
 
     status=$?
 
