@@ -116,7 +116,7 @@ git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 > By default, the script is configured for AMD Radeon 7900XTX.<br>
 > For other cards and architectures, edit <b>GFX</b> and <b>HSA_OVERRIDE_GFX_VERSION</b>.
 
-7\. Create container if you are upgrading or running the script for the first time.
+7\. Create a container if you are upgrading or running the script for the first time.
 
 8\. Install selected app.
 
