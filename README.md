@@ -126,4 +126,24 @@ git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 ```
 
 > [!NOTE]
-> Everything is configured to start from the host side (You don’t need to enter the container).
+> Everything is configured to start from the host side (You don't need to enter the container).
+
+## Container:
+
+### Checking the container
+To check if the container is running:
+```bash
+podman ps
+```
+
+### Starting the container
+If the container is not running, start it with:
+```bash
+podman start rocm
+```
+
+### Accessing container bash
+To enter the container's bash shell:
+```bash
+podman exec -it rocm bash
+```
