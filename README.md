@@ -118,7 +118,7 @@ git clone https://github.com/Mateusz-Dera/ROCm-AI-Installer.git
 
 7\. Create a container if you are upgrading or running the script for the first time.
 
-8\. Install selected app.
+8\. Install the applications of your choice.
 
 9\. Go to the application folder and run:
 ```bash
