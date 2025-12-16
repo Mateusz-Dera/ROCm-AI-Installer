@@ -401,6 +401,58 @@ install_f5_tts(){
     basic_run "$REPO" "$COMMAND"
 }
 
+# Matcha-TTS
+install_matcha_tts(){
+    REPO="https://github.com/shivammehta25/Matcha-TTS"
+    COMMIT="bd4d90d93214b37f7a159cf205ae85762c2c10aa"
+    COMMAND="matcha-tts-app"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Modify app.py to listen on all interfaces
+    podman exec -t rocm bash -c "cd /AI/$FOLDER/matcha && sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name=\"0.0.0.0\")/' app.py"
+
+    # Modify pyproject.toml to remove version constraints
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/cython==0.29.35/cython/' pyproject.toml && \
+        sed -i 's/numpy==1.24.3/numpy/' pyproject.toml && \
+        rm -f requirements.txt && \
+        touch requirements.txt"
+
+    basic_requirements "$REPO"
+
+    # Install package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+
+    basic_run "$REPO" "$COMMAND"
+}
+
+# Dia
+install_dia(){
+    REPO="https://github.com/tralamazza/dia"
+    COMMIT="8da0c755661e3cb71dc81583400012be6c3f62be"
+    COMMAND="MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+
+    # Modify pyproject.toml to update ROCm version
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's|url = \"https://download.pytorch.org/whl/rocm6\.3\"|url = \"https://download.pytorch.org/whl/rocm6.4\"|' pyproject.toml"
+
+    # Modify app.py to listen on all interfaces
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name=\"0.0.0.0\")/' app.py"
+
+    # Install dependencies with ROCm support using uv sync
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv sync --extra rocm"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"

@@ -10,6 +10,7 @@ Updated:
 - ComfyUI 
 - ComfyUI-Manager
 - F5-TTS
+- Matcha-TTS
 
 Added:
 - Wan 2.2 5B workflows
