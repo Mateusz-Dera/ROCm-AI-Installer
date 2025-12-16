@@ -1,5 +1,5 @@
 # ROCm-AI-Installer
-A script that automatically installs the required dependencies to run selected AI applications on AMD Radeon GPUs.
+Installation scripts for an AI application using ROCm on Linux.
 
 ## Info:
 [![Version](https://img.shields.io/badge/Version-10.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
