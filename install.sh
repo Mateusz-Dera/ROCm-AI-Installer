@@ -499,14 +499,13 @@ voice_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             1 "Install WhisperSpeech web UI" \
             2 "Install F5-TTS" \
             3 "Install Matcha-TTS" \
             4 "Install Dia" \
             5 "Install Chatterbox Multilingual" \
             6 "Install KaniTTS" \
-            7 "Install KaniTTS-vLLM" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -529,13 +528,10 @@ voice_generation() {
                 install_dia
                 ;;
             "5")
-                install_chatterbox
+                install_chatterbox_multilingual
                 ;;
             "6")
                 install_kanitts
-                ;;
-            "7")
-                install_kanitts_vllm
                 ;;
             "")
                 echo "Previous menu..."

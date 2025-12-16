@@ -36,17 +36,17 @@ basic_container(){
 basic_git(){
     local REPO=$1
     local COMMIT=$2
-    FOLDER=$(basename "$REPO")
+    local FOLDER=${3:-$(basename "$REPO")}
 
     podman exec -t rocm bash -c "cd /AI && echo $FOLDER && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -it rocm bash -c "cd /AI && git clone $REPO && cd $FOLDER && git checkout $COMMIT"
+    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
 }
 
 # VENV
 basic_venv(){
     local REPO=$1
     local PYTHON=${2:-3.13}
-    FOLDER=$(basename "$REPO")
+    local FOLDER=${3:-$(basename "$REPO")}
 
     podman exec -it rocm bash -c "cd /AI/$FOLDER && uv venv --python $PYTHON"
 }
@@ -54,7 +54,7 @@ basic_venv(){
 # REQUIREMENTS
 basic_requirements(){
     local REPO=$1
-    FOLDER=$(basename "$REPO")
+    local FOLDER=${2:-$(basename "$REPO")}
     REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$FOLDER.txt")
 
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
@@ -65,7 +65,7 @@ basic_run(){
     local REPO=$1
     local COMMAND="$2"
     local VENV=${3:-"&& source .venv/bin/activate &&"}
-    FOLDER=$(basename "$REPO")
+    local FOLDER=${4:-$(basename "$REPO")}
 
     podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << RUNEOF
 #!/bin/bash
@@ -83,7 +83,7 @@ chmod +x /AI/$FOLDER/run.sh"
 basic_pip(){
     local REPO=$1
     local LINK=$2
-    FOLDER=$(basename "$REPO")
+    local FOLDER=${3:-$(basename "$REPO")}
 
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $LINK"
 }
@@ -449,6 +449,74 @@ install_dia(){
 
     # Install dependencies with ROCm support using uv sync
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv sync --extra rocm"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
+# Chatterbox Multilingual
+install_chatterbox_multilingual(){
+    REPO="https://github.com/resemble-ai/chatterbox"
+    COMMIT="ed27b95ee46b95be201147bafe5ca85ac57ac4f2"
+    COMMAND="uv run multilingual_app.py"
+    FOLDER="chatterbox-multilingual"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT" "$FOLDER"
+    basic_venv "$REPO" "3.13" "$FOLDER"
+
+    # Replace multilingual_app.py with custom version
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && rm -f multilingual_app.py"
+    podman cp "$SCRIPT_DIR/custom_files/chatterbox/multilingual_app.py" "rocm:/AI/$FOLDER/multilingual_app.py"
+
+    # Replace pyproject.toml with custom version
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && rm -f pyproject.toml"
+    podman cp "$SCRIPT_DIR/custom_files/chatterbox/pyproject.toml" "rocm:/AI/$FOLDER/pyproject.toml"
+
+    basic_requirements "$REPO" "$FOLDER"
+
+    # Install package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+
+    basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
+}
+
+# KaniTTS
+install_kanitts(){
+    REPO="https://github.com/nineninesix-ai/kani-tts"
+    COMMIT="698be2c90cb81ca265771dec7c7e4c1752a8ff96"
+    COMMAND="uv run examples/basic/server.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+
+    # Rename client.html to index.html in examples/basic
+    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && mv ./client.html ./index.html"
+
+    # Remove logo line from index.html
+    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && sed -i 's/<img alt=\"Logo\" width=\"100px\" height=\"100px\" src=\"logo.png\" \/>//g' index.html"
+
+    # Modify server.py to add HTML server on port 7860
+    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && sed -i '/if __name__ == \"__main__\":/,/uvicorn\.run(app, host=\"0\.0\.0\.0\", port=8000, log_level=\"info\")/d' server.py"
+
+    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && cat >> server.py << 'EOF'
+
+if __name__ == \"__main__\":
+    import http.server
+    import threading
+    import os
+
+    # Change to examples/basic folder and start HTML server
+    os.chdir('examples/basic')
+    threading.Thread(target=lambda: http.server.HTTPServer(('', 7860), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
+    print(\"HTML Server: http://0.0.0.0:7860\")
+
+    # Start FastAPI server
+    import uvicorn
+    uvicorn.run(app, host=\"0.0.0.0\", port=8000, log_level=\"info\")
+EOF"
 
     basic_run "$REPO" "$COMMAND"
 }
