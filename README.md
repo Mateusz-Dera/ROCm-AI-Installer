@@ -66,7 +66,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select voice.|
 |Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
 |Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
-|Chatterbox Multilingual|https://github.com/resemble-ai/chatterbox|Only Polish and English have been tested.<br> May not read non-English characters.<br> Polish is fixed:<br> https://github.com/resemble-ai/chatterbox/issues/256<br> For other languages, you will need to add the changes manually in the multilingual_app.py file.<br> For a better effect in Polish, I recommend using lowercase letters for the entire text.|
 |KaniTTS|https://github.com/nineninesix-ai/kani-tts|If you want to change the default model, edit the <b>kanitts/config.py</b> file.|
 |KaniTTS-vLLM|https://github.com/nineninesix-ai/kanitts-vllm|If you want to change the default model, edit the <b>config.py</b> file.|
 

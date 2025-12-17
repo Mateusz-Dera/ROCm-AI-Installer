@@ -504,8 +504,7 @@ voice_generation() {
             2 "Install F5-TTS" \
             3 "Install Matcha-TTS" \
             4 "Install Dia" \
-            5 "Install Chatterbox Multilingual" \
-            6 "Install KaniTTS" \
+            5 "Install KaniTTS" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -528,9 +527,6 @@ voice_generation() {
                 install_dia
                 ;;
             "5")
-                install_chatterbox_multilingual
-                ;;
-            "6")
                 install_kanitts
                 ;;
             "")

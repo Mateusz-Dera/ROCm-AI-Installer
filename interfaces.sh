@@ -468,33 +468,6 @@ install_dia(){
     basic_run "$REPO" "$COMMAND"
 }
 
-# Chatterbox Multilingual
-install_chatterbox_multilingual(){
-    REPO="https://github.com/resemble-ai/chatterbox"
-    COMMIT="ed27b95ee46b95be201147bafe5ca85ac57ac4f2"
-    COMMAND="uv run multilingual_app.py"
-    FOLDER="chatterbox-multilingual"
-
-    basic_container
-    basic_git "$REPO" "$COMMIT" "$FOLDER"
-    basic_venv "$REPO" "3.13" "$FOLDER"
-
-    # Replace multilingual_app.py with custom version
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && rm -f multilingual_app.py"
-    podman cp "$SCRIPT_DIR/custom_files/chatterbox/multilingual_app.py" "rocm:/AI/$FOLDER/multilingual_app.py"
-
-    # Replace pyproject.toml with custom version
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && rm -f pyproject.toml"
-    podman cp "$SCRIPT_DIR/custom_files/chatterbox/pyproject.toml" "rocm:/AI/$FOLDER/pyproject.toml"
-
-    basic_requirements "$REPO" "$FOLDER"
-
-    # Install package in editable mode
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
-
-    basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
-}
-
 # KaniTTS
 install_kanitts(){
     REPO="https://github.com/nineninesix-ai/kani-tts"
