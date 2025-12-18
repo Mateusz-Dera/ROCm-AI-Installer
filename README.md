@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-10.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-11.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 ![ROCm](https://img.shields.io/badge/ROCm-7.1.1-red.svg)
 
@@ -53,6 +53,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Qwen-Image-Edit GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit<br> https://huggingface.co/calcuis/qwen-image-edit-ggu<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit quant: <b>Q4_K_M</b>|
 |Qwen-Image-Edit-2509 GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2509<br> https://huggingface.co/calcuis/qwen-image-edit-gguf<br> https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI<br> https://huggingface.co/city96/Qwen-Image-gguf<br> https://huggingface.co/lightx2v/Qwen-Image-Lightning|Text to image model.<br> Qwen Image-Quant-Edit-2509 quant: <b>Q4_0</b>|
 |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged|Text to video model.<br> Workflow also supports image to video.|
+|Z-Image-Turbo|https://huggingface.co/Tongyi-MAI/Z-Image-Turbo<br> https://huggingface.co/Comfy-Org/z_image_turbo|Text to image model.|
 
 ###  Music generation:
 |Name|Links|Additional information|

@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="10.0"
+VERSION="11.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -443,7 +443,7 @@ image_generation() {
 }
 
 comfyui_addons(){
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 10 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 11 --cancel-button "Back" \
         1 "ComfyUI-Manager" ON \
         2 "ComfyUI-GGUF" ON \
         3 "ComfyUI-AuraSR" ON \
@@ -451,7 +451,8 @@ comfyui_addons(){
         8 "Qwen-Image GGUF" ON \
         9 "Qwen-Image-Edit GGUF" ON \
         10 "Qwen-Image-Edit-2509 GGUF" ON \
-        11 "Wan2.2-TI2V-5B" ON 3>&1 1>&2 2>&3)
+        11 "Wan2.2-TI2V-5B" ON \
+        12 "Z-Image-Turbo" ON 3>&1 1>&2 2>&3)
 
     status=$?
 

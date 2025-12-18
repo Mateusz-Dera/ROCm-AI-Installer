@@ -285,6 +285,23 @@ install_comfyui() {
                     mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors /AI/$FOLDER/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors && \
                     rm -rf /tmp/$TEMP_DIR"
                 ;;
+            '"12"')
+                # Z Image Turbo
+                TEMP_DIR="ComfyUI-ZImageTurbo"
+                ZIMAGE_COMMIT="4f1e20c3aeca13aae20e46ff5fee8e37cd1278fc"
+
+                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+                    cd /tmp && \
+                    if [ -d '$TEMP_DIR' ]; then rm -rf '$TEMP_DIR'; fi && \
+                    mkdir $TEMP_DIR && \
+                    hf download Comfy-Org/z_image_turbo split_files/vae/ae.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/vae/ae.safetensors /AI/$FOLDER/models/vae/ae.safetensors && \
+                    hf download Comfy-Org/z_image_turbo split_files/diffusion_models/z_image_turbo_bf16.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/diffusion_models/z_image_turbo_bf16.safetensors /AI/$FOLDER/models/diffusion_models/z_image_turbo_bf16.safetensors && \
+                    hf download Comfy-Org/z_image_turbo split_files/text_encoders/qwen_3_4b.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
+                    mv /tmp/$TEMP_DIR/split_files/text_encoders/qwen_3_4b.safetensors /AI/$FOLDER/models/text_encoders/qwen_3_4b.safetensors && \
+                    rm -rf /tmp/$TEMP_DIR"
+                ;;
             "")
                 break
                 ;;
