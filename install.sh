@@ -41,7 +41,7 @@ export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
 version="9.1"
 
 # Default installation path
-default_installation_path="$HOME/AI"
+default_installation_path="$HOME/ai"
 # Global variable for installation path
 installation_path="$default_installation_path"
 
