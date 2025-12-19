@@ -30,15 +30,8 @@ services:
     container_name: rocm
     hostname: rocm
 
-    ports:
-      - "5000:5000"
-      - "5050:5050"
-      - "7860:7860"
-      - "7865:7865"
-      - "8000:8000"
-      - "8003:8003"
-      - "8080:8080"
-      - "8188:8188"
+    # Use host network - all ports automatically available
+    network_mode: "host"
 
     # Pass through AMD GPU devices
     devices:

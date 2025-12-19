@@ -107,9 +107,6 @@ RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install uv
 # Add uv to PATH
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Ports
-EXPOSE 5000 5050 7860 7865 8000 8003 8080 8188
-
 # Set entrypoint to fix permissions on startup
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

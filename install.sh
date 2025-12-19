@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="11.1"
+VERSION="12.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
