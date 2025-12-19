@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-11.0-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-11.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 ![ROCm](https://img.shields.io/badge/ROCm-7.1.1-red.svg)
 

@@ -39,7 +39,6 @@ services:
       - "8003:8003"
       - "8080:8080"
       - "8188:8188"
-      - "11434:11434"
 
     # Pass through AMD GPU devices
     devices:
