@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="12.0"
+VERSION="12.1"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -62,9 +62,11 @@ load_config() {
         GFX_VERSION="${TARGET_GFX:-$DEFAULT_GFX}"
         AI_DIR="${AI_HOST_DIR:-$DEFAULT_AI_DIR}"
     else
+        # Create default configuration file
         HSA_VERSION="$DEFAULT_HSA_VERSION"
         GFX_VERSION="$DEFAULT_GFX"
         AI_DIR="$DEFAULT_AI_DIR"
+        save_config
     fi
 }
 
@@ -188,6 +190,9 @@ create_container() {
 
             echo "Directory $AI_DIR ready for container mount"
         fi
+
+        # Ensure .env file is up to date for podman-compose
+        save_config
 
         echo "Stopping existing containers..."
         podman-compose down

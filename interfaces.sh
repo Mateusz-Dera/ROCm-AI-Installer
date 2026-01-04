@@ -551,6 +551,20 @@ install_partcrafter(){
     basic_run "$REPO" "$COMMAND"
 }
 
+# TRELLIS-AMD
+install_trellis(){
+    REPO="https://github.com/CalebisGross/TRELLIS-AMD"
+    COMMIT="2ccf54e8ff7aee0c519d37717bee6d95cf75357e"
+    COMMAND="ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse uv run app.p"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    # basic_requirements "$REPO"
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"

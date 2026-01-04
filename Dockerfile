@@ -45,7 +45,9 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     espeak \
     nodejs \
-    npm
+    npm \
+    libsparsehash-dev
+    
     # && rm -rf /var/lib/apt/lists/*
 
 # Download and install AMD GPU installer package for ROCm 7.1.1
