@@ -47,7 +47,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     libsparsehash-dev
-    
+
     # && rm -rf /var/lib/apt/lists/*
 
 # Download and install AMD GPU installer package for ROCm 7.1.1
@@ -91,6 +91,7 @@ COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/
 ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
 ENV ROCM_PATH="/opt/rocm"
+ENV ROCM_HOME="/opt/rocm"
 
 # Set GPU and PyTorch environment variables
 ENV HIP_VISIBLE_DEVICES=0

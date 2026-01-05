@@ -555,13 +555,39 @@ install_partcrafter(){
 install_trellis(){
     REPO="https://github.com/CalebisGross/TRELLIS-AMD"
     COMMIT="2ccf54e8ff7aee0c519d37717bee6d95cf75357e"
-    COMMAND="ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse uv run app.p"
+    COMMAND="ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse uv run app.py"
     FOLDER=$(basename "$REPO")
+    PYTHON_VERSION="3.11"
 
     basic_container
     basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    # basic_requirements "$REPO"
+    basic_venv "$REPO" "$PYTHON_VERSION"
+    basic_requirements "$REPO"
+
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's/demo.launch(server_name=\"0.0.0.0\", share=True)/demo.launch(server_name=\"0.0.0.0\", share=False)/' app.py"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/nvdiffrast-hip && uv pip install . --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/diff-gaussian-rasterization && chmod +x build_hip.sh && ./build_hip.sh"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/torchsparse && rm -rf build *.egg-info 2>/dev/null || true && FORCE_CUDA=1 pip install . --no-build-isolation"
+
+    # Patch gradio_client for compatibility
+    echo "Patching gradio_client for compatibility..."
+    podman exec -it rocm bash -c "
+cd /AI/$FOLDER
+source .venv/bin/activate
+PYTHON_VER=\$(python3 -c 'import sys; print(f\"{sys.version_info.major}.{sys.version_info.minor}\")')
+UTILS_FILE=\".venv/lib/python\${PYTHON_VER}/site-packages/gradio_client/utils.py\"
+if [ -f \"\$UTILS_FILE\" ]; then
+    # Patch get_type function to handle boolean schemas
+    sed -i 's/def get_type(schema: dict):/def get_type(schema: dict):\\n    # Handle non-dict schemas (e.g., boolean from additionalProperties: true)\\n    if not isinstance(schema, dict):\\n        return \"Any\"/' \"\$UTILS_FILE\"
+    # Patch _json_schema_to_python_type function
+    sed -i 's/def _json_schema_to_python_type(schema: Any, defs) -> str:/def _json_schema_to_python_type(schema: Any, defs) -> str:\\n    # Handle non-dict schemas (e.g., boolean from additionalProperties: true)\\n    if not isinstance(schema, dict):\\n        return \"Any\"/' \"\$UTILS_FILE\"
+    echo 'Successfully patched gradio_client for compatibility'
+else
+    echo 'Warning: gradio_client utils.py not found at' \"\$UTILS_FILE\"
+fi
+"
+
     basic_run "$REPO" "$COMMAND"
 }
 
