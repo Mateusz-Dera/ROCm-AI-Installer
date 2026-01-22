@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="12.2"
+VERSION="13"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -474,8 +474,9 @@ music_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             1 "Install ACE-Step" \
+            2 "Install HeartMuLa" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -487,6 +488,9 @@ music_generation() {
         case "$choice" in
             "1")
                 install_ace_step
+                ;;
+            "2")
+                install_heartmula
                 ;;
             "")
                 echo "Previous menu..."

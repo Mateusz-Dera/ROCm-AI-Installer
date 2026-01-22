@@ -106,7 +106,7 @@ basic_pip(){
 # KoboldCPP
 install_koboldcpp() {
     REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
-    COMMIT="b4fa4f897f0c75a1e8d45e8247a14c6053548a61"
+    COMMIT="64d9d01c57cb4d0c58c530bc5fc053196da566fa"
     COMMAND="uv run koboldcpp.py"
     FOLDER=$(basename "$REPO")
 
@@ -121,8 +121,8 @@ install_koboldcpp() {
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="9e6649ecf244a99749dacc28fc4f49f7d6ad6f60"
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 1"
+    COMMIT="959ecf7f234dc0bc0cd6829b25cb0ee1481aa78a"
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
     basic_container
@@ -135,7 +135,7 @@ install_llama_cpp() {
 # Text generation web UI
 install_text_generation_web_ui() {
     REPO="https://github.com/oobabooga/text-generation-webui"
-    COMMIT="34804f93540ca5dffd86e27ce8af55184d2b5096"
+    COMMIT="910456ba317ae99a313f00c593bd302281aa64ea"
     COMMAND="uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
     FOLDER=$(basename "$REPO")
 
@@ -151,7 +151,7 @@ install_text_generation_web_ui() {
     basic_pip "$REPO" "https://github.com/turboderp-org/exllamav2/releases/download/v0.3.2/exllamav2-0.3.2+rocm6.4.torch2.8.0-cp313-cp313-linux_x86_64.whl"
 
     # llama_cpp
-    basic_pip "$REPO" "https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.69.0/llama_cpp_binaries-0.69.0+rocm6.4.4-py3-none-linux_x86_64.whl"
+    basic_pip "$REPO" "https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.76.0/llama_cpp_binaries-0.76.0+vulkanavx-py3-none-linux_x86_64.whl"
 
     basic_run "$REPO" "$COMMAND"
 }
@@ -159,7 +159,7 @@ install_text_generation_web_ui() {
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="088ce0e962b138bb60958f8d32b549a4123f6508"
+    COMMIT="bba91e38fc1bd7e9583c6e0468feb980940a800c"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
@@ -175,7 +175,7 @@ install_sillytavern(){
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="37e2ddf59664dd1604cc41b2660f48d1fa1af173"
+    COMMIT="bba91e38fc1bd7e9583c6e0468feb980940a800c"
 
     basic_container
 
@@ -390,6 +390,38 @@ install_ace_step() {
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
         uv pip install -e . && \
         uv pip install torchcodec==0.8.1"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
+# HeartMuLa
+install_heartmula() {
+    REPO="https://github.com/HeartMuLa/heartlib"
+    COMMIT="b0cd98ca41d002599fe80a292f2ca9e23e894d89"
+    COMMAND="uv run webui.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/torch==2\.4\.1/torch/g' pyproject.toml && \
+        sed -i 's/torchaudio==2\.4\.1/torchaudio/g' pyproject.toml && \
+        sed -i 's/torchvision==0\.19\.1/torchvision/g' pyproject.toml && \
+        sed -i 's/torchao==0\.9\.0/torchao/g' pyproject.toml && \
+        sed -i 's/torchtune==0\.4\.0/torchtune/g' pyproject.toml && \
+        sed -i 's/bitsandbytes==0\.49\.0/bitsandbytes/g' pyproject.toml && \
+        sed -i 's/numpy==2\.4\.1/numpy/g' pyproject.toml && \
+        sed -i 's/transformers==4\.57\.0/transformers/g' pyproject.toml"
+
+    # bitsandbytes
+    basic_pip "$REPO" "git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba"
+
+    # Install package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install -e . "
 
     basic_run "$REPO" "$COMMAND"
 }

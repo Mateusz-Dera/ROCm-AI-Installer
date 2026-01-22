@@ -2,9 +2,9 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-12.2-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-13-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-![ROCm](https://img.shields.io/badge/ROCm-7.1.1-red.svg)
+![ROCm](https://img.shields.io/badge/ROCm-7.2-red.svg)
 
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
@@ -21,8 +21,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8)|
-|OS|Debian 13.2|
-|Kernel|6.12.57+deb13-amd64|
+|OS|Debian 13.3|
+|Kernel|6.12.63+deb13-amd64|
 
 ###  Text generation:
 |Name|Links|Additional information|
@@ -59,6 +59,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ACE-Step|https://github.com/ace-step/ACE-Step||
+|HeartMuLa|https://github.com/HeartMuLa/heartlib|Fodler name is <b>heartlib</b>|
 
 ###  Voice generation:
 |Name|Links|Additional information|
@@ -80,7 +81,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 1\. Install Podman.
 
 > [!Note]
-> If you are using Debian 13.2, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 24.04)
+> If you are using Debian 13.3, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 24.04)
 
 
 2\. Make sure that <b>/dev/dri</b> and <b>/dev/kfd</b> are accessible.
