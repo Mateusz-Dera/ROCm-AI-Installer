@@ -1,5 +1,5 @@
 # ROCM-AI-Installer
-# Copyright © 2023-2025 Mateusz Dera
+# Copyright © 2023-2026 Mateusz Dera
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -92,6 +92,7 @@ ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
 ENV ROCM_PATH="/opt/rocm"
 ENV ROCM_HOME="/opt/rocm"
+ENV VLLM_TARGET_DEVICE="rocm"
 
 # Set GPU and PyTorch environment variables
 ENV HIP_VISIBLE_DEVICES=0

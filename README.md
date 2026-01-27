@@ -66,9 +66,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select voice.|
-|Matcha-TTS|https://github.com/shivammehta25/Matcha-TTS||
-|Dia|https://github.com/nari-labs/dia<br> https://github.com/tralamazza/dia/tree/optional-rocm-cuda|Script uses the optional-rocm-cuda fork by tralamazza.|
-|KaniTTS|https://github.com/nineninesix-ai/kani-tts|If you want to change the default model, edit the <b>kanitts/config.py</b> file.|
+|Soprano|https://github.com/ekwek1/soprano<br> https://github.com/Mateusz-Dera/soprano-rocm|Uses my experimental fork for ROCm with vLLM|
 
 ###  3D generation:
 |Name|Links|Additional information|

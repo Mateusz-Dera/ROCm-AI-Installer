@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ROCM-AI-Installer
-# Copyright © 2023-2025 Mateusz Dera
+# Copyright © 2023-2026 Mateusz Dera
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

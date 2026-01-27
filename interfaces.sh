@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ROCM-AI-Installer
-# Copyright © 2023-2025 Mateusz Dera
+# Copyright © 2023-2026 Mateusz Dera
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ basic_requirements(){
     local FOLDER=${2:-$(basename "$REPO")}
     REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$FOLDER.txt")
 
+    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
 }
 
@@ -121,7 +122,7 @@ install_koboldcpp() {
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="959ecf7f234dc0bc0cd6829b25cb0ee1481aa78a"
+    COMMIT="b5b8fa1c8b3b27683b2965a22f9985eec683d384"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
@@ -159,7 +160,7 @@ install_text_generation_web_ui() {
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="bba91e38fc1bd7e9583c6e0468feb980940a800c"
+    COMMIT="cc12ace48dd5aa9e1685db61aa3b83229ca14ed1"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
@@ -175,7 +176,7 @@ install_sillytavern(){
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="bba91e38fc1bd7e9583c6e0468feb980940a800c"
+    COMMIT="308c338763eaeb44ca13eca75ec815231969ca3d"
 
     basic_container
 
@@ -429,7 +430,7 @@ install_heartmula() {
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="37e2ddf59664dd1604cc41b2660f48d1fa1af173"
+    COMMIT="308c338763eaeb44ca13eca75ec815231969ca3d"
     COMMAND="uv run --extra rocm webui.py --listen --api"
     FOLDER=$(basename "$REPO")
 
@@ -446,7 +447,7 @@ install_whisperspeech_web_ui(){
 # F5-TTS
 install_f5_tts(){
     REPO="https://github.com/SWivid/F5-TTS"
-    COMMIT="9ae46c8360303417489d2c1071f29972cd8ab171"
+    COMMIT="c279a2b7d573bc87a4eac6f6c08882188dea1b10"
     COMMAND="f5-tts_infer-gradio --host 0.0.0.0"
     FOLDER=$(basename "$REPO")
 
@@ -465,95 +466,25 @@ install_f5_tts(){
     basic_run "$REPO" "$COMMAND"
 }
 
-# Matcha-TTS
-install_matcha_tts(){
-    REPO="https://github.com/shivammehta25/Matcha-TTS"
-    COMMIT="bd4d90d93214b37f7a159cf205ae85762c2c10aa"
-    COMMAND="matcha-tts-app"
+# Soprano
+install_soprano(){
+    REPO="https://github.com/Mateusz-Dera/soprano-rocm"
+    COMMIT="99ff48a86dc6ba9823acd65189f4374c6715ff86"
+    COMMAND="TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui"
     FOLDER=$(basename "$REPO")
 
     basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
 
-    # Modify app.py to listen on all interfaces
-    podman exec -t rocm bash -c "cd /AI/$FOLDER/matcha && sed -i 's/demo\.queue().launch(share=True)/demo.queue().launch(server_name=\"0.0.0.0\")/' app.py"
-
-    # Modify pyproject.toml to remove version constraints
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/cython==0.29.35/cython/' pyproject.toml && \
-        sed -i 's/numpy==1.24.3/numpy/' pyproject.toml && \
-        rm -f requirements.txt && \
-        touch requirements.txt"
-
     basic_requirements "$REPO"
 
-    # Install package in editable mode
+    basic_pip "$REPO" "/opt/rocm/share/amd_smi"
+
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone https://github.com/vllm-project/vllm"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/vllm && git checkout 37c9859fab60bbc346be20a662387479eb0760de"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && cd ./vllm && TORCH_BLAS_PREFER_HIPBLASLT=1 python setup.py develop"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
-
-    basic_run "$REPO" "$COMMAND"
-}
-
-# Dia
-install_dia(){
-    REPO="https://github.com/tralamazza/dia"
-    COMMIT="8da0c755661e3cb71dc81583400012be6c3f62be"
-    COMMAND="MIOPEN_FIND_MODE=FAST uv run --extra rocm app.py"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-
-    # Modify pyproject.toml to update ROCm version
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's|url = \"https://download.pytorch.org/whl/rocm6\.3\"|url = \"https://download.pytorch.org/whl/rocm6.4\"|' pyproject.toml"
-
-    # Modify app.py to listen on all interfaces
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's/demo.launch(share=args.share)/demo.launch(share=args.share,server_name=\"0.0.0.0\")/' app.py"
-
-    # Install dependencies with ROCm support using uv sync
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv sync --extra rocm"
-
-    basic_run "$REPO" "$COMMAND"
-}
-
-# KaniTTS
-install_kanitts(){
-    REPO="https://github.com/nineninesix-ai/kani-tts"
-    COMMIT="698be2c90cb81ca265771dec7c7e4c1752a8ff96"
-    COMMAND="uv run examples/basic/server.py"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    basic_requirements "$REPO"
-
-    # Rename client.html to index.html in examples/basic
-    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && mv ./client.html ./index.html"
-
-    # Remove logo line from index.html
-    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && sed -i 's/<img alt=\"Logo\" width=\"100px\" height=\"100px\" src=\"logo.png\" \/>//g' index.html"
-
-    # Modify server.py to add HTML server on port 7860
-    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && sed -i '/if __name__ == \"__main__\":/,/uvicorn\.run(app, host=\"0\.0\.0\.0\", port=8000, log_level=\"info\")/d' server.py"
-
-    podman exec -t rocm bash -c "cd /AI/$FOLDER/examples/basic && cat >> server.py << 'EOF'
-
-if __name__ == \"__main__\":
-    import http.server
-    import threading
-    import os
-
-    # Change to examples/basic folder and start HTML server
-    os.chdir('examples/basic')
-    threading.Thread(target=lambda: http.server.HTTPServer(('', 7860), http.server.SimpleHTTPRequestHandler).serve_forever(), daemon=True).start()
-    print(\"HTML Server: http://0.0.0.0:7860\")
-
-    # Start FastAPI server
-    import uvicorn
-    uvicorn.run(app, host=\"0.0.0.0\", port=8000, log_level=\"info\")
-EOF"
 
     basic_run "$REPO" "$COMMAND"
 }

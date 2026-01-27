@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ROCM-AI-Installer
-# Copyright © 2023-2025 Mateusz Dera
+# Copyright © 2023-2026 Mateusz Dera
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -509,12 +509,10 @@ voice_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             1 "Install WhisperSpeech web UI" \
             2 "Install F5-TTS" \
-            3 "Install Matcha-TTS" \
-            4 "Install Dia" \
-            5 "Install KaniTTS" \
+            3 "Soprano" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -531,13 +529,7 @@ voice_generation() {
                 install_f5_tts
                 ;;
             "3")
-                install_matcha_tts
-                ;;
-            "4")
-                install_dia
-                ;;
-            "5")
-                install_kanitts
+                install_soprano
                 ;;
             "")
                 echo "Previous menu..."
