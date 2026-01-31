@@ -62,7 +62,10 @@ services:
       - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Configurable via setup.sh
       - PYTORCH_ROCM_ARCH=${TARGET_GFX:-gfx1100}  # PyTorch ROCm architecture
       - GPU_DEVICE_ORDINAL=0
-      - DISPLAY=${DISPLAY}  # X11 display for GUI applications
+      # X11/Wayland display for GUI applications
+      - DISPLAY=${DISPLAY_VAR}
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY_VAR}
+      - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR_VAR}
 
     # Keep container running
     stdin_open: true
@@ -75,6 +78,7 @@ services:
       - ${AI_HOST_DIR}:/AI
       - /etc/localtime:/etc/localtime:ro  # Inherit timezone from host
       - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 socket for GUI applications
+      - ${XDG_RUNTIME_DIR_VAR}:${XDG_RUNTIME_DIR_VAR}:rw  # Wayland socket
 
     # Set working directory
     working_dir: /AI
