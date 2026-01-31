@@ -66,7 +66,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |:---|:---|:---|
 |WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui<br> https://github.com/collabora/WhisperSpeech||
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select voice.|
-|Soprano|https://github.com/ekwek1/soprano<br> https://github.com/Mateusz-Dera/soprano-rocm|Uses my experimental fork for ROCm with vLLM|
+|Soprano|https://github.com/ekwek1/soprano<br> https://github.com/Mateusz-Dera/soprano-rocm|Uses my experimental fork for ROCm with vLLM|# (Initial run only) You may experience slower audio generation upon first launch. Please restart the application to resolve this.|
 
 ###  3D generation:
 |Name|Links|Additional information|

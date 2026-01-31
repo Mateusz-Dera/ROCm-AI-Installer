@@ -398,31 +398,41 @@ install_ace_step() {
 # HeartMuLa
 install_heartmula() {
     REPO="https://github.com/HeartMuLa/heartlib"
-    COMMIT="b0cd98ca41d002599fe80a292f2ca9e23e894d89"
-    COMMAND="uv run webui.py"
+    COMMIT="adabcf5791926efd1a6c34b22cccd3f87d643c13"
+    COMMAND="python webui.py --listen"
     FOLDER=$(basename "$REPO")
 
     basic_container
     basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
+    basic_venv "$REPO" "3.12"
+
+    # Copy custom webui
+    podman cp "$SCRIPT_DIR/custom_files/heartlib/webui.py" "rocm:/AI/$FOLDER/webui.py"
+
     basic_requirements "$REPO"
-
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/torch==2\.4\.1/torch/g' pyproject.toml && \
-        sed -i 's/torchaudio==2\.4\.1/torchaudio/g' pyproject.toml && \
-        sed -i 's/torchvision==0\.19\.1/torchvision/g' pyproject.toml && \
-        sed -i 's/torchao==0\.9\.0/torchao/g' pyproject.toml && \
-        sed -i 's/torchtune==0\.4\.0/torchtune/g' pyproject.toml && \
-        sed -i 's/bitsandbytes==0\.49\.0/bitsandbytes/g' pyproject.toml && \
-        sed -i 's/numpy==2\.4\.1/numpy/g' pyproject.toml && \
-        sed -i 's/transformers==4\.57\.0/transformers/g' pyproject.toml"
-
-    # bitsandbytes
-    basic_pip "$REPO" "git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba"
 
     # Install package in editable mode
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install -e . "
+        uv pip install -e . --no-deps"
+
+    # Download model checkpoints
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123' && \
+        hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123' && \
+        hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json"
+
+    # Apply fixes for torchtune compatibility (rope_init and setup_caches)
+    podman cp "$SCRIPT_DIR/custom_files/heartlib/patch_heartmula.py" "rocm:/AI/$FOLDER/patch_heartmula.py"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        python patch_heartmula.py src/heartlib/heartmula/modeling_heartmula.py"
+
+    # Fix ignore_mismatched_sizes for HeartCodec
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/dtype=self.codec_dtype,\$/dtype=self.codec_dtype, ignore_mismatched_sizes=True,/g' src/heartlib/pipelines/music_generation.py"
+
+    # Fix audio save using soundfile instead of torchaudio
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/torchaudio.save(save_path, wav.to(torch.float32).cpu(), 48000)/import soundfile as sf; wav_numpy = wav.to(torch.float32).cpu().numpy(); wav_numpy = wav_numpy.T if wav_numpy.ndim == 2 else wav_numpy; sf.write(save_path, wav_numpy, 48000)/g' src/heartlib/pipelines/music_generation.py"
 
     basic_run "$REPO" "$COMMAND"
 }
@@ -469,7 +479,7 @@ install_f5_tts(){
 # Soprano
 install_soprano(){
     REPO="https://github.com/Mateusz-Dera/soprano-rocm"
-    COMMIT="99ff48a86dc6ba9823acd65189f4374c6715ff86"
+    COMMIT="e4b3dd66641cc22c8f97f167ad1bfd75e04292e5"
     COMMAND="TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui"
     FOLDER=$(basename "$REPO")
 
