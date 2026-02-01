@@ -371,7 +371,7 @@ AMDEOF"
 install_ace_step() {
     REPO="https://github.com/ace-step/ACE-Step"
     COMMIT="6ae0852b1388de6dc0cca26b31a86d711f723cb3"
-    COMMAND="uv run acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0"
+    COMMAND="MIOPEN_FIND_MODE=3 PYTORCH_TUNABLEOP_ENABLED=1 uv run acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0 --bf16 True"
     FOLDER=$(basename "$REPO")
 
     basic_container
@@ -387,10 +387,12 @@ install_ace_step() {
 
     basic_requirements "$REPO"
 
-    # Install package in editable mode and torchcodec
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install -e . && \
-        uv pip install torchcodec==0.8.1"
+    # Install package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+
+    # Apply ROCm patches for pipeline
+    podman cp "$SCRIPT_DIR/custom_files/ace-step/patch_rocm.py" "rocm:/AI/$FOLDER/patch_rocm.py"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && python patch_rocm.py"
 
     basic_run "$REPO" "$COMMAND"
 }

@@ -29,7 +29,6 @@ einops==0.8.1
 einx==0.3.0
 ema-pytorch==0.7.7
 encodec==0.1.1
--e file:///AI/F5-TTS
 fastapi==0.124.4
 ffmpy==1.0.0
 filelock==3.20.1
