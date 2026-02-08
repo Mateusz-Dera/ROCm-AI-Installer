@@ -1,8 +1,8 @@
 {
   "id": "68375b17-c65d-48e6-9943-aa696c5116b9",
   "revision": 0,
-  "last_node_id": 131,
-  "last_link_id": 277,
+  "last_node_id": 133,
+  "last_link_id": 283,
   "nodes": [
     {
       "id": 94,
@@ -30,91 +30,12 @@
         }
       ],
       "properties": {
+        "Node name for S&R": "VAELoader",
         "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "VAELoader"
+        "ver": "0.3.49"
       },
       "widgets_values": [
         "qwen_image_vae.safetensors"
-      ]
-    },
-    {
-      "id": 97,
-      "type": "EmptyHunyuanLatentVideo",
-      "pos": [
-        465.66094970703125,
-        -387.2713317871094
-      ],
-      "size": [
-        240,
-        130
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            239
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "EmptyHunyuanLatentVideo"
-      },
-      "widgets_values": [
-        1280,
-        768,
-        1,
-        1
-      ]
-    },
-    {
-      "id": 100,
-      "type": "CLIPTextEncode",
-      "pos": [
-        464.3016052246094,
-        -649.043212890625
-      ],
-      "size": [
-        240,
-        90
-      ],
-      "flags": {
-        "collapsed": false
-      },
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 270
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            237
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "CLIPTextEncode"
-      },
-      "widgets_values": [
-        "Beautiful scenery nature glass bottle landscape. Purple galaxy bottle."
       ]
     },
     {
@@ -146,14 +67,14 @@
           "type": "CONDITIONING",
           "slot_index": 0,
           "links": [
-            238
+            281
           ]
         }
       ],
       "properties": {
+        "Node name for S&R": "CLIPTextEncode",
         "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "CLIPTextEncode"
+        "ver": "0.3.49"
       },
       "widgets_values": [
         "JPEG compression. Ugly. Low quality."
@@ -177,7 +98,7 @@
         {
           "name": "samples",
           "type": "LATENT",
-          "link": 240
+          "link": 283
         },
         {
           "name": "vae",
@@ -196,9 +117,9 @@
         }
       ],
       "properties": {
+        "Node name for S&R": "VAEDecode",
         "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "VAEDecode"
+        "ver": "0.3.49"
       },
       "widgets_values": []
     },
@@ -233,67 +154,6 @@
       ]
     },
     {
-      "id": 95,
-      "type": "KSampler",
-      "pos": [
-        896.7467651367188,
-        -769.9829711914062
-      ],
-      "size": [
-        300,
-        474
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 275
-        },
-        {
-          "name": "positive",
-          "type": "CONDITIONING",
-          "link": 237
-        },
-        {
-          "name": "negative",
-          "type": "CONDITIONING",
-          "link": 238
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 239
-        }
-      ],
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "slot_index": 0,
-          "links": [
-            240
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.49",
-        "Node name for S&R": "KSampler"
-      },
-      "widgets_values": [
-        1053018503116654,
-        "randomize",
-        20,
-        4.5,
-        "euler",
-        "normal",
-        1
-      ]
-    },
-    {
       "id": 128,
       "type": "CLIPLoader",
       "pos": [
@@ -305,7 +165,7 @@
         106
       ],
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -319,14 +179,45 @@
         }
       ],
       "properties": {
+        "Node name for S&R": "CLIPLoader",
         "cnr_id": "comfy-core",
-        "ver": "0.3.56",
-        "Node name for S&R": "CLIPLoader"
+        "ver": "0.3.56"
       },
       "widgets_values": [
         "qwen_2.5_vl_7b_fp8_scaled.safetensors",
         "stable_diffusion",
         "default"
+      ]
+    },
+    {
+      "id": 132,
+      "type": "UnetLoaderGGUF",
+      "pos": [
+        136.809975178631,
+        -767.4803952154294
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            278
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UnetLoaderGGUF"
+      },
+      "widgets_values": [
+        "qwen-image-2512-Q6_K.gguf"
       ]
     },
     {
@@ -347,7 +238,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 277
+          "link": 278
         }
       ],
       "outputs": [
@@ -355,30 +246,72 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            275
+            279
           ]
         }
       ],
       "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly",
         "cnr_id": "comfy-core",
-        "ver": "0.3.56",
-        "Node name for S&R": "LoraLoaderModelOnly"
+        "ver": "0.3.56"
       },
       "widgets_values": [
-        "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+        "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors",
         1
       ]
     },
     {
-      "id": 131,
-      "type": "LoaderGGUF",
+      "id": 100,
+      "type": "CLIPTextEncode",
       "pos": [
-        143.9205028505938,
-        -768.1168964539659
+        464.3016052246094,
+        -649.043212890625
       ],
       "size": [
-        270,
-        58
+        240,
+        90
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 270
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            280
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.49"
+      },
+      "widgets_values": [
+        "Beautiful scenery nature glass bottle landscape. Purple galaxy bottle."
+      ]
+    },
+    {
+      "id": 97,
+      "type": "EmptyHunyuanLatentVideo",
+      "pos": [
+        465.66094970703125,
+        -387.2713317871094
+      ],
+      "size": [
+        249.6197265625,
+        130
       ],
       "flags": {},
       "order": 3,
@@ -386,56 +319,101 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "MODEL",
-          "type": "MODEL",
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
           "links": [
-            277
+            282
           ]
         }
       ],
       "properties": {
-        "cnr_id": "gguf",
-        "ver": "a64ccbf6c694a46c181a444a1ac9d2d810607309",
-        "Node name for S&R": "LoaderGGUF"
+        "Node name for S&R": "EmptyHunyuanLatentVideo",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.49"
       },
       "widgets_values": [
-        "qwen-image-Q6_K.gguf"
+        1024,
+        768,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 133,
+      "type": "KSampler",
+      "pos": [
+        891.6450088776276,
+        -771.0724071610282
+      ],
+      "size": [
+        300,
+        474
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 279
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 280
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 281
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 282
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            283
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.48",
+        "ue_properties": {
+          "version": "7.5.2",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65
+      },
+      "widgets_values": [
+        365968220412512,
+        "randomize",
+        2,
+        0.8,
+        "euler",
+        "beta",
+        1
       ]
     }
   ],
   "links": [
-    [
-      237,
-      100,
-      0,
-      95,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      238,
-      93,
-      0,
-      95,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      239,
-      97,
-      0,
-      95,
-      3,
-      "LATENT"
-    ],
-    [
-      240,
-      95,
-      0,
-      98,
-      0,
-      "LATENT"
-    ],
     [
       241,
       94,
@@ -469,34 +447,67 @@
       "CLIP"
     ],
     [
-      275,
-      130,
+      278,
+      132,
       0,
-      95,
+      130,
       0,
       "MODEL"
     ],
     [
-      277,
-      131,
-      0,
+      279,
       130,
       0,
+      133,
+      0,
       "MODEL"
+    ],
+    [
+      280,
+      100,
+      0,
+      133,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      281,
+      93,
+      0,
+      133,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      282,
+      97,
+      0,
+      133,
+      3,
+      "LATENT"
+    ],
+    [
+      283,
+      133,
+      0,
+      98,
+      0,
+      "LATENT"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.6350799082656442,
+      "scale": 1.1167815779425223,
       "offset": [
-        623.19696329351,
-        1126.1056866312028
+        -145.05714173991146,
+        948.7145272363723
       ]
     },
-    "frontendVersion": "1.28.6",
-    "groupNodes": {}
+    "frontendVersion": "1.37.11",
+    "groupNodes": {},
+    "workflowRendererVersion": "LG"
   },
   "version": 0.4
 }

@@ -44,10 +44,11 @@ basic_container(){
 basic_git(){
     local REPO=$1
     local COMMIT=$2
-    local FOLDER=${3:-$(basename "$REPO")}
+    local SUBFOLDER=${3:-/}
+    local FOLDER=$(basename "$REPO")
 
-    podman exec -t rocm bash -c "cd /AI && echo $FOLDER && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    podman exec -t rocm bash -c "cd /AI$SUBFOLDER && echo $FOLDER && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
+    podman exec -it rocm bash -c "cd /AI$SUBFOLDER && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
 }
 
 # VENV
@@ -63,7 +64,8 @@ basic_venv(){
 basic_requirements(){
     local REPO=$1
     local FOLDER=${2:-$(basename "$REPO")}
-    REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$FOLDER.txt")
+    local BASENAME=$(basename "$REPO")
+    REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$BASENAME.txt")
 
     podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
@@ -198,11 +200,17 @@ install_sillytavern_whisperspeech_web_ui() {
         rm -rf whisperspeech-webui-temp"
 }
 
+# Download
+comfy_download() {
+    echo "$2/resolve/$3/$4 $1"
+    podman exec -it rocm bash -c "wget -P $1 $2/resolve/$3/$4"
+}
+
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="a5e85017d8574cb99024d320f7a53a77a9e6aa5a"
-    COMMAND="MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 uv run main.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram"
+    COMMIT="dd86b155210df9b34f479d70dad675aa782a30ef"
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 uv run main.py --enable-manager --use-pytorch-cross-attention --normalvram --disable-pinned-memory --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
 
     basic_container
@@ -210,161 +218,33 @@ install_comfyui() {
     basic_venv "$REPO"
     basic_requirements "$REPO"
 
-    local gguf=0
-    local qwen=0
-    local qwen2509=0
-
-    # Process each selected choice
-    for choice in $CHOICES; do
-        case $choice in
-            '"1"')
-                # ComfyUI-Manager
-                podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
-                    git clone https://github.com/ltdrdata/ComfyUI-Manager && \
-                    cd ComfyUI-Manager && \
-                    git checkout c7f03ad64e70ddda3b6e015e807f111b4ace45cf"
-                ;;
-            '"2"')
-                gguf=1
-                ;;
-            '"3"')
-                # AuraSR
-                podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
-                    git clone https://github.com/alexisrolland/ComfyUI-AuraSR --recursive && \
-                    cd ComfyUI-AuraSR && \
-                    git checkout 29c97cf9d7bda74d3020678a03545d74dfccadf4"
-
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    hf download fal/AuraSR-v2 model.safetensors --revision ff452185a7c8b51206dd62c21c292e7baad5c3a3 --local-dir /AI/$FOLDER/models/upscale_models && \
-                    mv /AI/$FOLDER/models/upscale_models/model.safetensors /AI/$FOLDER/models/upscale_models/aura_sr_v2.safetensors && \
-                    hf download fal/AuraSR model.safetensors --revision 87da2f52b29b6351391f71c74de581c393fc19f5 --local-dir /AI/$FOLDER/models/upscale_models && \
-                    mv /AI/$FOLDER/models/upscale_models/model.safetensors /AI/$FOLDER/models/upscale_models/aura_sr.safetensors && \
-                    uv pip install aura-sr==0.0.4"
-                ;;
-            '"4"')
-                # AuraFlow
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    hf download fal/AuraFlow-v0.3 aura_flow_0.3.safetensors --revision 2cd8588f04c886002be4571697d84654a50e3af3 --local-dir /AI/$FOLDER/models/checkpoints"
-                ;;
-            '"8"')
-                gguf=1
-                qwen=1
-                # Qwen-Image
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    hf download city96/Qwen-Image-gguf qwen-image-Q6_K.gguf --revision e77babc55af111419e1714a7a0a848b9cac25db7 --local-dir /AI/$FOLDER/models/diffusion_models"
-                ;;
-            '"9"')
-                gguf=1
-                qwen=1
-                # Qwen-Image-Edit
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    hf download calcuis/qwen-image-edit-gguf qwen-image-edit-q4_k_s.gguf --revision 113bedf317589c2e8f6d6f7fde3a40dbf90ef6eb --local-dir /AI/$FOLDER/models/diffusion_models"
-                ;;
-            '"10"')
-                gguf=1
-                qwen2509=1
-                # Qwen-Image-Edit-2509
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    hf download QuantStack/Qwen-Image-Edit-2509-GGUF Qwen-Image-Edit-2509-Q4_0.gguf --revision 37f16c813605380a97900aac19433ffb1622817a --local-dir /AI/$FOLDER/models/diffusion_models"
-                ;;
-            '"11"')
-                # Wan 2.2
-                TEMP_DIR="ComfyUI-Wan2.2"
-                WAN_COMMIT="bcd839189de217703be0450c4f3736062a4a4873"
-
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    cd /tmp && \
-                    if [ -d '$TEMP_DIR' ]; then rm -rf '$TEMP_DIR'; fi && \
-                    mkdir $TEMP_DIR && \
-                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors /AI/$FOLDER/models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors && \
-                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan_2.1_vae.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/vae/wan_2.1_vae.safetensors /AI/$FOLDER/models/vae/wan_2.1_vae.safetensors && \
-                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/vae/wan2.2_vae.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/vae/wan2.2_vae.safetensors /AI/$FOLDER/models/vae/wan2.2_vae.safetensors && \
-                    hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors --revision $WAN_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors /AI/$FOLDER/models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors && \
-                    rm -rf /tmp/$TEMP_DIR"
-                ;;
-            '"12"')
-                # Z Image Turbo
-                TEMP_DIR="ComfyUI-ZImageTurbo"
-                ZIMAGE_COMMIT="4f1e20c3aeca13aae20e46ff5fee8e37cd1278fc"
-
-                podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-                    cd /tmp && \
-                    if [ -d '$TEMP_DIR' ]; then rm -rf '$TEMP_DIR'; fi && \
-                    mkdir $TEMP_DIR && \
-                    hf download Comfy-Org/z_image_turbo split_files/vae/ae.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/vae/ae.safetensors /AI/$FOLDER/models/vae/ae.safetensors && \
-                    hf download Comfy-Org/z_image_turbo split_files/diffusion_models/z_image_turbo_bf16.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/diffusion_models/z_image_turbo_bf16.safetensors /AI/$FOLDER/models/diffusion_models/z_image_turbo_bf16.safetensors && \
-                    hf download Comfy-Org/z_image_turbo split_files/text_encoders/qwen_3_4b.safetensors --revision $ZIMAGE_COMMIT --local-dir /tmp/$TEMP_DIR && \
-                    mv /tmp/$TEMP_DIR/split_files/text_encoders/qwen_3_4b.safetensors /AI/$FOLDER/models/text_encoders/qwen_3_4b.safetensors && \
-                    rm -rf /tmp/$TEMP_DIR"
-                ;;
-            "")
-                break
-                ;;
-            *)
-                echo "Unknown option: $choice"
-                ;;
-        esac
-    done
-
-    if [ $gguf -eq 1 ]; then
-        podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && \
-            git clone https://github.com/calcuis/gguf && \
-            cd gguf && \
-            git checkout a64ccbf6c694a46c181a444a1ac9d2d810607309"
-    fi
-
-    if [ $qwen -eq 1 ]; then
-        # Lightning
-        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-4steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
-            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Lightning-8steps-V2.0.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras"
-    fi
-
-    if [ $qwen2509 -eq 1 ]; then
-        # Lightning
-        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
-            hf download lightx2v/Qwen-Image-Lightning Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors --revision 21e79ba3c2cb6454834051ea973ffcd04ff1993f --local-dir /AI/$FOLDER/models/loras && \
-            mv /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors && \
-            mv /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-bf16.safetensors && \
-            rm -rf /AI/$FOLDER/models/loras/Qwen-Image-Edit-2509"
-    fi
-
-    if [ $qwen -eq 1 -o $qwen2509 -eq 1 ]; then
-        # VL-7B
-        podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-            hf download Comfy-Org/Qwen-Image_ComfyUI split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors --revision 25608066f9bf5cdc28020836ce9549587053f346 --local-dir /AI/$FOLDER/models/ && \
-            mv /AI/$FOLDER/models/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors /AI/$FOLDER/models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors && \
-            rm -rf /AI/$FOLDER/models/split_files && \
-            hf download Comfy-Org/Qwen-Image_ComfyUI split_files/vae/qwen_image_vae.safetensors --revision b8f0a47470ec2a0724d6267ca696235e441baa5d --local-dir /AI/$FOLDER/models/vae && \
-            mv /AI/$FOLDER/models/vae/split_files/vae/qwen_image_vae.safetensors /AI/$FOLDER/models/vae/qwen_image_vae.safetensors && \
-            rm -rf /AI/$FOLDER/models/vae/split_files"
-    fi
-
-    # Create wrapper script for AMD optimization
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/main_amd.py << 'AMDEOF'
-import torch
-# Disable cuDNN for better AMD performance
-torch.backends.cudnn.enabled = False
-
-# Import and run the original main.py
-import sys
-import os
-
-# Execute main.py
-exec(open('main.py').read())
-AMDEOF"
-
-    # Update COMMAND to use the wrapper
-    COMMAND="MIOPEN_FIND_MODE=2 PYTORCH_TUNABLEOP_ENABLED=1 uv run main_amd.py --listen --reserve-vram 1.0 --preview-method auto --bf16-vae --disable-xformers --lowvram"
-
     basic_run "$REPO" "$COMMAND"
+
+    # GGUF
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && git clone https://github.com/city96/ComfyUI-GGUF && cd ComfyUI-GGUF && git checkout 6ea2651e7df66d7585f6ffee804b20e92fb38b8a"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && git clone https://github.com/Lightricks/ComfyUI-LTXVideo && cd ComfyUI-LTXVideo && git checkout 49add6dddb2e1bb2d23bc509a9fac3edd2834961"
+    
+    # Qwen-Image
+    comfy_download "$FOLDER/models/text_encoders" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+    comfy_download "$FOLDER/models/vae" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/vae/qwen_image_vae.safetensors"
+
+    # Qwen-Image-2512
+    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-2512-GGUF" "1626d7531f84b4d2ea1cd6d2e69f41ec027dd354" "qwen-image-2512-Q5_0.gguf"
+    comfy_download "$FOLDER/models/loras" "https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps" "85afdc701a730b8866d9aa7c7a2eb5bf019b8c00" "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors"
+
+    # Qwen-Image-2511 
+    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF" "0d33d9692b4b26212297240d87b0d4719aa4fd06" "qwen-image-edit-2511-Q5_0.gguf"
+    comfy_download "$FOLDER/models/loras/" "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning" "d74eba145674fd7e31b949324e148e21e7118abd" "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
+
+    # Z-Image-Turbo
+    comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
+    comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/text_encoders/qwen_3_4b.safetensors"
+    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
+
+    # LTX-2
+    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/LTX-2-GGUF" "f6212950c786257ed92509ff725d025d323bb4b8" "ltx-2-19b-dev-Q5_0.gguf"
+    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Kijai/LTXV2_comfy" "f0e79fa50dcc5cd643a5cfda39c64afcf0d57c56" "VAE/LTX2_audio_vae_bf16.safetensors"
+    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Kijai/LTXV2_comfy" "f0e79fa50dcc5cd643a5cfda39c64afcf0d57c56" "VAE/LTX2_video_vae_bf16.safetensors"
 }
 
 # ACE-Step
@@ -389,6 +269,13 @@ install_ace_step() {
 
     # Install package in editable mode
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+
+    # Fix Gradio 6.x compatibility (show_download_button removed)
+    # Fix port binding (use None default so Gradio auto-finds free port)
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/, show_download_button=True//g' acestep/ui/components.py && \
+        sed -i '/show_download_button=True,/d' acestep/ui/components.py && \
+        sed -i 's/\"--port\", type=int, default=7865/\"--port\", type=int, default=None/' acestep/gui.py"
 
     # Apply ROCm patches for pipeline
     podman cp "$SCRIPT_DIR/custom_files/ace-step/patch_rocm.py" "rocm:/AI/$FOLDER/patch_rocm.py"
