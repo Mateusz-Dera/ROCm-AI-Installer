@@ -463,16 +463,11 @@ image_generation() {
 }
 
 comfyui_addons(){
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 11 --cancel-button "Back" \
-        1 "ComfyUI-Manager" ON \
-        2 "ComfyUI-GGUF" ON \
-        3 "ComfyUI-AuraSR" ON \
-        4 "AuraFlow-v0.3" ON \
-        8 "Qwen-Image GGUF" ON \
-        9 "Qwen-Image-Edit GGUF" ON \
-        10 "Qwen-Image-Edit-2509 GGUF" ON \
-        11 "Wan2.2-TI2V-5B" ON \
-        12 "Z-Image-Turbo" ON 3>&1 1>&2 2>&3)
+    CHOICES=$(whiptail --checklist "Addons:" 17 50 5 --cancel-button "Back" \
+        1 "Qwen-Image-2512-GGUF" ON \
+        2 "Qwen-Image-2511-Edit-GGUF" ON \
+        3 "Z-Image-Turbo" ON \
+        4 "Wan2.2-TI2V-5B" ON 3>&1 1>&2 2>&3)
 
     status=$?
 

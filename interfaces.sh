@@ -210,8 +210,13 @@ comfy_download() {
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
     COMMIT="dd86b155210df9b34f479d70dad675aa782a30ef"
-    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 uv run main.py --enable-manager --use-pytorch-cross-attention --normalvram --disable-pinned-memory --reserve-vram 2.0"
+    TUNABLEOP=""
+    if [[ "$GFX_VERSION" == gfx110* ]]; then
+        TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
+    fi
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --normalvram --preview-method auto --dont-upcast-attention --fp16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
+    ADDONS="$@"
 
     basic_container
     basic_git "$REPO" "$COMMIT"
@@ -220,31 +225,43 @@ install_comfyui() {
 
     basic_run "$REPO" "$COMMAND"
 
-    # GGUF
+    # Extensions
     podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && git clone https://github.com/city96/ComfyUI-GGUF && cd ComfyUI-GGUF && git checkout 6ea2651e7df66d7585f6ffee804b20e92fb38b8a"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/custom_nodes && git clone https://github.com/Lightricks/ComfyUI-LTXVideo && cd ComfyUI-LTXVideo && git checkout 49add6dddb2e1bb2d23bc509a9fac3edd2834961"
-    
-    # Qwen-Image
-    comfy_download "$FOLDER/models/text_encoders" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
-    comfy_download "$FOLDER/models/vae" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/vae/qwen_image_vae.safetensors"
 
-    # Qwen-Image-2512
-    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-2512-GGUF" "1626d7531f84b4d2ea1cd6d2e69f41ec027dd354" "qwen-image-2512-Q5_0.gguf"
-    comfy_download "$FOLDER/models/loras" "https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps" "85afdc701a730b8866d9aa7c7a2eb5bf019b8c00" "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors"
+    # Qwen-Image (shared text encoder + vae for Qwen models)
+    if [[ "$ADDONS" == *"1"* ]] || [[ "$ADDONS" == *"2"* ]]; then
+        comfy_download "$FOLDER/models/text_encoders" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+        comfy_download "$FOLDER/models/vae" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/vae/qwen_image_vae.safetensors"
+    fi
 
-    # Qwen-Image-2511 
-    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF" "0d33d9692b4b26212297240d87b0d4719aa4fd06" "qwen-image-edit-2511-Q5_0.gguf"
-    comfy_download "$FOLDER/models/loras/" "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning" "d74eba145674fd7e31b949324e148e21e7118abd" "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
+    # 1 - Qwen-Image-2512
+    if [[ "$ADDONS" == *"1"* ]]; then
+        comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-2512-GGUF" "1626d7531f84b4d2ea1cd6d2e69f41ec027dd354" "qwen-image-2512-Q5_0.gguf"
+        comfy_download "$FOLDER/models/loras" "https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps" "85afdc701a730b8866d9aa7c7a2eb5bf019b8c00" "Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors"
+    fi
 
-    # Z-Image-Turbo
-    comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
-    comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/text_encoders/qwen_3_4b.safetensors"
-    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
+    # 2 - Qwen-Image-2511-Edit
+    if [[ "$ADDONS" == *"2"* ]]; then
+        comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF" "0d33d9692b4b26212297240d87b0d4719aa4fd06" "qwen-image-edit-2511-Q5_0.gguf"
+        comfy_download "$FOLDER/models/loras/" "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning" "d74eba145674fd7e31b949324e148e21e7118abd" "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
+    fi
 
-    # LTX-2
-    comfy_download "$FOLDER/models/unet/" "https://huggingface.co/unsloth/LTX-2-GGUF" "f6212950c786257ed92509ff725d025d323bb4b8" "ltx-2-19b-dev-Q5_0.gguf"
-    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Kijai/LTXV2_comfy" "f0e79fa50dcc5cd643a5cfda39c64afcf0d57c56" "VAE/LTX2_audio_vae_bf16.safetensors"
-    comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Kijai/LTXV2_comfy" "f0e79fa50dcc5cd643a5cfda39c64afcf0d57c56" "VAE/LTX2_video_vae_bf16.safetensors"
+    # 3 - Z-Image-Turbo
+    if [[ "$ADDONS" == *"3"* ]]; then
+        comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
+        comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/text_encoders/qwen_3_4b.safetensors"
+        comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
+    fi
+
+    # 4 - Wan 2.2 TI2V 5B
+    if [[ "$ADDONS" == *"4"* ]]; then
+        WAN_REPO="https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
+        WAN_COMMIT="f97505f0d38bea4897c970db66cb5f97f73676de"
+        comfy_download "$FOLDER/models/text_encoders/" "$WAN_REPO" "$WAN_COMMIT" "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+        comfy_download "$FOLDER/models/vae/" "$WAN_REPO" "$WAN_COMMIT" "split_files/vae/wan_2.1_vae.safetensors"
+        comfy_download "$FOLDER/models/vae/" "$WAN_REPO" "$WAN_COMMIT" "split_files/vae/wan2.2_vae.safetensors"
+        comfy_download "$FOLDER/models/diffusion_models/" "$WAN_REPO" "$WAN_COMMIT" "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors"
+    fi
 }
 
 # ACE-Step

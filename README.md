@@ -40,7 +40,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 ###  Image & video generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
-|ComfyUI|https://github.com/comfyanonymous/ComfyUI|Workflows templates are in the workflows folder.<br> The GGUF manager and extension are installed by default.|
+|ComfyUI|https://github.com/comfyanonymous/ComfyUI<br> https://github.com/city96/ComfyUI-GGUF|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
 
 #### ComfyUI Addons:
 |Name|Link|Additional information|
@@ -48,7 +48,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Qwen-Image-2512-GGUF|https://huggingface.co/Qwen/Qwen-Image-2512<br>https://huggingface.co/unsloth/Qwen-Image-2512-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps|Uses <b>Q5_0</b> quant.<br> Uses <b>2-step turbo LoRA</b>.|
 |Qwen-Image-2511-Edit-GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2511<br> https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning|Uses <b>Q5_0</b> quant.<br> Uses <b>4-step Lightning LoRA</b>|
 |Z-Image-Turbo|https://huggingface.co/Tongyi-MAI/Z-Image-Turbo<br> https://huggingface.co/Comfy-Org/z_image_turbo||
-|LTX-2-GGUF|https://huggingface.co/Lightricks/LTX-2<br> https://huggingface.co/unsloth/LTX-2-GGUF<br> https://huggingface.co/Kijai/LTXV2_comfy<br> https://github.com/Lightricks/ComfyUI-LTXVideo|Uses <b>Q5_0</b> quant.|
+|Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged||
+|ComfyUI-SUPIR|https://github.com/kijai/ComfyUI-SUPIR||
 
 ###  Music generation:
 |Name|Links|Additional information|
