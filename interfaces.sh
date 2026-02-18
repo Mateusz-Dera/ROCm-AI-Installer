@@ -363,7 +363,7 @@ install_whisperspeech_web_ui(){
 # F5-TTS
 install_f5_tts(){
     REPO="https://github.com/SWivid/F5-TTS"
-    COMMIT="c279a2b7d573bc87a4eac6f6c08882188dea1b10"
+    COMMIT="54c50eb8f655590ff6d7ad64aa065e61946621be"
     COMMAND="f5-tts_infer-gradio --host 0.0.0.0"
     FOLDER=$(basename "$REPO")
 
