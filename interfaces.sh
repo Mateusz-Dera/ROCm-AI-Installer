@@ -68,7 +68,8 @@ basic_requirements(){
     REQUIREMENTS=$(tr '\n' ' ' < "$SCRIPT_DIR/requirements/$BASENAME.txt")
 
     podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $REQUIREMENTS"
+    podman cp "$SCRIPT_DIR/requirements/$BASENAME.txt" "rocm:/AI/$FOLDER/requirements.txt"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install --override requirements.txt $REQUIREMENTS"
 }
 
 # RUN
@@ -449,7 +450,7 @@ install_trellis(){
     podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
     podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/nvdiffrast-hip && uv pip install . --no-build-isolation"
     podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/diff-gaussian-rasterization && chmod +x build_hip.sh && ./build_hip.sh"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/torchsparse && rm -rf build *.egg-info 2>/dev/null || true && FORCE_CUDA=1 pip install . --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/torchsparse && rm -rf build *.egg-info 2>/dev/null || true && FORCE_CUDA=1 uv pip install . --no-build-isolation"
 
     # Patch gradio_client for compatibility
     echo "Patching gradio_client for compatibility..."
