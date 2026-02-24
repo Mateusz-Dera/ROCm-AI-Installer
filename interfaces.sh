@@ -122,6 +122,52 @@ install_koboldcpp() {
     basic_run "$REPO" "$COMMAND"
 }
 
+# TabbyAPI
+install_tabbyapi() {
+    REPO="https://github.com/theroyallab/tabbyAPI"
+    COMMIT="41511f56c65ff0d5d7d7fca2adc07a0b0a7a508a"
+    EXLLAMA_REPO="https://github.com/turboderp-org/exllamav2"
+    EXLLAMA_COMMIT="6a2d8311408aa23af34e8ec32e28085ea68dada7"
+    COMMAND="python main.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+
+    # Install tabbyAPI core deps from pyproject.toml (without exllamav2 extras)
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e . --override requirements.txt"
+
+    # Clone and build exllamav2 from source for ROCm
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone $EXLLAMA_REPO && cd exllamav2 && git checkout $EXLLAMA_COMMIT"
+    # Patch: warpSize is a runtime variable in HIP, unusable as __shared__ array size.
+    # For gfx10xx/gfx11xx (RDNA) wave32 mode, warpSize == 32 == CUDA constant.
+    podman exec -it rocm bash -c "
+      BASE=/AI/$FOLDER/exllamav2/exllamav2/exllamav2_ext
+      for f in \$BASE/cuda/layer_norm.cu \$BASE/cuda/rms_norm.cu; do
+        sed -i 's|#define NUM_WARPS (1024 / warpSize)|#define NUM_WARPS 32|' \"\$f\"
+        sed -i 's|#define WARP_SIZE (warpSize)|#define WARP_SIZE 32|' \"\$f\"
+      done
+    "
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install ./exllamav2 --no-build-isolation --override requirements.txt"
+
+    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/models/example-model"
+
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/config.yml << 'EOF'
+network:
+  host: 0.0.0.0
+  port: 5000
+
+model:
+  model_dir: models
+  model_name: example-model
+  max_seq_len: -1
+EOF"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
@@ -134,30 +180,6 @@ install_llama_cpp() {
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
     basic_run "$REPO" "$COMMAND" "&&"
-}
-
-# Text generation web UI
-install_text_generation_web_ui() {
-    REPO="https://github.com/oobabooga/text-generation-webui"
-    COMMIT="910456ba317ae99a313f00c593bd302281aa64ea"
-    COMMAND="uv run server.py --api --listen --extensions sd_api_pictures send_pictures gallery"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    basic_requirements "$REPO"
-
-    # bitsandbytes
-    basic_pip "$REPO" "git+https://github.com/ROCm/bitsandbytes.git@4fa939b3883ca17574333de2935beaabf71b2dba"
-
-    # ExLlamaV2
-    basic_pip "$REPO" "https://github.com/turboderp-org/exllamav2/releases/download/v0.3.2/exllamav2-0.3.2+rocm6.4.torch2.8.0-cp313-cp313-linux_x86_64.whl"
-
-    # llama_cpp
-    basic_pip "$REPO" "https://github.com/oobabooga/llama-cpp-binaries/releases/download/v0.76.0/llama_cpp_binaries-0.76.0+vulkanavx-py3-none-linux_x86_64.whl"
-
-    basic_run "$REPO" "$COMMAND"
 }
 
 # SillyTavern

@@ -8,16 +8,17 @@ Main changes:
 Added:
 - HeartMuLa
 - Soprano
+- TabbyAPI
 
 Removed:
 - Matcha-TTS
 - Dia
 - KaniTTS
+- Text generation web UI
 
 Updated:
 - llama.cpp
 - KoboldCPP
-- Text generation web UI
 - SillyTavern
 - WhisperSpeech web UI
 - F5-TTS

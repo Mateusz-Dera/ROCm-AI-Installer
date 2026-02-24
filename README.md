@@ -27,9 +27,9 @@ Installation scripts for an AI applications using ROCm on Linux.
 ###  Text generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
-|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm|Support GGML and GGUF models.|
-|Text generation web UI|https://github.com/oobabooga/text-generation-webui<br/> https://github.com/ROCm/bitsandbytes.git<br/>  https://github.com/turboderp/exllamav2|1. Support ExLlamaV2, llama.cpp and Transformers.<br> 2. If you are using Transformers, it is recommended to use sdpa option instead of flash_attention_2.|
+|KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
+|TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.|
 
 #### SillyTavern Extensions:
