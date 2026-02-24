@@ -190,37 +190,6 @@
       ]
     },
     {
-      "id": 132,
-      "type": "UnetLoaderGGUF",
-      "pos": [
-        136.809975178631,
-        -767.4803952154294
-      ],
-      "size": [
-        270,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            278
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "UnetLoaderGGUF"
-      },
-      "widgets_values": [
-        "qwen-image-2512-Q6_K.gguf"
-      ]
-    },
-    {
       "id": 130,
       "type": "LoraLoaderModelOnly",
       "pos": [
@@ -314,7 +283,7 @@
         130
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -411,6 +380,37 @@
         "beta",
         1
       ]
+    },
+    {
+      "id": 132,
+      "type": "UnetLoaderGGUF",
+      "pos": [
+        136.809975178631,
+        -767.4803952154294
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            278
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UnetLoaderGGUF"
+      },
+      "widgets_values": [
+        "qwen-image-2512-Q5_0.gguf"
+      ]
     }
   ],
   "links": [
@@ -501,8 +501,8 @@
     "ds": {
       "scale": 1.1167815779425223,
       "offset": [
-        -145.05714173991146,
-        948.7145272363723
+        30.42969706616934,
+        1233.5243045305053
       ]
     },
     "frontendVersion": "1.37.11",

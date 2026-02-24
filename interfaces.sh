@@ -163,7 +163,7 @@ install_text_generation_web_ui() {
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="cc12ace48dd5aa9e1685db61aa3b83229ca14ed1"
+    COMMIT="7ffb28f753b98759bc7f3ac780e2743120023657"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
@@ -210,12 +210,12 @@ comfy_download() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="dd86b155210df9b34f479d70dad675aa782a30ef"
+    COMMIT="caa43d2395a69e93e52fe903da515fb2adbbb677"
     TUNABLEOP=""
-    if [[ "$GFX_VERSION" == gfx110* ]]; then
-        TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
-    fi
-    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --normalvram --preview-method auto --dont-upcast-attention --fp16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
+    #if [[ "$GFX_VERSION" == gfx110* ]]; then
+    #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
+    #fi
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --normalvram --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
     ADDONS="$@"
 

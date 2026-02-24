@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from src.utils.typing_utils import *
 
 import os
@@ -6,6 +8,7 @@ from PIL import Image
 import trimesh
 from trimesh.transformations import rotation_matrix
 import pyrender
+from pyrender.constants import RenderFlags
 from diffusers.utils import export_to_video
 from diffusers.utils.loading_utils import load_video
 import torch
@@ -20,7 +23,7 @@ def render(
     pose: np.ndarray,
     light: Optional[pyrender.Light] = None,
     normalize_depth: bool = False,
-    flags: int = pyrender.constants.RenderFlags.NONE,
+    flags: int = RenderFlags.NONE,
     return_type: Literal['pil', 'ndarray'] = 'pil'
 ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[Image.Image, Image.Image]]:
     camera_node = scene.add(camera, pose=pose)
@@ -121,7 +124,7 @@ def render_views_around_mesh(
     znear: float = 0.1,
     zfar: float = 10.0, 
     normalize_depth: bool = False,
-    flags: int = pyrender.constants.RenderFlags.NONE,
+    flags: int = RenderFlags.NONE,
     return_depth: bool = False, 
     return_type: Literal['pil', 'ndarray'] = 'pil'
 ) -> Union[
@@ -183,7 +186,7 @@ def render_normal_views_around_mesh(
     znear: float = 0.1,
     zfar: float = 10.0,
     normalize_depth: bool = False,
-    flags: int = pyrender.constants.RenderFlags.NONE,
+    flags: int = RenderFlags.NONE,
     return_depth: bool = False, 
     return_type: Literal['pil', 'ndarray'] = 'pil'
 ) -> Union[
@@ -253,7 +256,7 @@ def render_single_view(
     znear: float = 0.1,
     zfar: float = 10.0,
     normalize_depth: bool = False,
-    flags: int = pyrender.constants.RenderFlags.NONE,
+    flags: int = RenderFlags.NONE,
     return_depth: bool = False, 
     return_type: Literal['pil', 'ndarray'] = 'pil'
 ) -> Union[
@@ -324,7 +327,7 @@ def render_normal_single_view(
     znear: float = 0.1,
     zfar: float = 10.0,
     normalize_depth: bool = False,
-    flags: int = pyrender.constants.RenderFlags.NONE,
+    flags: int = RenderFlags.NONE,
     return_depth: bool = False,
     return_type: Literal['pil', 'ndarray'] = 'pil'
 ) -> Union[
