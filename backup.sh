@@ -297,6 +297,54 @@ generate_backup_summary() {
     fi
 }
 
+# TabbyAPI backup function
+perform_tabbyapi_backup() {
+    local choices="$1"
+
+    # Ensure container is running
+    basic_container || return 1
+
+    # Reset tracking arrays
+    reset_backup_tracking
+
+    log_message "INFO" "Starting TabbyAPI backup operation"
+
+    for choice in $choices; do
+        case $choice in
+            '"1"')
+                backup_directory "/AI/tabbyAPI/models" "/AI/Backups/tabbyAPI/models" "models folder"
+                ;;
+        esac
+    done
+
+    log_message "INFO" "TabbyAPI backup operation completed"
+    generate_backup_summary "Backup"
+}
+
+# TabbyAPI restore function
+perform_tabbyapi_restore() {
+    local choices="$1"
+
+    # Ensure container is running
+    basic_container || return 1
+
+    # Reset tracking arrays
+    reset_backup_tracking
+
+    log_message "INFO" "Starting TabbyAPI restore operation"
+
+    for choice in $choices; do
+        case $choice in
+            '"1"')
+                restore_directory "/AI/Backups/tabbyAPI/models" "/AI/tabbyAPI/models" "models folder"
+                ;;
+        esac
+    done
+
+    log_message "INFO" "TabbyAPI restore operation completed"
+    generate_backup_summary "Restore"
+}
+
 # SillyTavern backup function
 perform_sillytavern_backup() {
     local choices="$1"

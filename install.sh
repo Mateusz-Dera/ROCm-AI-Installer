@@ -319,6 +319,73 @@ sillytavern_restore() {
     perform_sillytavern_restore "$CHOICES"
 }
 
+# TabbyAPI
+tabbyapi() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "TabbyAPI" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
+            1 "Backup" \
+            2 "Install" \
+            3 "Restore" \
+            2>&1 > /dev/tty)
+        status=$?
+
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                tabbyapi_backup
+                ;;
+            "2")
+                install_tabbyapi
+                ;;
+            "3")
+                tabbyapi_restore
+                ;;
+            "")
+                echo "Previous menu..."
+                second=true
+                ;;
+            *)
+                echo "Invalid selection."
+                second=true
+                ;;
+        esac
+    done
+}
+
+# Backup TabbyAPI
+tabbyapi_backup() {
+    CHOICES=$(whiptail --checklist "Backup:" 10 50 1 --cancel-button "Back" \
+        1 "Backup models" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_tabbyapi_backup "$CHOICES"
+}
+
+# Restore TabbyAPI
+tabbyapi_restore() {
+    CHOICES=$(whiptail --checklist "Restore:" 10 50 1 --cancel-button "Back" \
+        1 "Restore models" ON 3>&1 1>&2 2>&3)
+
+    status=$?
+
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    perform_tabbyapi_restore "$CHOICES"
+}
+
 # Text generation
 text_generation() {
     second=true
@@ -342,7 +409,7 @@ text_generation() {
                 install_koboldcpp
                 ;;
             "2")
-                install_tabbyapi
+                tabbyapi
                 ;;
             "3")
                 sillytavern
