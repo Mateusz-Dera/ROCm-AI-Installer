@@ -49,7 +49,7 @@ new_setup_caches = '''    def setup_caches(self, max_batch_size: int):
         for module in self.backbone.modules():
             if hasattr(module, "rope_init"):
                 module.rope_init()
-                module.to(device)
+                module.to(device=device, dtype=dtype)
 
         with device:
             self.decoder.setup_caches(
@@ -60,7 +60,7 @@ new_setup_caches = '''    def setup_caches(self, max_batch_size: int):
         for module in self.decoder.modules():
             if hasattr(module, "rope_init"):
                 module.rope_init()
-                module.to(device)
+                module.to(device=device, dtype=dtype)
 
         self.register_buffer(
             "backbone_causal_mask",
