@@ -2,3 +2,4 @@
 TODO.txt
 .*/
 *.log
+automatic_tests/__pycache__

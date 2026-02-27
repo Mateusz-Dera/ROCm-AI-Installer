@@ -55,8 +55,20 @@ phase2_install() {
     pass "SillyTavern WhisperSpeech extension installed successfully"
 
     # ---- Image & Video generation ----
-    # Call install_comfyui with no addon args (base install only)
-    run_install "ComfyUI" "install_comfyui" "/AI/ComfyUI"
+    # install_comfyui must receive addon numbers to trigger model downloads:
+    #   1 = Qwen-Image-2512-GGUF, 2 = Qwen-Image-Edit-2511-GGUF,
+    #   3 = Z-Image-Turbo,        4 = Wan-2.2-5B-TI2V
+    info "--- Installing: ComfyUI (addons: 1 2 3 4) ---"
+    if ! install_comfyui 1 2 3 4; then
+        abort "ComfyUI: install function returned non-zero"
+    fi
+    if ! container_dir_exists "/AI/ComfyUI"; then
+        abort "ComfyUI: directory /AI/ComfyUI not found after install"
+    fi
+    if ! container_file_exists "/AI/ComfyUI/run.sh"; then
+        abort "ComfyUI: run.sh not found after install"
+    fi
+    pass "ComfyUI installed successfully (addons: 1 2 3 4)"
 
     # ---- Music generation ----
     run_install "ACE-Step"   install_ace_step   "/AI/ACE-Step"
