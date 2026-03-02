@@ -111,7 +111,7 @@ basic_pip(){
 install_koboldcpp() {
     REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
     COMMIT="64d9d01c57cb4d0c58c530bc5fc053196da566fa"
-    COMMAND="uv run koboldcpp.py"
+    COMMAND="DISPLAY=\\\$DISPLAY uv run koboldcpp.py"
     FOLDER=$(basename "$REPO")
 
     basic_container
