@@ -49,7 +49,6 @@ pyglet==2.1.13
 pygments==2.19.2
 pyopengl==3.1.0
 pyrender==0.1.42
-pyrenderer==0.1.0
 python-dateutil==2.9.0.post0
 python-multipart==0.0.22
 pytz==2025.2

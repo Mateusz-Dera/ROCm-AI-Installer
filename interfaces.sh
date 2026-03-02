@@ -201,7 +201,7 @@ install_sillytavern(){
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="308c338763eaeb44ca13eca75ec815231969ca3d"
+    COMMIT="5b23874177548f17690385faeae6c7e6dd9b3ba4"
 
     basic_container
 
@@ -369,7 +369,7 @@ install_heartmula() {
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="308c338763eaeb44ca13eca75ec815231969ca3d"
+    COMMIT="5b23874177548f17690385faeae6c7e6dd9b3ba4"
     COMMAND="uv run --extra rocm webui.py --listen --api"
     FOLDER=$(basename "$REPO")
 
@@ -443,6 +443,7 @@ install_partcrafter(){
     podman cp "$SCRIPT_DIR/custom_files/partcrafter/inference_partcrafter.py" "rocm:/AI/$FOLDER/scripts/inference_partcrafter.py"
     podman cp "$SCRIPT_DIR/custom_files/partcrafter/render_utils.py" "rocm:/AI/$FOLDER/src/utils/render_utils.py"
     podman cp "$SCRIPT_DIR/custom_files/partcrafter/partcrafter_webui.py" "rocm:/AI/$FOLDER/partcrafter_webui.py"
+    podman cp "$SCRIPT_DIR/custom_files/partcrafter/autoencoder_kl_triposg.py" "rocm:/AI/$FOLDER/src/models/autoencoders/autoencoder_kl_triposg.py"
 
     basic_requirements "$REPO" 
 
