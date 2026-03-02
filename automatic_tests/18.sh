@@ -20,14 +20,7 @@ phase18_comfyui_wan_t2v() {
     local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
     local helper_dst="/tmp/comfyui_run_workflow.py"
 
-    # --- Restart container ---
-    info "Restarting container 'rocm'..."
-    podman stop rocm 2>/dev/null || true
-    sleep 3
-    podman start rocm || abort "Failed to start container 'rocm'"
-    sleep 5
-    basic_container || abort "Container 'rocm' is not running after restart."
-    pass "Container 'rocm' restarted"
+    basic_container || abort "Container 'rocm' is not running."
 
     # --- Kill old ComfyUI instances ---
     podman exec -t rocm bash -c \

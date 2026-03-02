@@ -22,14 +22,7 @@ phase19_comfyui_wan_i2v() {
     local helper_dst="/tmp/comfyui_run_workflow.py"
     local bottle_img_src="${SCRIPT_DIR}/workflows/images/bottle.png"
 
-    # --- Restart container ---
-    info "Restarting container 'rocm'..."
-    podman stop rocm 2>/dev/null || true
-    sleep 3
-    podman start rocm || abort "Failed to start container 'rocm'"
-    sleep 5
-    basic_container || abort "Container 'rocm' is not running after restart."
-    pass "Container 'rocm' restarted"
+    basic_container || abort "Container 'rocm' is not running."
 
     # --- Kill old ComfyUI instances ---
     podman exec -t rocm bash -c \

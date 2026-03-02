@@ -49,13 +49,6 @@ log "Started: $(date '+%Y-%m-%d_%H-%M-%S')"
 log "Log: $LOG_FILE"
 log "============================================="
 
-# ── Restart container once before all phases ─────────────────
-log "Stopping container 'rocm'..."
-podman stop rocm 2>/dev/null || true
-log "Starting container 'rocm'..."
-podman start rocm || { log "FAIL: Failed to start container 'rocm'"; exit 1; }
-log "Container 'rocm' ready"
-log ""
 
 # ── Collect and run phase files ───────────────────────────────
 mapfile -t ALL_FILES < <(ls -v "$TESTS_DIR"/[0-9]*.sh 2>/dev/null)
@@ -92,6 +85,12 @@ fail_count=0
 failed_files=()
 
 for test_file in "${TEST_FILES[@]}"; do
+    log ""
+    log "Stopping container 'rocm'..."
+    podman stop rocm 2>/dev/null || true
+    log "Starting container 'rocm'..."
+    podman start rocm || { log "FAIL: Failed to start container 'rocm'"; exit 1; }
+    log "Container 'rocm' ready"
     log ""
     log "========================================"
     log " Running: $(basename "$test_file")"

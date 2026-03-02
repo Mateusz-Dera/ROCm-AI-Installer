@@ -4,6 +4,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+_ST_CFG_BACKUP="/AI/SillyTavern/config.yaml.test_bak"
+
+_restore_st_config() {
+    if podman exec rocm bash -c "[ -f '$_ST_CFG_BACKUP' ]" 2>/dev/null; then
+        podman exec rocm bash -c \
+            "cp '$_ST_CFG_BACKUP' /AI/SillyTavern/config.yaml && rm -f '$_ST_CFG_BACKUP'" \
+            2>/dev/null || true
+        info "config.yaml restored from test backup"
+    fi
+}
+trap _restore_st_config EXIT
+
 # ============================================================
 # PHASE 6: SillyTavern + WhisperSpeech integration
 # ============================================================
@@ -72,15 +84,51 @@ phase6_sillytavern_integration() {
     sleep 1
     podman exec -t rocm bash -c ": > '$st_log'" || true
 
-    # --- Read basicAuth credentials from config.yaml (default: user/password) ---
+    # --- Ensure config.yaml exists (SillyTavern creates it on first run) ---
+    if ! container_file_exists "$st_dir/config.yaml"; then
+        info "config.yaml missing – starting SillyTavern briefly to initialize it..."
+        local init_log="/tmp/st_init.log"
+        podman exec -d rocm bash -c ": > '$init_log'; cd '$st_dir' && bash start.sh >> '$init_log' 2>&1"
+        local cw=0
+        while ! container_file_exists "$st_dir/config.yaml" && [ $cw -lt 300 ]; do
+            sleep 5; cw=$((cw + 5))
+            info "  ...waiting for config.yaml ($cw/300s)"
+        done
+        podman exec -t rocm bash -c \
+            "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+             fuser -k ${st_port}/tcp 2>/dev/null; true" || true
+        sleep 3
+        podman exec -t rocm bash -c ": > '$st_log'" || true
+        if ! container_file_exists "$st_dir/config.yaml"; then
+            abort "SillyTavern did not generate config.yaml within 300s"
+        fi
+        pass "SillyTavern config.yaml initialized"
+    fi
+
+    # --- Patch config.yaml if basicAuth is not enabled with user/password credentials ---
+    if ! podman exec rocm bash -c \
+           "grep -q 'basicAuthMode: true' '$st_dir/config.yaml' && \
+            grep -q 'username: \"user\"' '$st_dir/config.yaml' && \
+            grep -q 'password: \"password\"' '$st_dir/config.yaml'" 2>/dev/null; then
+        info "Patching config.yaml (basicAuth) for test – original will be restored on exit..."
+        podman exec rocm bash -c "cp '$st_dir/config.yaml' '$_ST_CFG_BACKUP'" \
+            || abort "Failed to backup config.yaml"
+        podman exec rocm bash -c "
+            sed -i 's/basicAuthMode: false/basicAuthMode: true/' '$st_dir/config.yaml'
+            sed -i 's/^  username: .*/  username: \"user\"/' '$st_dir/config.yaml'
+            sed -i 's/^  password: .*/  password: \"password\"/' '$st_dir/config.yaml'
+        " || abort "Failed to patch config.yaml"
+        pass "config.yaml patched for test (will be restored on exit)"
+    fi
+
+    # --- Read basicAuth credentials from config.yaml ---
     local st_user st_pass
-    st_user=$(podman exec -t rocm bash -c \
-        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' | grep 'username:' \
-         | sed 's/.*username: *\"//;s/\"//' | tr -d '\r'") || st_user="user"
-    st_pass=$(podman exec -t rocm bash -c \
-        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' | grep 'password:' \
-         | sed 's/.*password: *\"//;s/\"//' | tr -d '\r'") || st_pass="password"
-    # podman exec -t adds \r to line endings via TTY layer – strip on host side
+    st_user=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'username:' \
+         | sed 's/.*username: *\"//;s/\"//'") || st_user=""
+    st_pass=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'password:' \
+         | sed 's/.*password: *\"//;s/\"//'") || st_pass=""
     st_user=$(printf '%s' "$st_user" | tr -d '\r'); st_user="${st_user:-user}"
     st_pass=$(printf '%s' "$st_pass" | tr -d '\r'); st_pass="${st_pass:-password}"
     info "SillyTavern basicAuth: user='$st_user'"
