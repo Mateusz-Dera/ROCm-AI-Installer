@@ -4,7 +4,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 ## Info:
 [![Version](https://img.shields.io/badge/Version-14-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-![ROCm](https://img.shields.io/badge/ROCm-7.2-red.svg)
+![ROCm](https://img.shields.io/badge/ROCm-7.2.1-red.svg)
 
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
