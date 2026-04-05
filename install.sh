@@ -391,7 +391,7 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "TabbyAPI" \
             3 "SillyTavern" \

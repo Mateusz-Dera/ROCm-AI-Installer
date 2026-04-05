@@ -50,11 +50,12 @@ RUN apt-get update && apt-get install -y \
 
     # && rm -rf /var/lib/apt/lists/*
 
+# No longer needed Ubuntu 26.04 includes ROCm 7.2 in its repositories, so we can install it directly without adding AMD's repository
 # Download and install AMD GPU installer package for ROCm 7.1.1
-RUN wget https://repo.radeon.com/amdgpu-install/7.2.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb \
-    && apt-get update \
-    && apt-get install -y ./amdgpu-install_7.2.1.70201-1_all.deb \
-    && rm amdgpu-install_7.2.1.70201-1_all.deb
+# RUN wget https://repo.radeon.com/amdgpu-install/7.2.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb \
+#     && apt-get update \
+#     && apt-get install -y ./amdgpu-install_7.2.1.70201-1_all.deb \
+#     && rm amdgpu-install_7.2.1.70201-1_all.deb
 
 # Update package list with AMD repositories
 RUN apt-get update
@@ -70,7 +71,10 @@ RUN apt-get install -y \
     amd-smi-lib \
     rocrand rocrand-dev rocfft rocfft-dev rocprim rocprim-dev rocthrust rocthrust-dev rocprofiler-sdk hsa-amd-aqlprofile \
     miopen-hip miopen-hip-dev
-    # && rm -rf /var/lib/apt/lists/*
+
+# Vulkan
+RUN apt-get install -y \
+    libvulkan-dev vulkan-tools shaderc
 
 # Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render
