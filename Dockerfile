@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 # Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -51,10 +51,10 @@ RUN apt-get update && apt-get install -y \
     # && rm -rf /var/lib/apt/lists/*
 
 # Download and install AMD GPU installer package for ROCm 7.1.1
-RUN wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb \
+RUN wget https://repo.radeon.com/amdgpu-install/7.2.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb \
     && apt-get update \
-    && apt-get install -y ./amdgpu-install_7.2.70200-1_all.deb \
-    && rm amdgpu-install_7.2.70200-1_all.deb
+    && apt-get install -y ./amdgpu-install_7.2.1.70201-1_all.deb \
+    && rm amdgpu-install_7.2.1.70201-1_all.deb
 
 # Update package list with AMD repositories
 RUN apt-get update

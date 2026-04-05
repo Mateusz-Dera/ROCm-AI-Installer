@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-13-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-14-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 ![ROCm](https://img.shields.io/badge/ROCm-7.2-red.svg)
 
@@ -22,7 +22,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8)|
 |OS|Debian 13.3|
-|Kernel|6.12.63+deb13-amd64|
+|Kernel|6.12.74+deb13+1-amd64|
 
 ###  Text generation:
 |Name|Links|Additional information|

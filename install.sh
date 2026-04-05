@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="13"
+VERSION="14"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -396,6 +396,7 @@ text_generation() {
             2 "TabbyAPI" \
             3 "SillyTavern" \
             4 "Install llama.cpp" \
+            5 "Install llama.cpp Vulkan" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -416,6 +417,9 @@ text_generation() {
                 ;;
             "4")
                 install_llama_cpp
+                ;;
+            "5")
+                install_llama_cpp_vulkan
                 ;;
             "")
                 echo "Previous menu..."

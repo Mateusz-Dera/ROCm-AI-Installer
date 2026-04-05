@@ -171,7 +171,7 @@ EOF"
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="b5b8fa1c8b3b27683b2965a22f9985eec683d384"
+    COMMIT="c08d28d08871715fd68accffaeeb76ddcaede658"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
@@ -182,10 +182,25 @@ install_llama_cpp() {
     basic_run "$REPO" "$COMMAND" "&&"
 }
 
+# llama.cpp Vulkan
+install_llama_cpp_vulkan() {
+    REPO="https://github.com/ggml-org/llama.cpp"
+    COMMIT="c08d28d08871715fd68accffaeeb76ddcaede658"
+    FOLDER="llama.cpp-vulkan"
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
+
+    basic_container
+    podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
+    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    PODMAN='cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+    basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
+}
+
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="7ffb28f753b98759bc7f3ac780e2743120023657"
+    COMMIT="004f1336e6e59d476c1043f1dc94c92d028ac5d0"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
