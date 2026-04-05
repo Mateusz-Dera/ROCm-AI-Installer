@@ -46,22 +46,24 @@ RUN apt-get update && apt-get install -y \
     espeak \
     nodejs \
     npm \
-    libsparsehash-dev
+    libsparsehash-dev \
+    libxml2-16
 
     # && rm -rf /var/lib/apt/lists/*
 
-# No longer needed Ubuntu 26.04 includes ROCm 7.2 in its repositories, so we can install it directly without adding AMD's repository
-# Download and install AMD GPU installer package for ROCm 7.1.1
-# RUN wget https://repo.radeon.com/amdgpu-install/7.2.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb \
-#     && apt-get update \
-#     && apt-get install -y ./amdgpu-install_7.2.1.70201-1_all.deb \
-#     && rm amdgpu-install_7.2.1.70201-1_all.deb
+# Add AMD ROCm repositories
+RUN mkdir -p /etc/apt/keyrings && \
+    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null
+RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/30.30/ubuntu noble main" \
+        > /etc/apt/sources.list.d/amdgpu.list && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.2.1 noble main" \
+        > /etc/apt/sources.list.d/rocm.list && \
+    echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.2.1/ubuntu noble main" \
+        >> /etc/apt/sources.list.d/amdgpu.list && \
+    printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' \
+        > /etc/apt/preferences.d/rocm-pin
 
-# Update package list with AMD repositories
 RUN apt-get update
-
-# AMDGPU
-RUN apt install -y amdgpu-dkms 
 
 # ROCM
 RUN apt-get install -y \
@@ -72,9 +74,13 @@ RUN apt-get install -y \
     rocrand rocrand-dev rocfft rocfft-dev rocprim rocprim-dev rocthrust rocthrust-dev rocprofiler-sdk hsa-amd-aqlprofile \
     miopen-hip miopen-hip-dev
 
+# libxml2 symlink: ROCm lld was built against libxml2.so.2 (Ubuntu 24.04 soname),
+# Ubuntu 26.04 ships libxml2.so.16 — create compat symlink
+RUN ln -sf /usr/lib/x86_64-linux-gnu/libxml2.so.16 /usr/lib/x86_64-linux-gnu/libxml2.so.2
+
 # Vulkan
 RUN apt-get install -y \
-    libvulkan-dev vulkan-tools shaderc
+    libvulkan-dev vulkan-tools glslc
 
 # Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render

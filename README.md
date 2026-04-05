@@ -4,7 +4,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 ## Info:
 [![Version](https://img.shields.io/badge/Version-14-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-![ROCm](https://img.shields.io/badge/ROCm-7.2-red.svg)
+![ROCm](https://img.shields.io/badge/ROCm-7.2.1-red.svg)
 
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
@@ -30,7 +30,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
-|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 2.|
+|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 2. A Vulkan version is also available.|
 
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
