@@ -520,10 +520,11 @@ voice_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "Voice generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
             1 "Install WhisperSpeech web UI" \
             2 "Install F5-TTS" \
-            3 "Soprano" \
+            3 "Install Soprano" \
+            4 "Install OmniVoice" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -541,6 +542,9 @@ voice_generation() {
                 ;;
             "3")
                 install_soprano
+                ;;
+            "4")
+                install_omnivoice
                 ;;
             "")
                 echo "Previous menu..."

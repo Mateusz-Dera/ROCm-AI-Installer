@@ -444,6 +444,21 @@ install_soprano(){
     basic_run "$REPO" "$COMMAND"
 }
 
+# OmniVoice
+install_omnivoice(){
+    REPO="https://github.com/k2-fsa/OmniVoice"
+    COMMIT="b2dcccaa9f68fe0255326ce675d24b6d112b685a"
+    COMMAND="uv run omnivoice-demo --ip 0.0.0.0 --port 8001"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+    basic_run "$REPO" "$COMMAND"
+}
+
 # PartCrafter
 install_partcrafter(){
     REPO="https://github.com/wgsxm/PartCrafter"
