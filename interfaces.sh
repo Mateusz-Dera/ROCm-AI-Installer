@@ -171,7 +171,7 @@ EOF"
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="c08d28d08871715fd68accffaeeb76ddcaede658"
+    COMMIT="d132f22fc92f36848f7ccf2fc9987cd0b0120825"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
@@ -185,7 +185,7 @@ install_llama_cpp() {
 # llama.cpp Vulkan
 install_llama_cpp_vulkan() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="c08d28d08871715fd68accffaeeb76ddcaede658"
+    COMMIT="d132f22fc92f36848f7ccf2fc9987cd0b0120825"
     FOLDER="llama.cpp-vulkan"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
 
@@ -448,14 +448,14 @@ install_soprano(){
 install_omnivoice(){
     REPO="https://github.com/k2-fsa/OmniVoice"
     COMMIT="b2dcccaa9f68fe0255326ce675d24b6d112b685a"
-    COMMAND="uv run omnivoice-demo --ip 0.0.0.0 --port 8001"
+    COMMAND="omnivoice-demo --ip 0.0.0.0 --port 7860"
     FOLDER=$(basename "$REPO")
 
     basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install --no-deps  -e ."
     basic_run "$REPO" "$COMMAND"
 }
 
