@@ -28,7 +28,7 @@ def load_model(model_path: str = "./ckpt", version: str = "3B", lazy_load: bool 
                 "codec": torch.device(device),
             },
             dtype={
-                "mula": torch.bfloat16,
+                "mula": torch.float16,
                 "codec": torch.float32,
             },
             version=version,

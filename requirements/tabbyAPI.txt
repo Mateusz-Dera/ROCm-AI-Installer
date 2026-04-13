@@ -62,9 +62,9 @@ sse-starlette==3.2.0
 starlette==0.52.1
 sympy==1.14.0
 tokenizers==0.22.2
-torch==2.8.0+rocm7.2.0.lw.gitbf943426
+torch==2.8.0+rocm7.2.1.lw.gitb3e903e9
 tqdm==4.67.3
-triton==3.4.0+rocm7.2.0.git0cace8d2
+triton==3.4.0+rocm7.2.1.git0cace8d2
 typer==0.24.1
 typer-slim==0.24.0
 typing-extensions==4.15.0

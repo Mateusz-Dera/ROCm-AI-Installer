@@ -171,7 +171,7 @@ EOF"
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="d132f22fc92f36848f7ccf2fc9987cd0b0120825"
+    COMMIT="aa00911d12198f1772905c319c0a073f87984883"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
@@ -185,7 +185,7 @@ install_llama_cpp() {
 # llama.cpp Vulkan
 install_llama_cpp_vulkan() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="d132f22fc92f36848f7ccf2fc9987cd0b0120825"
+    COMMIT="aa00911d12198f1772905c319c0a073f87984883"
     FOLDER="llama.cpp-vulkan"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
 
@@ -248,7 +248,7 @@ comfy_download() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="caa43d2395a69e93e52fe903da515fb2adbbb677"
+    COMMIT="acd718598eca0b944a1a7a82072a9dec40d3d4f7"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
