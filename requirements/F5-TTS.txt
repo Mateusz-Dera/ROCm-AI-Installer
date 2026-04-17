@@ -126,14 +126,14 @@ threadpoolctl==3.6.0
 tokenizers==0.22.2
 tomli==2.4.0
 tomlkit==0.13.3
-torch==2.7.1+rocm7.2.1.lw.git1dab218d
-torchaudio==2.7.1+rocm7.2.1.git95c61b41
+torch==2.7.1+rocm7.2.2.lw.git1dab218d
+torchaudio==2.7.1+rocm7.2.2.git95c61b41
 torchcodec==0.5
 torchdiffeq==0.2.5
 tqdm==4.67.3
 transformers==5.2.0
 transformers-stream-generator==0.0.5
-triton==3.3.1+rocm7.2.1.git28a7371e
+triton==3.3.1+rocm7.2.2.git28a7371e
 typer==0.24.0
 typer-slim==0.24.0
 typing-extensions==4.15.0

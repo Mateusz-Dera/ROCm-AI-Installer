@@ -36,9 +36,10 @@ phase2_install() {
     }
 
     # ---- Text generation ----
-    run_install "KoboldCPP"   install_koboldcpp   "/AI/koboldcpp-rocm"
-    run_install "TabbyAPI"    install_tabbyapi    "/AI/tabbyAPI"
-    run_install "llama.cpp"   install_llama_cpp   "/AI/llama.cpp"
+    run_install "KoboldCPP"        install_koboldcpp        "/AI/koboldcpp-rocm"
+    run_install "TabbyAPI"         install_tabbyapi         "/AI/tabbyAPI"
+    run_install "llama.cpp"        install_llama_cpp        "/AI/llama.cpp"
+    run_install "llama.cpp-vulkan" install_llama_cpp_vulkan "/AI/llama.cpp-vulkan"
 
     # SillyTavern (run.sh uses &&, no venv activate needed)
     run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
@@ -71,13 +72,14 @@ phase2_install() {
     pass "ComfyUI installed successfully (addons: 1 2 3 4)"
 
     # ---- Music generation ----
-    run_install "ACE-Step"   install_ace_step   "/AI/ACE-Step"
-    run_install "HeartMuLa"  install_heartmula  "/AI/heartlib"
+    run_install "ACE-Step"     install_ace_step     "/AI/ACE-Step"
+    run_install "ACE-Step-1.5" install_ace_step_1_5 "/AI/ACE-Step-1.5"
 
     # ---- Voice generation ----
     run_install "WhisperSpeech web UI" install_whisperspeech_web_ui "/AI/whisperspeech-webui"
     run_install "F5-TTS"              install_f5_tts              "/AI/F5-TTS"
     run_install "Soprano"             install_soprano             "/AI/soprano-rocm"
+    run_install "OmniVoice"           install_omnivoice           "/AI/OmniVoice"
 
     # ---- 3D generation ----
     run_install "PartCrafter" install_partcrafter "/AI/PartCrafter"

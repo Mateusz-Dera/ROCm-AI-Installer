@@ -487,7 +487,7 @@ music_generation() {
 
         choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             1 "Install ACE-Step" \
-            2 "Install HeartMuLa" \
+            2 "Install ACE-Step-1.5" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -501,7 +501,7 @@ music_generation() {
                 install_ace_step
                 ;;
             "2")
-                install_heartmula
+                install_ace_step_1_5
                 ;;
             "")
                 echo "Previous menu..."

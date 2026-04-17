@@ -105,8 +105,7 @@ phase11_verify_soprano() {
         # Extract audio path and copy to stable location for F5-TTS (test 12)
         local audio_path
         audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*\.wav[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
+            | grep -oP '"path":\s*"\K[^"]*\.wav[^"]*' | head -1) || audio_path=""
         if [ -n "$audio_path" ]; then
             podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" 2>/dev/null || true
             local fsize

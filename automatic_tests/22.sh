@@ -109,8 +109,7 @@ phase22_verify_omnivoice() {
     # Extract audio path and copy to persistent location
     local audio_path
     audio_path=$(echo "$design_result" \
-        | grep -o '"path":"[^"]*"' | head -1 \
-        | sed 's/"path":"//;s/"//') || audio_path=""
+        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
 
     if [ -z "$audio_path" ]; then
         info "Raw result: $design_result"
@@ -198,8 +197,7 @@ phase22_verify_omnivoice() {
         pass "OmniVoice Voice Clone OK (audio returned)"
         local clone_path
         clone_path=$(echo "$clone_result" \
-            | grep -o '"path":"[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || clone_path=""
+            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
         if [ -n "$clone_path" ]; then
             fsize=$(podman exec -t rocm bash -c \
                 "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \

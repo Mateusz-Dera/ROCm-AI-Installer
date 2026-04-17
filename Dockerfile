@@ -47,19 +47,20 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     libsparsehash-dev \
-    libxml2-16
+    libxml2-16 \
+    libopenmpi40 \
+    libdw1 \
+    g++
 
     # && rm -rf /var/lib/apt/lists/*
 
 # Add AMD ROCm repositories
 RUN mkdir -p /etc/apt/keyrings && \
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null
-RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/30.30/ubuntu noble main" \
+RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/31.20/ubuntu noble main" \
         > /etc/apt/sources.list.d/amdgpu.list && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.2.1 noble main" \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.2.2 noble main" \
         > /etc/apt/sources.list.d/rocm.list && \
-    echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/7.2.1/ubuntu noble main" \
-        >> /etc/apt/sources.list.d/amdgpu.list && \
     printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' \
         > /etc/apt/preferences.d/rocm-pin
 
@@ -80,7 +81,7 @@ RUN ln -sf /usr/lib/x86_64-linux-gnu/libxml2.so.16 /usr/lib/x86_64-linux-gnu/lib
 
 # Vulkan
 RUN apt-get install -y \
-    libvulkan-dev vulkan-tools glslc
+    libvulkan-dev vulkan-tools glslc spirv-headers
 
 # Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render

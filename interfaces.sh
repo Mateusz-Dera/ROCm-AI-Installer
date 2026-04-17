@@ -168,10 +168,14 @@ EOF"
     basic_run "$REPO" "$COMMAND"
 }
 
+# ----- llama.cpp -----
+
+LLAMA_COMMIT="5e6c0e18b6b11f109411401239b3b0ef61058dae"
+
 # llama.cpp
 install_llama_cpp() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="aa00911d12198f1772905c319c0a073f87984883"
+    COMMIT="$LLAMA_COMMIT"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
     FOLDER=$(basename "$REPO")
 
@@ -185,7 +189,7 @@ install_llama_cpp() {
 # llama.cpp Vulkan
 install_llama_cpp_vulkan() {
     REPO="https://github.com/ggml-org/llama.cpp"
-    COMMIT="aa00911d12198f1772905c319c0a073f87984883"
+    COMMIT="$LLAMA_COMMIT"
     FOLDER="llama.cpp-vulkan"
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
 
@@ -239,16 +243,156 @@ install_sillytavern_whisperspeech_web_ui() {
         rm -rf whisperspeech-webui-temp"
 }
 
-# Download
+# Queue for parallel downloads (dir|repo|commit|file)
+_COMFY_DL_QUEUE=()
+
+# Queue a model download – actual transfer starts in comfy_wait
 comfy_download() {
-    echo "$2/resolve/$3/$4 $1"
-    podman exec -it rocm bash -c "wget -P $1 $2/resolve/$3/$4"
+    _COMFY_DL_QUEUE+=("$1|$2|$3|$4")
+}
+
+_comfy_fmt_size() {
+    local b=$1
+    if   (( b >= 1073741824 )); then awk "BEGIN{printf \"%.1f GB\", $b/1073741824}"
+    elif (( b >= 1048576    )); then awk "BEGIN{printf \"%.0f MB\",  $b/1048576}"
+    else                             awk "BEGIN{printf \"%.0f KB\",  $b/1024}"
+    fi
+}
+
+# Run all queued downloads simultaneously with a live overall progress bar
+comfy_wait() {
+    local n=${#_COMFY_DL_QUEUE[@]}
+    [[ $n -eq 0 ]] && return 0
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    local -a names=() dirs=() urls=() destpaths=()
+    local idx=0
+
+    for entry in "${_COMFY_DL_QUEUE[@]}"; do
+        local dir repo commit file filename
+        IFS='|' read -r dir repo commit file <<< "$entry"
+        filename=$(basename "$file")
+        names+=("$filename")
+        dirs+=("$dir")
+        urls+=("$repo/resolve/$commit/$file")
+        destpaths+=("/AI/$dir/$filename")
+        (( idx++ )) || true
+    done
+
+    # Fetch file sizes in parallel (curl HEAD inside container)
+    printf "\n  Fetching file sizes...\n"
+    for (( i=0; i<n; i++ )); do
+        ( s=$(podman exec -i rocm bash -c \
+                "curl -sIL '${urls[$i]}' 2>/dev/null \
+                 | grep -i '^content-length:' | tail -1 \
+                 | tr -d '[:space:]\r' | cut -d: -f2")
+          [[ "$s" =~ ^[0-9]+$ ]] && echo "$s" || echo 0 ) > "$tmpdir/size$i" &
+    done
+    wait
+
+    local -a sizes=()
+    local total_size=0
+    for (( i=0; i<n; i++ )); do
+        local s; s=$(cat "$tmpdir/size$i" 2>/dev/null); [[ "$s" =~ ^[0-9]+$ ]] || s=0
+        sizes+=("$s")
+        total_size=$(( total_size + s ))
+    done
+
+    # Start all downloads in background
+    for (( i=0; i<n; i++ )); do
+        ( podman exec -i rocm bash -c \
+            "wget -q -P \"${dirs[$i]}\" \"${urls[$i]}\""; echo $? > "$tmpdir/s$i" ) &
+    done
+
+    local -a spin=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+    local si=0 bar_width=40
+    local -a done_flags=() statuses=()
+    for (( i=0; i<n; i++ )); do done_flags[$i]=0; statuses[$i]=0; done
+
+    # Build stat one-liner to check all dest files in one podman exec
+    local stat_cmd=""
+    for (( i=0; i<n; i++ )); do
+        stat_cmd+="stat -c%s '${destpaths[$i]}' 2>/dev/null || echo 0; "
+    done
+
+    printf "\n  Downloading %d file(s) simultaneously...\n\n" "$n"
+
+    local first=1
+    while true; do
+        # Check completions
+        local all_done=1
+        for (( i=0; i<n; i++ )); do
+            if [[ ${done_flags[$i]} -eq 0 ]]; then
+                if [[ -f "$tmpdir/s$i" ]]; then
+                    done_flags[$i]=1; statuses[$i]=$(cat "$tmpdir/s$i")
+                else
+                    all_done=0
+                fi
+            fi
+        done
+
+        # Get current downloaded sizes in one exec
+        local downloaded=0
+        local -a cur=()
+        while IFS= read -r line; do
+            line=$(tr -d '[:space:]' <<< "$line")
+            [[ "$line" =~ ^[0-9]+$ ]] || line=0
+            cur+=("$line")
+            downloaded=$(( downloaded + line ))
+        done < <(podman exec -i rocm bash -c "$stat_cmd" 2>/dev/null)
+        # pad cur[] if podman returned fewer lines than expected
+        while (( ${#cur[@]} < n )); do cur+=(0); done
+
+        # Calculate percentage and bar
+        local pct=0
+        [[ $total_size -gt 0 ]] && pct=$(( downloaded * 100 / total_size ))
+        [[ $pct -gt 100 ]] && pct=100
+
+        local bar=""
+        local filled=$(( pct * bar_width / 100 ))
+        for (( j=0; j<bar_width; j++ )); do
+            (( j < filled )) && bar+="█" || bar+="░"
+        done
+
+        local dl_hr total_hr
+        dl_hr=$(_comfy_fmt_size "$downloaded")
+        total_hr=$(_comfy_fmt_size "$total_size")
+
+        # Redraw: move up (bar line + blank line + N file lines) = N+2, skip on first pass
+        if [[ $first -eq 1 ]]; then first=0; else printf "\033[%dA" $(( n + 2 )); fi
+
+        printf "  \033[36m[%s]\033[0m  \033[1m%3d%%\033[0m   %s / %s\n" \
+               "$bar" "$pct" "$dl_hr" "$total_hr"
+        printf "\n"
+        for (( i=0; i<n; i++ )); do
+            if   [[ ${done_flags[$i]} -eq 1 && ${statuses[$i]} -eq 0 ]]; then
+                printf "    \033[32m✓\033[0m %-65s\n" "${names[$i]}"
+            elif [[ ${done_flags[$i]} -eq 1 ]]; then
+                printf "    \033[31m✗\033[0m %-65s\n" "${names[$i]}"
+            else
+                printf "    \033[33m%s\033[0m %-65s\n" "${spin[$si]}" "${names[$i]}"
+            fi
+        done
+
+        [[ $all_done -eq 1 ]] && break
+        si=$(( (si + 1) % 10 ))
+        sleep 0.5
+    done
+
+    printf "\n"
+    wait
+    rm -rf "$tmpdir"
+    _COMFY_DL_QUEUE=()
+
+    for s in "${statuses[@]}"; do [[ "$s" -ne 0 ]] && return 1; done
+    return 0
 }
 
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="acd718598eca0b944a1a7a82072a9dec40d3d4f7"
+    COMMIT="c033bbf516ad8fcd079b45c318e73ee8b5e22962"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -301,6 +445,8 @@ install_comfyui() {
         comfy_download "$FOLDER/models/vae/" "$WAN_REPO" "$WAN_COMMIT" "split_files/vae/wan2.2_vae.safetensors"
         comfy_download "$FOLDER/models/diffusion_models/" "$WAN_REPO" "$WAN_COMMIT" "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors"
     fi
+
+    comfy_wait
 }
 
 # ACE-Step
@@ -340,44 +486,21 @@ install_ace_step() {
     basic_run "$REPO" "$COMMAND"
 }
 
-# HeartMuLa
-install_heartmula() {
-    REPO="https://github.com/HeartMuLa/heartlib"
-    COMMIT="adabcf5791926efd1a6c34b22cccd3f87d643c13"
-    COMMAND="python webui.py --listen"
+# ACE-Step-1.5
+install_ace_step_1_5() {
+    REPO="https://github.com/ace-step/ACE-Step-1.5"
+    COMMIT="97ac5116c103c05532e4968a83b9046181248da6"
+    COMMAND="ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST python -m acestep.acestep_v15_pipeline --server-name 0.0.0.0 --port 7860 --config_path acestep-v15-turbo --lm_model_path acestep-5Hz-lm-4B --init_service true --backend pt"
     FOLDER=$(basename "$REPO")
 
     basic_container
     basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO" "3.12"
-
-    # Copy custom webui
-    podman cp "$SCRIPT_DIR/custom_files/heartlib/webui.py" "rocm:/AI/$FOLDER/webui.py"
-
+    basic_venv "$REPO"
     basic_requirements "$REPO"
 
-    # Install package in editable mode
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install -e . --no-deps"
-
-    # Download model checkpoints
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123' && \
-        hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123' && \
-        hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json"
-
-    # Apply fixes for torchtune compatibility (rope_init and setup_caches)
-    podman cp "$SCRIPT_DIR/custom_files/heartlib/patch_heartmula.py" "rocm:/AI/$FOLDER/patch_heartmula.py"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        python patch_heartmula.py src/heartlib/heartmula/modeling_heartmula.py"
-
-    # Fix ignore_mismatched_sizes for HeartCodec
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/dtype=self.codec_dtype,\$/dtype=self.codec_dtype, ignore_mismatched_sizes=True,/g' src/heartlib/pipelines/music_generation.py"
-
-    # Fix audio save using soundfile instead of torchaudio
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/torchaudio.save(save_path, wav.to(torch.float32).cpu(), 48000)/import soundfile as sf; wav_numpy = wav.to(torch.float32).cpu().numpy(); wav_numpy = wav_numpy.T if wav_numpy.ndim == 2 else wav_numpy; sf.write(save_path, wav_numpy, 48000)/g' src/heartlib/pipelines/music_generation.py"
+    # Fix: torchaudio 2.10+ requires torchcodec for MP3 – change default to WAV
+    podman cp "$SCRIPT_DIR/custom_files/ACE-Step-1.5/generation_advanced_output_controls.py" \
+        "rocm:/AI/$FOLDER/acestep/ui/gradio/interfaces/generation_advanced_output_controls.py"
 
     basic_run "$REPO" "$COMMAND"
 }
@@ -425,20 +548,42 @@ install_f5_tts(){
 install_soprano(){
     REPO="https://github.com/Mateusz-Dera/soprano-rocm"
     COMMIT="e4b3dd66641cc22c8f97f167ad1bfd75e04292e5"
-    COMMAND="TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui"
+    COMMAND="TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui --backend vllm"
     FOLDER=$(basename "$REPO")
 
     basic_container
+    podman exec -it rocm bash -c "apt-get install -y libopenmpi40"
+    # libmpi_cxx.so.40: OpenMPI 4.x dropped C++ bindings; torch lw builds still link against them.
+    # Create a stub shared library with the 3 C++ symbols torch references (never called at inference time).
+    podman exec -t rocm bash -c "
+cat > /tmp/mpi_cxx_stub.cpp << 'EOF'
+// Stub libmpi_cxx.so.40 for OpenMPI 4.x on Ubuntu 26.04
+// These symbols were removed from OpenMPI 4.x but torch lw builds still link against them.
+// None are called during single-GPU inference.
+extern \"C\" {
+    void ompi_mpi_cxx_op_intercept(void*, void*, int*, void*) {}
+    void ompi_op_set_cxx_callback(void*, void*) {}
+}
+namespace MPI {
+    class Datatype { public: void Free(); };
+    class Win      { public: void Free(); };
+    class Comm     { public: Comm(); };
+    void Datatype::Free() {}
+    void Win::Free()      {}
+    Comm::Comm()          {}
+}
+EOF
+g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
+    -o /usr/lib/x86_64-linux-gnu/libmpi_cxx.so.40 \
+    /tmp/mpi_cxx_stub.cpp && ldconfig"
     basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
+    basic_venv "$REPO" "3.12"
 
     basic_requirements "$REPO"
 
     basic_pip "$REPO" "/opt/rocm/share/amd_smi"
 
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone https://github.com/vllm-project/vllm"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/vllm && git checkout 37c9859fab60bbc346be20a662387479eb0760de"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && cd ./vllm && TORCH_BLAS_PREFER_HIPBLASLT=1 python setup.py develop"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install vllm --extra-index-url https://wheels.vllm.ai/rocm/"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
 
     basic_run "$REPO" "$COMMAND"
