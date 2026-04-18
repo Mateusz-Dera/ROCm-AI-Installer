@@ -118,24 +118,25 @@ phase12_verify_f5tts() {
         | tr -d '\r'
     " 2>/dev/null) || true
 
-    if echo "$gen_result" | grep -q '"path"'; then
-        pass "F5-TTS voice cloning OK (audio returned)"
-        local audio_path
-        audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*\.wav[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
-        if [ -n "$audio_path" ]; then
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Output WAV: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
-        fi
-    else
+    local audio_path
+    audio_path=$(echo "$gen_result" \
+        | grep -oP '"path":\s*"\K[^"]*\.wav[^"]*' | head -1) || audio_path=""
+
+    if [ -z "$audio_path" ]; then
         info "Raw result: $gen_result"
         podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "F5-TTS generation did not return audio data"
+        abort "F5-TTS generation did not return a WAV path"
     fi
+
+    local fsize
+    fsize=$(podman exec -t rocm bash -c \
+        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
+        | tr -d '\r\n') || fsize=0
+    info "  Output WAV: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
+    if [ "${fsize:-0}" -lt 10240 ]; then
+        abort "F5-TTS: output WAV suspiciously small (${fsize} bytes)"
+    fi
+    pass "F5-TTS voice cloning OK (audio returned)"
 
     # --- Stop server ---
     info "Stopping F5-TTS..."

@@ -541,6 +541,9 @@ install_f5_tts(){
     # Install package in editable mode
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
 
+    # torchcodec is incompatible with ROCm (built for CUDA only) – remove it
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip uninstall torchcodec 2>/dev/null; true"
+
     basic_run "$REPO" "$COMMAND"
 }
 

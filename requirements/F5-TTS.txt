@@ -128,7 +128,6 @@ tomli==2.4.0
 tomlkit==0.13.3
 torch==2.7.1+rocm7.2.2.lw.git1dab218d
 torchaudio==2.7.1+rocm7.2.2.git95c61b41
-torchcodec==0.5
 torchdiffeq==0.2.5
 tqdm==4.67.3
 transformers==5.2.0
