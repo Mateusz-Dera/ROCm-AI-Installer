@@ -687,26 +687,18 @@ install_trellis_2_rocm() {
     basic_venv "$REPO" "3.11"
     basic_requirements "$REPO"
 
-    # Extra Python packages not covered by base requirements
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install imageio imageio-ffmpeg easydict trimesh xatlas \
-        largestinteriorrectangle pyfqmr rembg kornia timm lpips \
-        tensorboard zstandard matplotlib "transformers==4.56.0" && \
         uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
 
-    # Dependency/FlexGEMM-rocm registers the function without _cuda suffix;
-    # conv_flex_gemm.py in the repo expects the _cuda suffix — patch it to match.
     podman exec -it rocm bash -c "sed -i 's/hashmap_build_submanifold_conv_neighbour_map_cuda/hashmap_build_submanifold_conv_neighbour_map/g' \
         /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
 
-    # Overlay eigen into cubvh and o-voxel (required for their builds)
     podman exec -it rocm bash -c "
         mkdir -p /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party && \
         cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party/eigen && \
         mkdir -p /AI/$FOLDER/Dependency/o-voxel/third_party && \
         cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/o-voxel/third_party/eigen"
 
-    # Build ROCm extensions from Dependency/
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
         ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
         uv pip install Dependency/nvdiffrast-hip --no-build-isolation"
