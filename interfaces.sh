@@ -675,6 +675,95 @@ fi
     basic_run "$REPO" "$COMMAND"
 }
 
+# TRELLIS.2_rocm
+install_trellis_2_rocm() {
+    REPO="https://github.com/hqnicolas/TRELLIS.2_rocm"
+    COMMIT="1eac4201e111755a1b9eafe5edfc1526d4db07c3"
+    COMMAND="export HF_TOKEN=<your_token> && ROCM_SAFE_SPCONV=1 FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE ATTN_BACKEND=sdpa GRADIO_SERVER_NAME=0.0.0.0 python app.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO" "3.11"
+    basic_requirements "$REPO"
+
+    # Extra Python packages not covered by base requirements
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install imageio imageio-ffmpeg easydict trimesh xatlas \
+        largestinteriorrectangle pyfqmr rembg kornia timm lpips \
+        tensorboard zstandard matplotlib "transformers==4.56.0" && \
+        uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
+
+    # Dependency/FlexGEMM-rocm registers the function without _cuda suffix;
+    # conv_flex_gemm.py in the repo expects the _cuda suffix — patch it to match.
+    podman exec -it rocm bash -c "sed -i 's/hashmap_build_submanifold_conv_neighbour_map_cuda/hashmap_build_submanifold_conv_neighbour_map/g' \
+        /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
+
+    # Overlay eigen into cubvh and o-voxel (required for their builds)
+    podman exec -it rocm bash -c "
+        mkdir -p /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party && \
+        cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party/eigen && \
+        mkdir -p /AI/$FOLDER/Dependency/o-voxel/third_party && \
+        cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/o-voxel/third_party/eigen"
+
+    # Build ROCm extensions from Dependency/
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
+        uv pip install Dependency/nvdiffrast-hip --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
+        uv pip install Dependency/nvdiffrec --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
+        uv pip install Dependency/CuMesh --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
+        uv pip install Dependency/FlexGEMM-rocm --no-build-isolation"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
+        uv pip install Dependency/o-voxel --no-build-isolation"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
+# SAM 3D Objects
+install_sam_3d_objects(){
+    REPO="https://github.com/facebookresearch/sam-3d-objects"
+    COMMIT="81a82373a3a7f4cbb00bd5b32aaf6b4d0f659ddd"
+    COMMAND="python demo.py"
+    FOLDER=$(basename "$REPO")
+    KAOLIN_COMMIT="v0.17.0"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    # open3d (required by utils3d) has wheels only up to cp311
+    basic_venv "$REPO" "3.11"
+
+    # Fix: inference.py hardcodes CONDA_PREFIX for CUDA_HOME – use ROCm path instead
+    podman exec -it rocm bash -c "sed -i 's|os.environ\[\"CUDA_HOME\"\] = os.environ\[\"CONDA_PREFIX\"\]|os.environ.setdefault(\"CUDA_HOME\", os.environ.get(\"ROCM_PATH\", \"/opt/rocm\"))|' /AI/$FOLDER/notebook/inference.py"
+
+    basic_requirements "$REPO"
+
+    # Build kaolin from source – no pre-built ROCm wheels available.
+    # Patch setup.py to skip CUDA extensions when nvcc is absent (ROCm uses hipcc).
+    podman exec -it rocm bash -c "
+        cd /tmp && rm -rf kaolin && \
+        git clone --depth 1 --branch $KAOLIN_COMMIT https://github.com/NVIDIAGameWorks/kaolin.git && \
+        cd kaolin && \
+        sed -i 's|if torch.cuda.is_available() or os.getenv.*FORCE_CUDA.*:|if (torch.cuda.is_available() and os.path.exists(os.path.join(CUDA_HOME or \"\", \"bin\", \"nvcc\"))) or os.getenv(\"FORCE_CUDA\", \"0\") == \"1\":|g' setup.py && \
+        source /AI/$FOLDER/.venv/bin/activate && \
+        IGNORE_TORCH_VER=1 python setup.py install
+    "
+
+    # Install sam3d_objects package in editable mode
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install hatchling hatch-requirements-txt editables && uv pip install -e . --no-build-isolation"
+
+    # Apply hydra patch (fixes config loading in newer hydra)
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && python patching/hydra"
+
+    basic_run "$REPO" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"

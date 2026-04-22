@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="14.1"
+VERSION="14.2"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -605,9 +605,11 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             1 "Install PartCrafter" \
-            2 "TRELLIS-AMD" \
+            2 "InstallTRELLIS-AMD" \
+            3 "Install SAM 3D Objects"\
+            4 "Install TRELLIS.2_rocm" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -616,6 +618,12 @@ d3_generation() {
                 ;;
             "2")
                 install_trellis
+                ;;
+            "3")
+                install_sam_3d_objects
+                ;;
+            "4")
+                install_trellis_2_rocm
                 ;;
             "")
                 echo "Previous menu..."
