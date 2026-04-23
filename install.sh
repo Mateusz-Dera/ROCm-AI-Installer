@@ -33,6 +33,7 @@ CONFIG_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_HSA_VERSION="11.0.0"
 DEFAULT_GFX="gfx1100"
 DEFAULT_AI_DIR="${HOME}/AI"
+DEFAULT_HF_TOKEN=""
 
 # Colors
 export NEWT_COLORS='
@@ -61,11 +62,13 @@ load_config() {
         HSA_VERSION="${HSA_OVERRIDE_GFX_VERSION:-$DEFAULT_HSA_VERSION}"
         GFX_VERSION="${TARGET_GFX:-$DEFAULT_GFX}"
         AI_DIR="${AI_HOST_DIR:-$DEFAULT_AI_DIR}"
+        HF_TOKEN="${HF_TOKEN:-$DEFAULT_HF_TOKEN}"
     else
         # Create default configuration file
         HSA_VERSION="$DEFAULT_HSA_VERSION"
         GFX_VERSION="$DEFAULT_GFX"
         AI_DIR="$DEFAULT_AI_DIR"
+        HF_TOKEN="$DEFAULT_HF_TOKEN"
         save_config
     fi
 }
@@ -89,6 +92,9 @@ TARGET_GFX=${GFX_VERSION}
 
 # AI Workspace Directory (host path)
 AI_HOST_DIR=${AI_DIR}
+
+# HuggingFace token (for model downloads requiring access)
+HF_TOKEN=${HF_TOKEN}
 
 # X11/Wayland display variables (captured at config save time)
 DISPLAY_VAR=${display_var}
@@ -170,6 +176,24 @@ configure_path() {
 
             save_config
             whiptail --title "Success" --msgbox "Path set to: ${AI_DIR}\n\nNote: Ownership will be managed by Podman when container starts." 10 70 2>&1 > /dev/tty
+        fi
+    fi
+}
+
+# Configure HuggingFace Token
+configure_hf_token() {
+    local new_token
+    new_token=$(whiptail --title "HuggingFace Token (optional)" \
+        --inputbox "Enter your HuggingFace access token (optional).\n\nRequired only for models that need access approval (e.g. facebook/sam-3d-objects).\nLeave empty to skip.\n\nCurrent value: ${HF_TOKEN:-(not set)}" \
+        14 70 "$HF_TOKEN" 2>&1 > /dev/tty)
+
+    if [ $? -eq 0 ]; then
+        HF_TOKEN="$new_token"
+        save_config
+        if [ -n "$HF_TOKEN" ]; then
+            whiptail --title "Success" --msgbox "HuggingFace token saved." 8 50 2>&1 > /dev/tty
+        else
+            whiptail --title "Success" --msgbox "HuggingFace token cleared." 8 50 2>&1 > /dev/tty
         fi
     fi
 }
@@ -652,6 +676,7 @@ variables() {
             "1" "GFX" \
             "2" "HSA_OVERRIDE_GFX_VERSION" \
             "3" "PATH" \
+            "4" "HuggingFace Token (optional)" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -668,6 +693,9 @@ variables() {
                 ;;
             "3")
                 configure_path
+                ;;
+            "4")
+                configure_hf_token
                 ;;
             *)
                 echo "Invalid selection."

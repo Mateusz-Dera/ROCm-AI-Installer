@@ -13,7 +13,6 @@ easydict==1.13
 einops==0.8.2
 fastapi==0.136.0
 filelock==3.29.0
-flash-attn==2.8.3
 fonttools==4.62.1
 fsspec==2026.3.0
 glcontext==3.0.0
