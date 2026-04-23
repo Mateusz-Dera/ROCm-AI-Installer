@@ -726,7 +726,7 @@ install_trellis_2_rocm() {
 install_sam_3d_objects(){
     REPO="https://github.com/facebookresearch/sam-3d-objects"
     COMMIT="81a82373a3a7f4cbb00bd5b32aaf6b4d0f659ddd"
-    COMMAND=". /etc/environment && GRADIO_SERVER_NAME=0.0.0.0 python app_gradio.py"
+    COMMAND="GRADIO_SERVER_NAME=0.0.0.0 python app_gradio.py"
     FOLDER=$(basename "$REPO")
     KAOLIN_COMMIT="v0.17.0"
 
@@ -737,6 +737,16 @@ install_sam_3d_objects(){
 
     # Fix: inference.py hardcodes CONDA_PREFIX for CUDA_HOME – use ROCm path instead
     podman exec -it rocm bash -c "sed -i 's|os.environ\[\"CUDA_HOME\"\] = os.environ\[\"CONDA_PREFIX\"\]|os.environ.setdefault(\"CUDA_HOME\", os.environ.get(\"ROCM_PATH\", \"/opt/rocm\"))|' /AI/$FOLDER/notebook/inference.py"
+
+    # pytorch3d doesn't declare torch/setuptools as build deps (no build isolation = no venv access).
+    # Pre-install them, copy uv.toml for ROCm index, then build pytorch3d with --no-build-isolation.
+    # basic_requirements skips already-satisfied packages, so this doesn't cause double installs.
+    TORCH_REQ=$(grep '^torch==' "$SCRIPT_DIR/requirements/sam-3d-objects.txt")
+    PYTORCH3D_REQ=$(grep '^pytorch3d' "$SCRIPT_DIR/requirements/sam-3d-objects.txt")
+    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
+    podman cp "$SCRIPT_DIR/requirements/sam-3d-objects.txt" "rocm:/AI/$FOLDER/requirements.txt"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install 'setuptools==70.3.0' '$TORCH_REQ'"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install '$PYTORCH3D_REQ' --no-build-isolation --override requirements.txt"
 
     basic_requirements "$REPO"
 
@@ -786,7 +796,7 @@ install_sam_3d_objects(){
         echo "Set it via the Variables menu in install.sh, then re-run the installer."
     fi
 
-    basic_run "$REPO" "$COMMAND"
+    basic_run "$REPO" "$COMMAND" "&& . /etc/environment && source .venv/bin/activate &&"
 }
 
 # Backup and Restore Manager

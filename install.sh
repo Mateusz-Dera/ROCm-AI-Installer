@@ -184,7 +184,7 @@ configure_path() {
 configure_hf_token() {
     local new_token
     new_token=$(whiptail --title "HuggingFace Token (optional)" \
-        --inputbox "Enter your HuggingFace access token (optional).\n\nRequired only for models that need access approval (e.g. facebook/sam-3d-objects).\nLeave empty to skip.\n\nCurrent value: ${HF_TOKEN:-(not set)}" \
+        --inputbox "Enter your HuggingFace access token (optional).\n\nRequired only for models that need access approval.\nLeave empty to skip.\n\nCurrent value: ${HF_TOKEN:-(not set)}" \
         14 70 "$HF_TOKEN" 2>&1 > /dev/tty)
 
     if [ $? -eq 0 ]; then
@@ -629,11 +629,10 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
             1 "Install PartCrafter" \
             2 "InstallTRELLIS-AMD" \
-            3 "Install SAM 3D Objects"\
-            4 "Install TRELLIS.2_rocm" \
+            3 "Install TRELLIS.2_rocm" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -644,9 +643,6 @@ d3_generation() {
                 install_trellis
                 ;;
             "3")
-                install_sam_3d_objects
-                ;;
-            "4")
                 install_trellis_2_rocm
                 ;;
             "")

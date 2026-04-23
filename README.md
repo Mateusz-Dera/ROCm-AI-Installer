@@ -64,7 +64,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 |F5-TTS|https://github.com/SWivid/F5-TTS|Remember to select voice.|
 |Soprano|https://github.com/ekwek1/soprano<br> https://github.com/Mateusz-Dera/soprano-rocm|Uses my experimental fork for ROCm with vLLM|# (Initial run only) You may experience slower audio generation upon first launch. Please restart the application to resolve this.|
 |OmniVoice|https://github.com/k2-fsa/OmniVoice||
-|SAM 3D Objects|https://github.com/facebookresearch/sam-3d-objects||
 |TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.|
 
 ###  3D generation:
