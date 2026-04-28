@@ -205,7 +205,6 @@ install_llama_cpp_vulkan() {
 install_hipfire() {
     REPO="https://github.com/Kaden-Schutt/hipfire"
     COMMIT="161f9e0f401a6b2e9a80285553e81e1d88999bac"
-    COMMAND="hipfire pull qwen3.5:4b && hipfire serve"
     FOLDER=$(basename "$REPO")
     basic_container
     basic_git "$REPO" "$COMMIT"
@@ -222,10 +221,11 @@ install_hipfire() {
     # Create hipfire wrapper that explicitly calls bun with the repo's CLI
     podman exec -t rocm bash -c "printf '#!/bin/bash\nexec bun run /AI/$FOLDER/cli/index.ts \"\$@\"\n' > /usr/local/bin/hipfire && chmod +x /usr/local/bin/hipfire"
 
-    basic_run "$REPO" "$COMMAND" "&&"
+    # Create working directories
+    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/model_to_convert /AI/$FOLDER/models"
 
-    # Generate stop.sh alongside run.sh
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/stop.sh << 'STOPEOF'
+    # Generate run.sh: use converted:local if registered, otherwise pull qwen3.5:4b
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
 #!/bin/bash
 if ! podman ps -a --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then
     echo \"Error: Container 'rocm' does not exist.\"
@@ -235,9 +235,9 @@ if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then
     echo \"Container rocm is not running. Starting...\"
     podman start rocm
 fi
-podman exec -it rocm bash -c \"hipfire stop\"
-STOPEOF
-chmod +x /AI/$FOLDER/stop.sh"
+podman exec -it rocm bash -c \"hipfire serve\"
+RUNEOF
+chmod +x /AI/$FOLDER/run.sh"
 }
 
 # SillyTavern

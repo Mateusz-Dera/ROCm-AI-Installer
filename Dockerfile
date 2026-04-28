@@ -123,6 +123,7 @@ WORKDIR /AI
 # Install uv for root user
 # In rootless podman, this root user is mapped to host user
 RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install uv
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hub[cli]==1.12.0'
 
 # Add uv to PATH
 ENV PATH="/usr/local/bin:${PATH}"

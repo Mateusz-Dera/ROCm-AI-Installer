@@ -31,7 +31,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
 |llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 2. A Vulkan version is also available.|
-|hipfire|https://github.com/Kaden-Schutt/hipfire.git||
+|hipfire|https://github.com/Kaden-Schutt/hipfire.git|1. Paste compatible models into the <b>models</b> folder, or use "<b>Prepare model</b>" to manually convert model to a compatible format.|
 
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
@@ -72,7 +72,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 |PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
 |TRELLIS-AMD|https://github.com/CalebisGross/TRELLIS-AMD|GLB Export Takes 5-10 Minutes.<br> Mesh preview may show grey, but the actual export works correctly.|
 |TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.|
-
 
 ## Instalation:
 

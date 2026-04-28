@@ -344,6 +344,92 @@ sillytavern_restore() {
 }
 
 # TabbyAPI
+hipfire() {
+    local hf_loop=true
+    while $hf_loop; do
+        choice=$(whiptail --title "hipfire" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
+            1 "Install" \
+            2 "Prepare model" \
+            2>&1 > /dev/tty)
+        [ $? -ne 0 ] && return 0
+        case "$choice" in
+            "1") install_hipfire ;;
+            "2") hipfire_prepare_model ;;
+            "") hf_loop=false ;;
+            *) ;;
+        esac
+    done
+}
+
+hipfire_prepare_model() {
+    # Step 1: source
+    local src_choice
+    src_choice=$(whiptail --title "hipfire – Prepare model" --menu "Model source:" 12 70 2 --cancel-button "Back" \
+        1 "Local files (model_to_convert)" \
+        2 "Download from HuggingFace" \
+        2>&1 > /dev/tty)
+    [ $? -ne 0 ] && return 0
+
+    local src=""
+    if [ "$src_choice" = "2" ]; then
+        local hf_repo
+        hf_repo=$(whiptail --title "HuggingFace repo" \
+            --inputbox "Enter repo ID or full URL:\n  author/repo\n  https://huggingface.co/author/repo" 11 70 "" \
+            2>&1 > /dev/tty)
+        [ $? -ne 0 ] && return 0
+        if [ -z "$hf_repo" ]; then
+            whiptail --title "Error" --msgbox "No repo entered." 8 50 2>&1 > /dev/tty
+            return 0
+        fi
+        # Strip https://huggingface.co/ prefix if user pasted a full URL
+        hf_repo="${hf_repo#https://huggingface.co/}"
+        hf_repo="${hf_repo#http://huggingface.co/}"
+        src="$hf_repo"
+    else
+        src="/AI/hipfire/model_to_convert"
+        whiptail --title "Local files" --msgbox \
+            "Place your model files (safetensors + config.json) in:\n\n  model_to_convert\n\nPress OK when ready." \
+            12 70 2>&1 > /dev/tty
+        [ $? -ne 0 ] && return 0
+    fi
+
+    # Step 2: format
+    local fmt_choice fmt
+    fmt_choice=$(whiptail --title "hipfire – Quantization format" --menu "Choose format:" 14 92 4 --cancel-button "Back" \
+        1 "MQ4-G256 (mq4) – 4-bit FWHT rotation (Qwen 3.5+, recommended)" \
+        2 "MQ6-G256 (mq6) – 6-bit FWHT rotation (Qwen 3.5+, higher quality)" \
+        3 "HFQ4-G256 (hf4) – 4-bit no rotation  (Llama / Mistral / dense)" \
+        4 "HFQ6-G256 (hf6) – 6-bit no rotation  (Llama / Mistral / dense, higher quality)" \
+        2>&1 > /dev/tty)
+    [ $? -ne 0 ] && return 0
+    case "$fmt_choice" in
+        1) fmt="mq4" ;; 2) fmt="mq6" ;;
+        3) fmt="hf4" ;; 4) fmt="hf6" ;;
+    esac
+
+    # Step 3: quantize
+    clear
+    echo "=== hipfire quantize — format: ${fmt} ==="
+    echo "Source: ${src}"
+    echo ""
+    # Pass HF_TOKEN from installer config so gated models are accessible
+    local token_env=""
+    [ -n "${HF_TOKEN:-}" ] && token_env="HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} HF_TOKEN=${HF_TOKEN}"
+    podman exec -it rocm bash -c \
+        "${token_env} hipfire quantize '${src}' --format ${fmt} --output-dir /AI/hipfire/models --install --register converted:local"
+
+    local status=$?
+    if [ $status -eq 0 ]; then
+        whiptail --title "Done" --msgbox \
+            "Model converted and registered as 'converted:local'.\n\nrun.sh will use it automatically on next launch." \
+            10 65 2>&1 > /dev/tty
+    else
+        whiptail --title "Error" --msgbox \
+            "Quantization failed (exit code ${status}).\nCheck the output above for details." \
+            10 65 2>&1 > /dev/tty
+    fi
+}
+
 tabbyapi() {
     second=true
     while $second; do
@@ -421,7 +507,7 @@ text_generation() {
             3 "SillyTavern" \
             4 "Install llama.cpp" \
             5 "Install llama.cpp Vulkan" \
-            6 "Install hipfire" \
+            6 "hipfire" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -447,7 +533,7 @@ text_generation() {
                 install_llama_cpp_vulkan
                 ;;
             "6")
-                install_hipfire
+                hipfire
                 ;;
             "")
                 echo "Previous menu..."
