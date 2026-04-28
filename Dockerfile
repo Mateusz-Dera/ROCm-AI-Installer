@@ -50,7 +50,12 @@ RUN apt-get update && apt-get install -y \
     libxml2-16 \
     libopenmpi40 \
     libdw1 \
-    g++
+    g++ \
+    build-essential \
+    cargo \
+    unzip \
+    libgl1 \
+    libglib2.0-0t64
 
     # && rm -rf /var/lib/apt/lists/*
 

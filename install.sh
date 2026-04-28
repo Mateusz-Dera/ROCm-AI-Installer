@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="14.2"
+VERSION="14.3"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -415,12 +415,13 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "TabbyAPI" \
             3 "SillyTavern" \
             4 "Install llama.cpp" \
             5 "Install llama.cpp Vulkan" \
+            6 "Install hipfire" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -444,6 +445,9 @@ text_generation() {
                 ;;
             "5")
                 install_llama_cpp_vulkan
+                ;;
+            "6")
+                install_hipfire
                 ;;
             "")
                 echo "Previous menu..."
