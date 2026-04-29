@@ -209,6 +209,9 @@ install_hipfire() {
     basic_container
     basic_git "$REPO" "$COMMIT"
 
+    # Redirect HIPFIRE_DIR from ~/.hipfire to /AI/hipfire (patch CLI before first run)
+    podman exec -t rocm bash -c "sed -i 's|const HIPFIRE_DIR = .*|const HIPFIRE_DIR = \"/AI/$FOLDER\";|' /AI/$FOLDER/cli/index.ts"
+
     # Build inference daemon and quantizer
     podman exec -it rocm bash -c "cd /AI/$FOLDER && \
         cargo build --release --features deltanet --example daemon -p engine && \
@@ -221,10 +224,13 @@ install_hipfire() {
     # Create hipfire wrapper that explicitly calls bun with the repo's CLI
     podman exec -t rocm bash -c "printf '#!/bin/bash\nexec bun run /AI/$FOLDER/cli/index.ts \"\$@\"\n' > /usr/local/bin/hipfire && chmod +x /usr/local/bin/hipfire"
 
-    # Create working directories
-    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/model_to_convert /AI/$FOLDER/models"
+    # Create data dirs directly in /AI/hipfire (no ~/.hipfire needed)
+    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/model_to_convert /AI/$FOLDER/models /AI/$FOLDER/hf-cache"
 
-    # Generate run.sh: use converted:local if registered, otherwise pull qwen3.5:4b
+    # Pull default model into /AI/hipfire/models
+    podman exec -it rocm bash -c "hipfire pull qwen3.5:4b"
+
+    # Generate run.sh: always serve from /AI/hipfire/models (via ~/.hipfire/models symlink)
     podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
 #!/bin/bash
 if ! podman ps -a --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then

@@ -416,7 +416,7 @@ hipfire_prepare_model() {
     local token_env=""
     [ -n "${HF_TOKEN:-}" ] && token_env="HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} HF_TOKEN=${HF_TOKEN}"
     podman exec -it rocm bash -c \
-        "${token_env} hipfire quantize '${src}' --format ${fmt} --output-dir /AI/hipfire/models --install --register converted:local"
+        "${token_env} hipfire quantize '${src}' --format ${fmt} --output-dir /AI/hipfire/models --register converted:local"
 
     local status=$?
     if [ $status -eq 0 ]; then
