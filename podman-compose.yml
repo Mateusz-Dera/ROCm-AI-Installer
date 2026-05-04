@@ -62,6 +62,8 @@ services:
       - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Configurable via setup.sh
       - PYTORCH_ROCM_ARCH=${TARGET_GFX:-gfx1100}  # PyTorch ROCm architecture
       - GPU_DEVICE_ORDINAL=0
+      - HF_TOKEN=${HF_TOKEN}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
       # X11/Wayland display for GUI applications
       - DISPLAY=${DISPLAY_VAR}
       - WAYLAND_DISPLAY=${WAYLAND_DISPLAY_VAR}

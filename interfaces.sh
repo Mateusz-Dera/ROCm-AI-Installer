@@ -169,7 +169,7 @@ EOF"
 
 # ----- llama.cpp -----
 
-LLAMA_COMMIT="5e6c0e18b6b11f109411401239b3b0ef61058dae"
+LLAMA_COMMIT="994118a1831fdede28ee2d228e0570db9b728c45"
 
 # llama.cpp
 install_llama_cpp() {
@@ -204,7 +204,7 @@ install_llama_cpp_vulkan() {
 # hipfire
 install_hipfire() {
     REPO="https://github.com/Kaden-Schutt/hipfire"
-    COMMIT="161f9e0f401a6b2e9a80285553e81e1d88999bac"
+    COMMIT="c0d45b9aed82304a039aafdc8ce7ddcc0c1663cb"
     FOLDER=$(basename "$REPO")
     basic_container
     basic_git "$REPO" "$COMMIT"
@@ -249,7 +249,7 @@ chmod +x /AI/$FOLDER/run.sh"
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="004f1336e6e59d476c1043f1dc94c92d028ac5d0"
+    COMMIT="51ad27fb86d39a3daca3adaa970375c9670c12df"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
@@ -265,7 +265,7 @@ install_sillytavern(){
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="5b23874177548f17690385faeae6c7e6dd9b3ba4"
+    COMMIT="6e1657aee30dea11558ffe4cefc2588e0f6c7db7"
 
     basic_container
 
@@ -765,6 +765,22 @@ install_trellis_2_rocm() {
         uv pip install Dependency/o-voxel --no-build-isolation"
 
     basic_run "$REPO" "$COMMAND"
+}
+
+# Kimodo
+install_kimodo() {
+    REPO="https://github.com/nv-tlabs/kimodo.git"
+    COMMIT="c6c8ba766e52172f1ad34cd1fbe912115c82ce34"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install 'viser @ git+https://github.com/nv-tlabs/kimodo-viser.git'"
+
+    basic_run "$REPO" "TEXT_ENCODER_DEVICE=cpu kimodo_demo"
 }
 
 # Backup and Restore Manager
