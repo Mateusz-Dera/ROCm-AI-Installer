@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="14.3"
+VERSION="15"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -205,7 +205,7 @@ create_container() {
         return
     fi
 
-    if whiptail --title "Create Container" --yesno "This will:\n1. Stop existing container (podman-compose down)\n2. Build new container (podman-compose build)\n3. Start container (podman-compose up -d)\n\nContinue?" 14 60 2>&1 > /dev/tty; then
+    if whiptail --title "Create Container" --yesno "This will:\n1. Stop and remove existing container\n2. Build new container (podman-compose build)\n3. Start container (podman-compose up -d)\n\nContinue?" 14 60 2>&1 > /dev/tty; then
         # Ensure AI_DIR exists
         if [ -n "$AI_DIR" ]; then
             if [ ! -d "$AI_DIR" ]; then
@@ -233,8 +233,9 @@ create_container() {
             xhost +local: 2>/dev/null || true
         fi
 
-        echo "Stopping existing containers..."
+        echo "Stopping and removing existing container..."
         podman-compose down
+        podman rm -f rocm 2>/dev/null || true
 
         echo "Building container..."
         podman-compose build
@@ -501,13 +502,14 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "TabbyAPI" \
             3 "SillyTavern" \
             4 "Install llama.cpp" \
             5 "Install llama.cpp Vulkan" \
-            6 "hipfire" \
+            6 "Install llama-cpp-turboquant" \
+            7 "hipfire" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -533,6 +535,9 @@ text_generation() {
                 install_llama_cpp_vulkan
                 ;;
             "6")
+                install_llama_cpp_turboquant
+                ;;
+            "7")
                 hipfire
                 ;;
             "")
@@ -578,11 +583,12 @@ image_generation() {
 }
 
 comfyui_addons(){
-    CHOICES=$(whiptail --checklist "Addons:" 17 50 5 --cancel-button "Back" \
+    CHOICES=$(whiptail --checklist "Addons:" 19 50 6 --cancel-button "Back" \
         1 "Qwen-Image-2512-GGUF" ON \
         2 "Qwen-Image-2511-Edit-GGUF" ON \
         3 "Z-Image-Turbo" ON \
-        4 "Wan2.2-TI2V-5B" ON 3>&1 1>&2 2>&3)
+        4 "Z-Anime" ON \
+        5 "Wan2.2-TI2V-5B" ON 3>&1 1>&2 2>&3)
 
     status=$?
 

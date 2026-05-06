@@ -1,5 +1,5 @@
 {
-  "id": "d2ed35de-4256-4e9c-9db0-ba7ada3b37d3",
+  "id": "a1b2c3d4-5678-9abc-def0-123456789abc",
   "revision": 0,
   "last_node_id": 10,
   "last_link_id": 10,
@@ -142,7 +142,7 @@
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "z_image_turbo_bf16.safetensors",
+        "z-anime-distill-4step-bf16.safetensors",
         "default"
       ]
     },
@@ -234,7 +234,7 @@
       "widgets_values": [
         1053018503116654,
         "randomize",
-        9,
+        4,
         1,
         "res_multistep",
         "simple",
@@ -281,7 +281,7 @@
         "ver": "0.3.49"
       },
       "widgets_values": [
-        "Beautiful scenery nature glass bottle landscape. Purple galaxy bottle."
+        "Beautiful anime scenery, cherry blossom garden, soft lighting, detailed illustration"
       ]
     },
     {
@@ -315,7 +315,7 @@
       },
       "widgets_values": [
         "qwen_3_4b-bf16.safetensors",
-        "lumina2",
+        "qwen_image",
         "default"
       ]
     },

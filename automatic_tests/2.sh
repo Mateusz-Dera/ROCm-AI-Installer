@@ -58,9 +58,9 @@ phase2_install() {
     # ---- Image & Video generation ----
     # install_comfyui must receive addon numbers to trigger model downloads:
     #   1 = Qwen-Image-2512-GGUF, 2 = Qwen-Image-Edit-2511-GGUF,
-    #   3 = Z-Image-Turbo,        4 = Wan-2.2-5B-TI2V
-    info "--- Installing: ComfyUI (addons: 1 2 3 4) ---"
-    if ! install_comfyui 1 2 3 4; then
+    #   3 = Z-Image-Turbo,        4 = Z-Anime,  5 = Wan-2.2-5B-TI2V
+    info "--- Installing: ComfyUI (addons: 1 2 3 4 5) ---"
+    if ! install_comfyui 1 2 3 4 5; then
         abort "ComfyUI: install function returned non-zero"
     fi
     if ! container_dir_exists "/AI/ComfyUI"; then
@@ -69,7 +69,7 @@ phase2_install() {
     if ! container_file_exists "/AI/ComfyUI/run.sh"; then
         abort "ComfyUI: run.sh not found after install"
     fi
-    pass "ComfyUI installed successfully (addons: 1 2 3 4)"
+    pass "ComfyUI installed successfully (addons: 1 2 3 4 5)"
 
     # ---- Music generation ----
     run_install "ACE-Step"     install_ace_step     "/AI/ACE-Step"

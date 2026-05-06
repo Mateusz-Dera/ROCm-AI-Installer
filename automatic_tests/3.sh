@@ -39,10 +39,15 @@ phase3_restore() {
         restore_directory "$st_bdata/instruct"            "$st_ddata/instruct"            "instruct"        || true
         restore_directory "$st_bdata/sysprompt"           "$st_ddata/sysprompt"           "sysprompt"       || true
 
-        if container_file_exists "$st_dst/config.yaml"; then
-            pass "SillyTavern restore verified (config.yaml present)"
+        # Verify only if config.yaml was present in backup (i.e. backed up in phase 1)
+        if container_file_exists "$st_bak/config.yaml"; then
+            if container_file_exists "$st_dst/config.yaml"; then
+                pass "SillyTavern restore verified (config.yaml present)"
+            else
+                abort "SillyTavern restore FAILED – config.yaml missing in $st_dst"
+            fi
         else
-            abort "SillyTavern restore FAILED – config.yaml missing in $st_dst"
+            pass "SillyTavern restore – config.yaml not in backup (first run), skipped"
         fi
     fi
 

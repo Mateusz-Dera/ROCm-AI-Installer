@@ -2,9 +2,9 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-14.3-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-15-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
-![ROCm](https://img.shields.io/badge/ROCm-7.2.2-red.svg)
+![ROCm](https://img.shields.io/badge/ROCm-7.2.3-red.svg)
 
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
@@ -30,7 +30,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
-|llama.cpp|https://github.com/ggerganov/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 2. A Vulkan version is also available.|
+|llama.cpp|https://github.com/ggml-org/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. A Vulkan version is also available.|
+|llama-cpp-turboquant|https://github.com/TheTom/llama-cpp-turboquant|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. Default quant: <b>turbo3</b>|
 |hipfire|https://github.com/Kaden-Schutt/hipfire.git|1. Paste compatible models into the <b>models</b> folder, or use "<b>Prepare model</b>" to manually convert model to a compatible format.|
 |Kimodo|https://github.com/nv-tlabs/kimodo|1. Set <b>HuggingFace Token</b> in Variables.<br> 2. Request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (required for text encoder).|
 
@@ -50,6 +51,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Qwen-Image-2512-GGUF|https://huggingface.co/Qwen/Qwen-Image-2512<br>https://huggingface.co/unsloth/Qwen-Image-2512-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps|Uses <b>Q5_0</b> quant.<br> Uses <b>2-step turbo LoRA</b>.|
 |Qwen-Image-2511-Edit-GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2511<br> https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning|Uses <b>Q5_0</b> quant.<br> Uses <b>4-step Lightning LoRA</b>|
 |Z-Image-Turbo|https://huggingface.co/Tongyi-MAI/Z-Image-Turbo<br> https://huggingface.co/Comfy-Org/z_image_turbo||
+|Z-Anime|https://huggingface.co/SeeSee21/Z-Anime<br> https://huggingface.co/Comfy-Org/z_image_turbo||
 |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged||
 |ComfyUI-SUPIR|https://github.com/kijai/ComfyUI-SUPIR||
 
@@ -79,8 +81,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 1\. Install Podman.
 
 > [!Note]
-> If you are using Debian 13.3, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 24.04)
-
+> If you are using Debian 13.4, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 26.04)
 
 2\. Make sure that <b>/dev/dri</b> and <b>/dev/kfd</b> are accessible.
 ```bash

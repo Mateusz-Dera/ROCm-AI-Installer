@@ -170,12 +170,13 @@ EOF"
 # ----- llama.cpp -----
 
 LLAMA_COMMIT="994118a1831fdede28ee2d228e0570db9b728c45"
+LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
 
 # llama.cpp
 install_llama_cpp() {
-    REPO="https://github.com/ggml-org/llama.cpp"
+    REPO="$LLAMA_REPO"
     COMMIT="$LLAMA_COMMIT"
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 30"
     FOLDER=$(basename "$REPO")
 
     basic_container
@@ -187,10 +188,10 @@ install_llama_cpp() {
 
 # llama.cpp Vulkan
 install_llama_cpp_vulkan() {
-    REPO="https://github.com/ggml-org/llama.cpp"
+    REPO="$LLAMA_REPO"
     COMMIT="$LLAMA_COMMIT"
     FOLDER="llama.cpp-vulkan"
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 31"
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 30"
 
     basic_container
     podman exec -it rocm bash -c "apt-get install -y libvulkan-dev vulkan-tools glslc"
@@ -199,6 +200,20 @@ install_llama_cpp_vulkan() {
     PODMAN='cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
+}
+
+# llama.cpp Vulkan
+install_llama_cpp_turboquant() {
+    REPO="https://github.com/TheTom/llama-cpp-turboquant"
+    COMMIT="69d8e4be47243e83b3d0d71e932bc7aa61c644dc"
+    FOLDER=$(basename "$REPO")
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 262144 --gpu-layers 30 -ctk turbo3 -ctv turbo3"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+    basic_run "$REPO" "$COMMAND" "&&"
 }
 
 # hipfire
@@ -436,7 +451,7 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="c033bbf516ad8fcd079b45c318e73ee8b5e22962"
+    COMMIT="fed8d5efa6b70d5b24c4c33cb643bfccc39d45b5"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -449,6 +464,70 @@ install_comfyui() {
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO"
     basic_requirements "$REPO"
+
+    # comfy_aimdo is NVIDIA-only; install a stub package so all imports succeed on AMD
+    podman exec -it rocm bash -c "
+mkdir -p /AI/ComfyUI/comfy_aimdo
+cat > /AI/ComfyUI/comfy_aimdo/__init__.py << 'PYEOF'
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/control.py << 'PYEOF'
+def init(): pass
+def init_device(index): return False
+def set_log_debug(): pass
+def set_log_critical(): pass
+def set_log_error(): pass
+def set_log_warning(): pass
+def set_log_info(): pass
+def get_total_vram_usage(): return 0
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/model_vbar.py << 'PYEOF'
+class _VbarSlot:
+    pass
+class ModelVBAR:
+    def __init__(self, size, device_index): pass
+    def alloc(self, size): return _VbarSlot()
+    def loaded_size(self): return 0
+def vbars_analyze(): return 0
+def vbar_fault(v): return None
+def vbar_signature_compare(signature, v): return False
+def vbar_unpin(v): pass
+def vbars_reset_watermark_limits(): pass
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/vram_buffer.py << 'PYEOF'
+class VRAMBuffer:
+    def __init__(self, size, device_index):
+        raise RuntimeError('comfy_aimdo stub: VRAMBuffer not available on AMD')
+    def get(self, size, offset=0): return None
+    def size(self): return 0
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/host_buffer.py << 'PYEOF'
+class HostBuffer:
+    def __init__(self, size):
+        raise RuntimeError('comfy_aimdo stub: HostBuffer not available on AMD')
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/torch.py << 'PYEOF'
+def hostbuf_to_tensor(hostbuf): return None
+def aimdo_to_tensor(obj, device): return None
+PYEOF
+cat > /AI/ComfyUI/comfy_aimdo/model_mmap.py << 'PYEOF'
+import mmap, ctypes, os
+class ModelMMAP:
+    def __init__(self, path):
+        self._f = open(path, 'rb')
+        size = os.path.getsize(path)
+        self._mm = mmap.mmap(self._f.fileno(), size, access=mmap.ACCESS_READ)
+        self._arr = (ctypes.c_uint8 * size).from_buffer(self._mm)
+    def get(self):
+        return ctypes.addressof(self._arr)
+    def __del__(self):
+        try:
+            del self._arr
+            self._mm.close()
+            self._f.close()
+        except Exception:
+            pass
+PYEOF
+"
 
     basic_run "$REPO" "$COMMAND"
 
@@ -473,15 +552,24 @@ install_comfyui() {
         comfy_download "$FOLDER/models/loras/" "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning" "d74eba145674fd7e31b949324e148e21e7118abd" "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
     fi
 
+    # Z-Image / Z-Anime shared (vae + text encoder used by both)
+    if [[ "$ADDONS" == *"3"* ]] || [[ "$ADDONS" == *"4"* ]]; then
+        comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
+        comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/SeeSee21/Z-Anime" "0f5fb51464638a2f7328a1d74590281e63e1fde2" "text_encoder/qwen_3_4b-bf16.safetensors"
+    fi
+
     # 3 - Z-Image-Turbo
     if [[ "$ADDONS" == *"3"* ]]; then
         comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
-        comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/text_encoders/qwen_3_4b.safetensors"
-        comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
     fi
 
-    # 4 - Wan 2.2 TI2V 5B
+    # 4 - Z-Anime
     if [[ "$ADDONS" == *"4"* ]]; then
+        comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/SeeSee21/Z-Anime" "0f5fb51464638a2f7328a1d74590281e63e1fde2" "diffusion_models/z-anime-distill-4step-bf16.safetensors"
+    fi
+
+    # 5 - Wan 2.2 TI2V 5B
+    if [[ "$ADDONS" == *"5"* ]]; then
         WAN_REPO="https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
         WAN_COMMIT="f97505f0d38bea4897c970db66cb5f97f73676de"
         comfy_download "$FOLDER/models/text_encoders/" "$WAN_REPO" "$WAN_COMMIT" "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"

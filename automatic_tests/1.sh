@@ -54,11 +54,15 @@ phase1_backup() {
         backup_directory "$st_data/instruct"            "$st_bdata/instruct"            "instruct"        || true
         backup_directory "$st_data/sysprompt"           "$st_bdata/sysprompt"           "sysprompt"       || true
 
-        # Verify – config.yaml must exist in backup
-        if container_file_exists "$st_bak/config.yaml"; then
-            pass "SillyTavern backup verified (config.yaml present)"
+        # Verify – only required if config.yaml existed at source
+        if container_file_exists "$st_src/config.yaml"; then
+            if container_file_exists "$st_bak/config.yaml"; then
+                pass "SillyTavern backup verified (config.yaml present)"
+            else
+                abort "SillyTavern backup FAILED – config.yaml missing in $st_bak"
+            fi
         else
-            abort "SillyTavern backup FAILED – config.yaml missing in $st_bak"
+            pass "SillyTavern backup – config.yaml not present at source (first run), skipped"
         fi
     fi
 
@@ -69,10 +73,14 @@ phase1_backup() {
 
         backup_directory "/AI/tabbyAPI/models" "/AI/Backups/tabbyAPI/models" "models" || true
 
-        if container_dir_exists "/AI/Backups/tabbyAPI/models"; then
-            pass "TabbyAPI backup verified (models directory present)"
+        if container_dir_exists "/AI/tabbyAPI/models"; then
+            if container_dir_exists "/AI/Backups/tabbyAPI/models"; then
+                pass "TabbyAPI backup verified (models directory present)"
+            else
+                abort "TabbyAPI backup FAILED – /AI/Backups/tabbyAPI/models missing"
+            fi
         else
-            abort "TabbyAPI backup FAILED – /AI/Backups/tabbyAPI/models missing"
+            pass "TabbyAPI backup – models directory not present at source, skipped"
         fi
     fi
 

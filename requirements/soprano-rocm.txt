@@ -204,12 +204,12 @@ tiktoken==0.12.0
 timm==1.0.24
 tokenizers==0.22.2
 tomlkit==0.14.0
-torch==2.10.0+git8514f05
-torchaudio==2.9.0+eaa9e4e
-torchvision==0.24.1+d801a34
+torch==2.10.0+rocm7.2.3.lw.git1a270074
+torchaudio==2.10.0+rocm7.2.3.git5047768f
+torchvision==0.25.0+rocm7.2.3.git82df5f59
 tqdm==4.67.1
 transformers==4.57.6
-triton==3.6.0+rocm7.2.2.git4ed88892
+triton==3.6.0+rocm7.2.3.git4ed88892
 triton-kernels==1.0.0
 typeguard==4.5.1
 typer==0.21.1
