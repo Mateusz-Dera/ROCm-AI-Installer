@@ -31,7 +31,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
 |llama.cpp|https://github.com/ggml-org/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. A Vulkan version is also available.|
-|llama-cpp-turboquant|https://github.com/TheTom/llama-cpp-turboquant|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. Default quant: <b>turbo3</b>|
+|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. 4-bit KV-cache quantization (TurboQuant)|
 |hipfire|https://github.com/Kaden-Schutt/hipfire.git|1. Paste compatible models into the <b>models</b> folder, or use "<b>Prepare model</b>" to manually convert model to a compatible format.|
 |Kimodo|https://github.com/nv-tlabs/kimodo|1. Set <b>HuggingFace Token</b> in Variables.<br> 2. Request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (required for text encoder).|
 

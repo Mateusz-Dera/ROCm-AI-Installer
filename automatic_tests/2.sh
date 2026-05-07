@@ -38,8 +38,10 @@ phase2_install() {
     # ---- Text generation ----
     run_install "KoboldCPP"        install_koboldcpp        "/AI/koboldcpp-rocm"
     run_install "TabbyAPI"         install_tabbyapi         "/AI/tabbyAPI"
-    run_install "llama.cpp"        install_llama_cpp        "/AI/llama.cpp"
-    run_install "llama.cpp-vulkan" install_llama_cpp_vulkan "/AI/llama.cpp-vulkan"
+    run_install "llama.cpp"              install_llama_cpp              "/AI/llama.cpp"
+    run_install "llama.cpp-vulkan"       install_llama_cpp_vulkan       "/AI/llama.cpp-vulkan"
+    run_install "llama-cpp-turboquant"   install_llama_cpp_turboquant   "/AI/llama-cpp-turboquant"
+    run_install "vllm-turboquant"        install_vllm_turboquant        "/AI/vllm-turboquant"
 
     # SillyTavern (run.sh uses &&, no venv activate needed)
     run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
