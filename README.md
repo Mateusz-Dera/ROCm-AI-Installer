@@ -52,7 +52,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Z-Image-Turbo|https://huggingface.co/Tongyi-MAI/Z-Image-Turbo<br> https://huggingface.co/Comfy-Org/z_image_turbo||
 |Z-Anime|https://huggingface.co/SeeSee21/Z-Anime<br> https://huggingface.co/Comfy-Org/z_image_turbo||
 |Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged||
-|ComfyUI-SUPIR|https://github.com/kijai/ComfyUI-SUPIR||
 
 ###  Music generation:
 |Name|Links|Additional information|
