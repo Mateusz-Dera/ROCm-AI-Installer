@@ -5,22 +5,22 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 19: ComfyUI workflow – Wan-2.2-5B-image-to-video
-# Input image: bottle.png
+# PHASE 19: ComfyUI workflow – Qwen-Image-Edit-2511-GGUF (image edit)
+# Input image: cat.png → change fur color to black, eyes to yellow
 # ============================================================
-phase19_comfyui_wan_i2v() {
+phase19_comfyui_qwen_image_edit() {
     info "============================================="
-    info "PHASE 19: ComfyUI – Wan-2.2-5B-image-to-video"
+    info "PHASE 19: ComfyUI – Qwen-Image-Edit-2511-GGUF"
     info "============================================="
 
     local app_port=8188
     local app_dir="/AI/ComfyUI"
     local app_log="/tmp/comfyui_server.log"
-    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-image-to-video.json"
-    local workflow_dst="/tmp/comfyui_workflow_19.json"
+    local workflow_src="${SCRIPT_DIR}/workflows/Qwen-Image-Edit-2511-GGUF-Single-Image.json"
+    local workflow_dst="/tmp/comfyui_workflow_17.json"
     local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
     local helper_dst="/tmp/comfyui_run_workflow.py"
-    local bottle_img_src="${SCRIPT_DIR}/workflows/images/bottle.png"
+    local cat_img_src="${SCRIPT_DIR}/workflows/images/cat.png"
 
     basic_container || abort "Container 'rocm' is not running."
 
@@ -55,11 +55,11 @@ phase19_comfyui_wan_i2v() {
     pass "ComfyUI ready"
 
     # --- Copy input image into ComfyUI input directory ---
-    info "Copying bottle.png into ComfyUI input directory..."
+    info "Copying cat.png into ComfyUI input directory..."
     podman exec -t rocm bash -c "mkdir -p '${app_dir}/input'" 2>/dev/null || true
-    podman cp "${bottle_img_src}" "rocm:${app_dir}/input/bottle.png" || \
-        abort "Failed to copy bottle.png into container"
-    pass "bottle.png copied to ${app_dir}/input/"
+    podman cp "${cat_img_src}" "rocm:${app_dir}/input/cat.png" || \
+        abort "Failed to copy cat.png into container"
+    pass "cat.png copied to ${app_dir}/input/"
 
     # --- Copy workflow JSON and helper into container ---
     podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
@@ -68,27 +68,26 @@ phase19_comfyui_wan_i2v() {
         abort "Failed to copy comfyui_run_workflow.py into container"
 
     # --- Run workflow ---
-    # NOTE: Wan 5B image-to-video with 97 frames / 20 steps can take 1-3 hours.
-    info "Running Wan-2.2-5B-image-to-video workflow (up to 3h)..."
+    info "Running Qwen-Image-Edit-2511-GGUF workflow (image edit: cat.png)..."
     local test_output
     test_output=$(podman exec -t rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_19_stderr.txt" \
+         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_17_stderr.txt" \
         | tr -d '\r') || true
 
     if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
-        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_19_stderr.txt" 2>/dev/null || true
+        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_17_stderr.txt" 2>/dev/null || true
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "Wan-2.2-5B-image-to-video workflow FAILED"
+        abort "Qwen-Image-Edit-2511-GGUF workflow FAILED"
     fi
 
     local out_line out_path out_sz
     out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
     out_path=$(echo "$out_line" | cut -d: -f2)
     out_sz=$(echo "$out_line"   | cut -d: -f3)
-    pass "Wan-2.2-5B-image-to-video output OK (${out_path}, ${out_sz} bytes)"
+    pass "Qwen-Image-Edit-2511-GGUF output OK (${out_path}, ${out_sz} bytes)"
     if [ "${out_sz:-0}" -lt 10240 ]; then
-        abort "Output video suspiciously small (${out_sz} bytes)"
+        abort "Output image suspiciously small (${out_sz} bytes)"
     fi
     pass "Output size OK (${out_sz} bytes >= 10 KB)"
 
@@ -107,5 +106,5 @@ phase19_comfyui_wan_i2v() {
     info "Phase 19 DONE"
 }
 
-main() { phase19_comfyui_wan_i2v; }
+main() { phase19_comfyui_qwen_image_edit; }
 main "$@"

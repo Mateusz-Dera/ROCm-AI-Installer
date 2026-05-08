@@ -202,80 +202,6 @@ install_llama_cpp_vulkan() {
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
 }
 
-# llama.cpp Vulkan
-install_vllm_turboquant() {
-    REPO="https://github.com/mitkox/vllm-turboquant"
-    COMMIT="c6b2ee90d17eecb43c0afa273ae5ef8ecc8a1a3d"
-    FOLDER=$(basename "$REPO")
-    COMMAND="vllm serve model.gguf --host 0.0.0.0 --port 8000 --kv-cache-dtype turboquant35 --enable-turboquant"
-
-    basic_container
-    podman exec -it rocm bash -c "apt-get install -y ninja-build"
-    basic_git "$REPO" "$COMMIT"
-    # requires Python <3.14; use 3.12
-    basic_venv "$REPO" "3.12"
-
-    # Copy uv.toml so the ROCm index is available in the venv
-    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
-
-    # Install torch 2.10.0 from ROCm repo first (build isolation disabled for vllm)
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install \
-            'torch==2.10.0+rocm7.2.3.lw.git1a270074' \
-            'torchvision==0.25.0+rocm7.2.3.git82df5f59' \
-            'torchaudio==2.10.0+rocm7.2.3.git5047768f' \
-            'triton==3.6.0+rocm7.2.3.git4ed88892'"
-
-    # Patch: add ROCm support to TurboQuant (capability checks are CUDA-only by default)
-    podman exec -it rocm bash -c "python3 - << 'PYEOF'
-import re
-
-# turboquant_kv_cache.py: make supports_turboquant_cuda and get_turboquant_kernel_meta ROCm-aware
-path = '/AI/vllm-turboquant/vllm/v1/attention/ops/turboquant_kv_cache.py'
-with open(path) as f:
-    c = f.read()
-
-c = c.replace(
-    'def supports_turboquant_cuda(capability: Any | None) -> bool:\n    normalized = _normalize_turboquant_cuda_capability(capability)\n    return normalized in TURBOQUANT_SUPPORTED_CUDA_CAPABILITIES',
-    'def supports_turboquant_cuda(capability: Any | None) -> bool:\n    import torch as _torch\n    if _torch.version.hip is not None:\n        return True\n    normalized = _normalize_turboquant_cuda_capability(capability)\n    return normalized in TURBOQUANT_SUPPORTED_CUDA_CAPABILITIES'
-)
-
-# Add ROCm fallback in get_turboquant_kernel_meta (after the device.type check)
-c = c.replace(
-    '    capability = _normalize_turboquant_cuda_capability(\n        torch.cuda.get_device_capability(device)\n    )\n    assert capability is not None\n    if capability == (8, 6):',
-    '    if torch.version.hip is not None:\n        return TurboQuantKernelMeta(decode_block_n=8, decode_num_warps=2, update_tile=16)\n    capability = _normalize_turboquant_cuda_capability(\n        torch.cuda.get_device_capability(device)\n    )\n    assert capability is not None\n    if capability == (8, 6):'
-)
-
-with open(path, 'w') as f:
-    f.write(c)
-print('Patched turboquant_kv_cache.py')
-
-# triton_turboquant_decode.py: skip capability check on ROCm
-path2 = '/AI/vllm-turboquant/vllm/v1/attention/ops/triton_turboquant_decode.py'
-with open(path2) as f:
-    c2 = f.read()
-
-c2 = c2.replace(
-    'def _require_turboquant_cuda(device: torch.device) -> None:\n    if device.type != \"cuda\":\n        raise ValueError(\"TurboQuant Triton decode requires CUDA tensors.\")\n    capability = torch.cuda.get_device_capability(device)\n    if not supports_turboquant_cuda(capability):\n        raise ValueError(get_turboquant_platform_requirement())',
-    'def _require_turboquant_cuda(device: torch.device) -> None:\n    if device.type != \"cuda\":\n        raise ValueError(\"TurboQuant Triton decode requires CUDA tensors.\")\n    if torch.version.hip is not None:\n        return\n    capability = torch.cuda.get_device_capability(device)\n    if not supports_turboquant_cuda(capability):\n        raise ValueError(get_turboquant_platform_requirement())'
-)
-
-with open(path2, 'w') as f:
-    f.write(c2)
-print('Patched triton_turboquant_decode.py')
-PYEOF
-"
-
-    # Build vllm for ROCm (no-build-isolation: torch already installed from ROCm repo)
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install setuptools_scm"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        VLLM_TARGET_DEVICE=rocm PYTORCH_ROCM_ARCH=\$TARGET_GFX \
-        uv pip install --no-build-isolation -e ."
-
-    basic_run "$REPO" "$COMMAND"
-}
-
 install_turboquant_rocm_llamacpp() {
     REPO="https://github.com/jagsan-cyber/turboquant-rocm-llamacpp"
     COMMIT="22cce31b6e58f3e945fbc7f2f5eb06a509e64fcc"
@@ -713,7 +639,7 @@ install_ace_step_1_5() {
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
     REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="5b23874177548f17690385faeae6c7e6dd9b3ba4"
+    COMMIT="55368e08774e3ea6ab0a864aafa2a3506b7c7059"
     COMMAND="uv run --extra rocm webui.py --listen --api"
     FOLDER=$(basename "$REPO")
 

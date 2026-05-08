@@ -5,137 +5,98 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 9: RUN AND VERIFY – ACE-Step (text-to-music)
+# PHASE 9: RUN AND VERIFY – hipfire (LLM inference, qwen3.5:4b)
 # ============================================================
-phase9_verify_acestep() {
+phase9_verify_hipfire() {
     info "============================================="
-    info "PHASE 9: RUN AND VERIFY (ACE-Step)"
+    info "PHASE 9: RUN AND VERIFY (hipfire)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/ACE-Step"
-    local app_port=7860
-    local app_log="/tmp/acestep_server.log"
+    local api_port=11435
+    local model_tag="qwen3.5:4b"
+    local model_file="qwen3.5-4b.mq4"
 
-    # --- Kill old instances and clear log ---
-    podman exec -t rocm bash -c \
-        "pkill -f 'acestep' 2>/dev/null; pkill -f 'MIOPEN_FIND_MODE' 2>/dev/null; \
-         fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+    # --- Kill any leftover serve daemon ---
+    podman exec -t rocm bash -c "hipfire stop 2>/dev/null; sleep 2; fuser -k ${api_port}/tcp 2>/dev/null; true" || true
 
-    # --- Start ACE-Step ---
-    info "Starting ACE-Step on port ${app_port}..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         MIOPEN_FIND_MODE=3 PYTORCH_TUNABLEOP_ENABLED=1 \
-         uv run acestep --checkpoint_path ./checkpoints \
-             --server_name 0.0.0.0 --bf16 True \
-         >> '${app_log}' 2>&1"
+    # --- diag ---
+    info "Running hipfire diag..."
+    local diag_out
+    diag_out=$(podman exec -t rocm bash -c "hipfire diag 2>&1" | tr -d '\r')
+    if echo "$diag_out" | grep -qi "gfx\|GPU\|HIP\|VRAM"; then
+        pass "hipfire diag OK"
+    else
+        info "diag output: $diag_out"
+        abort "hipfire diag did not report GPU info"
+    fi
 
-    # --- Wait for Gradio API to become ready (model loads at startup) ---
-    info "Waiting for ACE-Step Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
+    # --- Verify model file exists in /AI/hipfire/models/ (pulled during install) ---
+    podman exec -t rocm bash -c "[ -f /AI/hipfire/models/${model_file} ]" \
+        || abort "Model file ${model_file} not found in /AI/hipfire/models/ — was hipfire installed?"
+    pass "Model file ${model_file} present"
+
+    # --- Start serve ---
+    info "Starting hipfire serve on port ${api_port}..."
+    podman exec -d rocm bash -c "hipfire serve ${api_port}"
+
+    # --- Wait for API ---
+    info "Waiting for hipfire API (up to 120s)..."
+    local waited=0 max_wait=120 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
+               "curl -sf http://localhost:${api_port}/v1/models | grep -q '${model_file}'" 2>/dev/null; then
             ready=true; break
         fi
-        sleep 5; waited=$((waited + 5))
+        if ! podman exec -t rocm bash -c \
+               "pgrep -f 'examples/daemon' > /dev/null" 2>/dev/null; then
+            abort "hipfire daemon died during startup"
+        fi
+        sleep 3; waited=$((waited + 3))
         info "  ...waiting ($waited/${max_wait}s)"
     done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step did not become ready within ${max_wait}s"
-    fi
-    pass "ACE-Step Gradio API ready on port ${app_port}"
+    $ready || abort "hipfire API did not respond within ${max_wait}s"
+    pass "hipfire API ready on port ${api_port}"
 
-    # --- Generate a short test song via the /__call__ endpoint ---
-    # infer_step=20 (faster than default 60), audio_duration=15s
-    info "Requesting music generation (15s, 20 infer steps)..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/__call__ \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"wav\",
-                15,
-                \"pop, simple, calm, test\",
-                \"[verse]\nThis is a test song\nSimple melody\n\",
-                20,
-                15.0,
-                \"euler\",
-                \"apg\",
-                10.0,
-                null,
-                0.5,
-                0.0,
-                3.0,
-                true,
-                false,
-                true,
-                null,
-                0.0,
-                0.0,
-                false,
-                0.5,
-                null,
-                \"none\",
-                1.0
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
+    # --- Query model ---
+    info "Querying ${model_file}: 'What is 2+2?'"
+    local response
+    response=$(podman exec -t rocm bash -c "curl -sf http://localhost:${api_port}/v1/chat/completions \
+        -H 'Content-Type: application/json' \
+        -d '{
+            \"model\": \"${model_file}\",
+            \"messages\": [{\"role\": \"user\", \"content\": \"What is 2+2? Answer with just the number.\"}],
+            \"max_tokens\": 32,
+            \"temperature\": 0
+        }' 2>&1" | tr -d '\r') || true
 
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step: no event_id returned from /__call__"
-    fi
-    info "Generation started (event_id: $event_id) – polling result..."
-
-    # --- Poll result (SSE stream) – up to 600s ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 600 \
-            http://localhost:${app_port}/gradio_api/call/__call__/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$gen_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "ACE-Step music generation OK (audio file returned)"
-        # Extract and log the file path
-        local audio_path
-        audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
-        if [ -n "$audio_path" ]; then
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
-        fi
+    if echo "$response" | grep -qiE '"content"\s*:\s*"[^"]*4'; then
+        local content
+        content=$(echo "$response" | grep -oP '"content"\s*:\s*"\K[^"]+' | head -1)
+        pass "Model answered correctly: '$content'"
+    elif echo "$response" | grep -q '"content"'; then
+        local content
+        content=$(echo "$response" | grep -oP '"content"\s*:\s*"\K[^"]+' | head -1)
+        info "Response content: '$content'"
+        pass "Model responded (content present)"
     else
-        info "Raw generation result: $gen_result"
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step generation did not return audio data"
+        info "Full response: $response"
+        abort "No valid response from model"
     fi
 
-    # --- Stop server ---
-    info "Stopping ACE-Step..."
-    podman exec -t rocm bash -c \
-        "pkill -f 'acestep' 2>/dev/null; pkill -f 'MIOPEN_FIND_MODE' 2>/dev/null; \
-         fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    # --- Stop serve ---
+    info "Stopping hipfire serve..."
+    podman exec -t rocm bash -c "hipfire stop 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c \
-            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+    while podman exec -t rocm bash -c "fuser ${api_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
+        sleep 2; kw=$((kw + 2))
+        [ $kw -ge 20 ] && break
     done
-    pass "ACE-Step stopped"
+    pass "hipfire stopped"
 
     info "Phase 9 DONE"
 }
 
-main() { phase9_verify_acestep; }
+main() { phase9_verify_hipfire; }
 main "$@"

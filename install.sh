@@ -502,15 +502,14 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 16 100 8 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "TabbyAPI" \
             3 "SillyTavern" \
             4 "Install llama.cpp" \
             5 "Install llama.cpp Vulkan" \
             6 "Install turboquant-rocm-llamacpp" \
-            7 "Install vllm-turboquant" \
-            8 "hipfire" \
+            7 "hipfire" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -539,9 +538,6 @@ text_generation() {
                 install_turboquant_rocm_llamacpp
                 ;;
             "7")
-                install_vllm_turboquant
-                ;;
-            "8")
                 hipfire
                 ;;
             "")

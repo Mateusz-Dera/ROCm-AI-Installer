@@ -5,229 +5,98 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 22: RUN AND VERIFY – OmniVoice
-#   Step 1: Voice Design  (no reference) → save output as ref
-#   Step 2: Voice Clone   (use step-1 output as reference)
+# PHASE 22: ComfyUI workflow – Wan-2.2-5B-text-to-video
 # ============================================================
-phase22_verify_omnivoice() {
+phase22_comfyui_wan_t2v() {
     info "============================================="
-    info "PHASE 22: RUN AND VERIFY (OmniVoice)"
+    info "PHASE 22: ComfyUI – Wan-2.2-5B-text-to-video"
     info "============================================="
+
+    local app_port=8188
+    local app_dir="/AI/ComfyUI"
+    local app_log="/tmp/comfyui_server.log"
+    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-text-to-video.json"
+    local workflow_dst="/tmp/comfyui_workflow_18.json"
+    local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
+    local helper_dst="/tmp/comfyui_run_workflow.py"
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/OmniVoice"
-    local app_port=7860
-    local app_log="/tmp/omnivoice_server.log"
-    local ref_wav="/tmp/omnivoice_ref.wav"
-    local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
-
-    # --- Kill old instances and clear log ---
+    # --- Kill old ComfyUI instances ---
     podman exec -t rocm bash -c \
-        "pkill -f 'omnivoice-demo' 2>/dev/null; \
+        "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
 
-    # --- Start OmniVoice ---
-    info "Starting OmniVoice on port ${app_port}..."
+    # --- Start ComfyUI ---
+    info "Starting ComfyUI on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         omnivoice-demo --ip 0.0.0.0 --port ${app_port} \
+         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
+         uv run main.py --listen 0.0.0.0 --enable-manager --normalvram \
+         --preview-method auto --dont-upcast-attention --bf16-vae \
+         --use-pytorch-cross-attention --reserve-vram 2.0 \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API to become ready (model download + load) ---
-    info "Waiting for OmniVoice Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
+    info "Waiting for ComfyUI to become ready (up to 300s)..."
+    local rc
+    wait_for_http \
+        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
+        "main\.py" "${app_log}" 300 "Starting server"
+    rc=$?
+    if [ $rc -eq 1 ]; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice did not become ready within ${max_wait}s"
+        abort "ComfyUI process died"
+    elif [ $rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "ComfyUI did not become ready within 300s"
     fi
-    pass "OmniVoice Gradio API ready on port ${app_port}"
+    pass "ComfyUI ready"
 
-    # ================================================================
-    # STEP 1 – Voice Design (no reference audio)
-    # Endpoint: /_design_fn
-    # Inputs (15): text, lang, ns, gs, dn, sp, du, pp, po, 6×group
-    # ================================================================
-    info "--- Step 1: Voice Design (no reference) ---"
-    info "Requesting Voice Design: \"${GEN_TEXT}\"..."
+    # --- Copy workflow JSON and helper into container ---
+    podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
+        abort "Failed to copy workflow JSON into container"
+    podman cp "${helper_src}" "rocm:${helper_dst}" || \
+        abort "Failed to copy comfyui_run_workflow.py into container"
 
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                32,
-                2.0,
-                true,
-                1.0,
-                null,
-                true,
-                true,
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\"
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
+    # --- Run workflow ---
+    # NOTE: Wan 5B text-to-video with 97 frames / 20 steps can take 1-3 hours.
+    info "Running Wan-2.2-5B-text-to-video workflow (up to 3h)..."
+    local test_output
+    test_output=$(podman exec -t rocm bash -c \
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_18_stderr.txt" \
+        | tr -d '\r') || true
 
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_design_fn"
-    fi
-    info "Voice Design started (event_id: $event_id) – polling result (up to 300s)..."
-
-    local design_result
-    design_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if ! echo "$design_result" | grep -q '"path"'; then
-        info "Raw result: $design_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Design did not return audio data"
-    fi
-    pass "OmniVoice Voice Design OK (audio returned)"
-
-    # Extract audio path and copy to persistent location
-    local audio_path
-    audio_path=$(echo "$design_result" \
-        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
-
-    if [ -z "$audio_path" ]; then
-        info "Raw result: $design_result"
-        abort "OmniVoice: could not extract audio path from Voice Design result"
-    fi
-    info "  Voice Design output: ${audio_path}"
-
-    # Verify size
-    local fsize
-    fsize=$(podman exec -t rocm bash -c \
-        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-        | tr -d '\r\n') || fsize=0
-    if [ "${fsize:-0}" -lt 1024 ]; then
-        abort "OmniVoice: Voice Design audio suspiciously small (${fsize} bytes)"
-    fi
-    info "  Size: $(( ${fsize} / 1024 )) KB"
-
-    # Copy to persistent location for use as reference
-    podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" || \
-        abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
-    pass "Voice Design audio saved as reference: ${ref_wav}"
-
-    # ================================================================
-    # STEP 2 – Voice Clone (use step-1 output as reference)
-    # Endpoint: /_clone_fn
-    # Inputs (11): text, lang, ref_audio, ref_text, ns, gs, dn, sp, du, pp, po
-    # ================================================================
-    info "--- Step 2: Voice Clone (using generated audio as reference) ---"
-
-    # Upload reference audio via /gradio_api/upload
-    info "Uploading reference audio to OmniVoice..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${ref_wav}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
-
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-
-    if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
-        abort "OmniVoice: failed to upload reference audio"
-    fi
-    info "Reference audio uploaded: ${uploaded_path}"
-
-    info "Requesting Voice Clone: \"${GEN_TEXT}\"..."
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_clone_fn \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                \"\",
-                32,
-                2.0,
-                true,
-                1.0,
-                null,
-                true,
-                true
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_clone_fn"
-    fi
-    info "Voice Clone started (event_id: $event_id) – polling result (up to 300s)..."
-
-    local clone_result
-    clone_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_clone_fn/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$clone_result" | grep -q '"path"'; then
-        pass "OmniVoice Voice Clone OK (audio returned)"
-        local clone_path
-        clone_path=$(echo "$clone_result" \
-            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
-        if [ -n "$clone_path" ]; then
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Clone output: ${clone_path} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "OmniVoice: Voice Clone audio suspiciously small (${fsize} bytes)"
-            fi
-        fi
-        pass "Voice Clone audio size OK"
-    else
-        info "Raw result: $clone_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Clone did not return audio data"
+    if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
+        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_18_stderr.txt" 2>/dev/null || true
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "Wan-2.2-5B-text-to-video workflow FAILED"
     fi
 
-    # --- Stop server ---
-    info "Stopping OmniVoice..."
+    local out_line out_path out_sz
+    out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
+    out_path=$(echo "$out_line" | cut -d: -f2)
+    out_sz=$(echo "$out_line"   | cut -d: -f3)
+    pass "Wan-2.2-5B-text-to-video output OK (${out_path}, ${out_sz} bytes)"
+    if [ "${out_sz:-0}" -lt 10240 ]; then
+        abort "Output video suspiciously small (${out_sz} bytes)"
+    fi
+    pass "Output size OK (${out_sz} bytes >= 10 KB)"
+
+    # --- Stop ComfyUI ---
+    info "Stopping ComfyUI..."
     podman exec -t rocm bash -c \
-        "pkill -f 'omnivoice-demo' 2>/dev/null; \
+        "pkill -f 'main\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "OmniVoice stopped"
+    pass "ComfyUI stopped"
 
     info "Phase 22 DONE"
 }
 
-main() { phase22_verify_omnivoice; }
+main() { phase22_comfyui_wan_t2v; }
 main "$@"

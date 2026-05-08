@@ -5,39 +5,41 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 14: RUN AND VERIFY – TRELLIS-AMD (image-to-3D: GLB + Gaussian)
+# PHASE 14: RUN AND VERIFY – OmniVoice
+#   Step 1: Voice Design  (no reference) → save output as ref
+#   Step 2: Voice Clone   (use step-1 output as reference)
 # ============================================================
-phase14_verify_trellis() {
+phase14_verify_omnivoice() {
     info "============================================="
-    info "PHASE 14: RUN AND VERIFY (TRELLIS-AMD)"
+    info "PHASE 14: RUN AND VERIFY (OmniVoice)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/TRELLIS-AMD"
+    local app_dir="/AI/OmniVoice"
     local app_port=7860
-    local app_log="/tmp/trellis_server.log"
-    local helper_src="${TESTS_DIR}/trellis_api_helper.py"
-    local helper_dst="/tmp/trellis_api_helper.py"
+    local app_log="/tmp/omnivoice_server.log"
+    local ref_wav="/tmp/omnivoice_ref.wav"
+    local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
 
     # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
+        "pkill -f 'omnivoice-demo' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
 
-    # --- Start TRELLIS-AMD ---
-    info "Starting TRELLIS-AMD on port ${app_port}..."
+    # --- Start OmniVoice ---
+    info "Starting OmniVoice on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse \
-         uv run app.py >> '${app_log}' 2>&1"
+         omnivoice-demo --ip 0.0.0.0 --port ${app_port} \
+         >> '${app_log}' 2>&1"
 
-    # --- Wait for /info endpoint (model loads at startup, can take >2 min) ---
-    info "Waiting for TRELLIS-AMD to become ready (up to 600s)..."
+    # --- Wait for Gradio API to become ready (model download + load) ---
+    info "Waiting for OmniVoice Gradio API to become ready (up to 600s)..."
     local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/info \
+               "curl -sf http://localhost:${app_port}/gradio_api/info \
                 | grep -q '\"named_endpoints\"'" 2>/dev/null; then
             ready=true; break
         fi
@@ -46,89 +48,186 @@ phase14_verify_trellis() {
     done
     if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "TRELLIS-AMD did not become ready within ${max_wait}s"
+        abort "OmniVoice did not become ready within ${max_wait}s"
     fi
-    pass "TRELLIS-AMD API ready on port ${app_port}"
+    pass "OmniVoice Gradio API ready on port ${app_port}"
 
-    # --- Copy Python helper into container ---
-    podman cp "${helper_src}" "rocm:${helper_dst}" || \
-        abort "Failed to copy trellis_api_helper.py into container"
+    # ================================================================
+    # STEP 1 – Voice Design (no reference audio)
+    # Endpoint: /_design_fn
+    # Inputs (15): text, lang, ns, gs, dn, sp, du, pp, po, 6×group
+    # ================================================================
+    info "--- Step 1: Voice Design (no reference) ---"
+    info "Requesting Voice Design: \"${GEN_TEXT}\"..."
 
-    # --- Run API test helper (generate + extract GLB + extract Gaussian) ---
-    info "Running TRELLIS-AMD API test (Generate → Extract GLB → Extract Gaussian)..."
-    local test_output
-    test_output=$(podman exec -t rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' 2>/tmp/trellis_helper_stderr.txt" \
-        | tr -d '\r') || true   # preserve output even on non-zero exit
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                \"${GEN_TEXT}\",
+                \"Auto\",
+                32,
+                2.0,
+                true,
+                1.0,
+                null,
+                true,
+                true,
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\"
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
 
-    # Show stderr for debugging if test failed
-    if ! echo "$test_output" | grep -q "GAUSSIAN_OK"; then
-        podman exec -t rocm bash -c "cat /tmp/trellis_helper_stderr.txt" 2>/dev/null || true
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice: no event_id returned from /_design_fn"
     fi
+    info "Voice Design started (event_id: $event_id) – polling result (up to 300s)..."
 
-    # --- Check Generate ---
-    if echo "$test_output" | grep -q "^GENERATE_OK:"; then
-        local gen_line video_path gen_sz
-        gen_line=$(echo "$test_output" | grep "^GENERATE_OK:" | head -1)
-        video_path=$(echo "$gen_line" | cut -d: -f2)
-        gen_sz=$(echo "$gen_line"    | cut -d: -f3)
-        pass "TRELLIS Generate OK (video: ${video_path}, ${gen_sz} bytes)"
-    else
-        abort "TRELLIS Generate FAILED"
+    local design_result
+    design_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 300 \
+            http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if ! echo "$design_result" | grep -q '"path"'; then
+        info "Raw result: $design_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice Voice Design did not return audio data"
     fi
+    pass "OmniVoice Voice Design OK (audio returned)"
 
-    # --- Check Extract GLB ---
-    if echo "$test_output" | grep -q "^GLB_OK:"; then
-        local glb_line glb_path glb_sz
-        glb_line=$(echo "$test_output" | grep "^GLB_OK:" | head -1)
-        glb_path=$(echo "$glb_line" | cut -d: -f2)
-        glb_sz=$(echo "$glb_line"   | cut -d: -f3)
-        pass "TRELLIS Extract GLB OK (${glb_path}, ${glb_sz} bytes)"
-        if [ "${glb_sz:-0}" -lt 1024 ]; then
-            abort "GLB file suspiciously small (${glb_sz} bytes)"
+    # Extract audio path and copy to persistent location
+    local audio_path
+    audio_path=$(echo "$design_result" \
+        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
+
+    if [ -z "$audio_path" ]; then
+        info "Raw result: $design_result"
+        abort "OmniVoice: could not extract audio path from Voice Design result"
+    fi
+    info "  Voice Design output: ${audio_path}"
+
+    # Verify size
+    local fsize
+    fsize=$(podman exec -t rocm bash -c \
+        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
+        | tr -d '\r\n') || fsize=0
+    if [ "${fsize:-0}" -lt 1024 ]; then
+        abort "OmniVoice: Voice Design audio suspiciously small (${fsize} bytes)"
+    fi
+    info "  Size: $(( ${fsize} / 1024 )) KB"
+
+    # Copy to persistent location for use as reference
+    podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" || \
+        abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
+    pass "Voice Design audio saved as reference: ${ref_wav}"
+
+    # ================================================================
+    # STEP 2 – Voice Clone (use step-1 output as reference)
+    # Endpoint: /_clone_fn
+    # Inputs (11): text, lang, ref_audio, ref_text, ns, gs, dn, sp, du, pp, po
+    # ================================================================
+    info "--- Step 2: Voice Clone (using generated audio as reference) ---"
+
+    # Upload reference audio via /gradio_api/upload
+    info "Uploading reference audio to OmniVoice..."
+    local upload_response
+    upload_response=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
+            -F 'files=@${ref_wav}' | tr -d '\r'
+    " 2>/dev/null) || upload_response=""
+
+    local uploaded_path
+    uploaded_path=$(echo "$upload_response" \
+        | grep -o '"[^"]*"' | head -1 \
+        | tr -d '"') || uploaded_path=""
+
+    if [ -z "$uploaded_path" ]; then
+        info "Upload response: $upload_response"
+        abort "OmniVoice: failed to upload reference audio"
+    fi
+    info "Reference audio uploaded: ${uploaded_path}"
+
+    info "Requesting Voice Clone: \"${GEN_TEXT}\"..."
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_clone_fn \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                \"${GEN_TEXT}\",
+                \"Auto\",
+                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
+                \"\",
+                32,
+                2.0,
+                true,
+                1.0,
+                null,
+                true,
+                true
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice: no event_id returned from /_clone_fn"
+    fi
+    info "Voice Clone started (event_id: $event_id) – polling result (up to 300s)..."
+
+    local clone_result
+    clone_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 300 \
+            http://localhost:${app_port}/gradio_api/call/_clone_fn/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if echo "$clone_result" | grep -q '"path"'; then
+        pass "OmniVoice Voice Clone OK (audio returned)"
+        local clone_path
+        clone_path=$(echo "$clone_result" \
+            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
+        if [ -n "$clone_path" ]; then
+            fsize=$(podman exec -t rocm bash -c \
+                "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || fsize=0
+            info "  Clone output: ${clone_path} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 1024 ]; then
+                abort "OmniVoice: Voice Clone audio suspiciously small (${fsize} bytes)"
+            fi
         fi
-    elif echo "$test_output" | grep -q "^GLB_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GLB_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract GLB FAILED: ${fail_msg}"
+        pass "Voice Clone audio size OK"
     else
-        abort "TRELLIS Extract GLB: no result"
-    fi
-
-    # --- Check Extract Gaussian ---
-    if echo "$test_output" | grep -q "^GAUSSIAN_OK:"; then
-        local gs_line ply_path ply_sz
-        gs_line=$(echo "$test_output" | grep "^GAUSSIAN_OK:" | head -1)
-        ply_path=$(echo "$gs_line" | cut -d: -f2)
-        ply_sz=$(echo "$gs_line"   | cut -d: -f3)
-        pass "TRELLIS Extract Gaussian OK (${ply_path}, ${ply_sz} bytes)"
-        if [ "${ply_sz:-0}" -lt 1024 ]; then
-            abort "PLY file suspiciously small (${ply_sz} bytes)"
-        fi
-    elif echo "$test_output" | grep -q "^GAUSSIAN_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GAUSSIAN_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract Gaussian FAILED: ${fail_msg}"
-    else
-        abort "TRELLIS Extract Gaussian: no result"
+        info "Raw result: $clone_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice Voice Clone did not return audio data"
     fi
 
     # --- Stop server ---
-    info "Stopping TRELLIS-AMD..."
+    info "Stopping OmniVoice..."
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
+        "pkill -f 'omnivoice-demo' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "TRELLIS-AMD stopped"
+    pass "OmniVoice stopped"
 
     info "Phase 14 DONE"
 }
 
-main() { phase14_verify_trellis; }
+main() { phase14_verify_omnivoice; }
 main "$@"

@@ -5,98 +5,162 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 24: RUN AND VERIFY – hipfire (LLM inference, qwen3.5:4b)
+# PHASE 24: RUN AND VERIFY – PartCrafter (image-to-3D parts)
 # ============================================================
-phase24_verify_hipfire() {
+phase24_verify_partcrafter() {
     info "============================================="
-    info "PHASE 24: RUN AND VERIFY (hipfire)"
+    info "PHASE 24: RUN AND VERIFY (PartCrafter)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local api_port=11435
-    local model_tag="qwen3.5:4b"
-    local model_file="qwen3.5-4b.mq4"
+    local app_dir="/AI/PartCrafter"
+    local app_port=7860
+    local app_log="/tmp/partcrafter_server.log"
+    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
+    local output_glb="/tmp/partcrafter_object.glb"
 
-    # --- Kill any leftover serve daemon ---
-    podman exec -t rocm bash -c "hipfire stop 2>/dev/null; sleep 2; fuser -k ${api_port}/tcp 2>/dev/null; true" || true
+    # --- Kill old instances and clear log ---
+    podman exec -t rocm bash -c \
+        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
 
-    # --- diag ---
-    info "Running hipfire diag..."
-    local diag_out
-    diag_out=$(podman exec -t rocm bash -c "hipfire diag 2>&1" | tr -d '\r')
-    if echo "$diag_out" | grep -qi "gfx\|GPU\|HIP\|VRAM"; then
-        pass "hipfire diag OK"
-    else
-        info "diag output: $diag_out"
-        abort "hipfire diag did not report GPU info"
-    fi
+    # --- Start PartCrafter ---
+    info "Starting PartCrafter on port ${app_port}..."
+    podman exec -d rocm bash -c \
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
 
-    # --- Verify model file exists in /AI/hipfire/models/ (pulled during install) ---
-    podman exec -t rocm bash -c "[ -f /AI/hipfire/models/${model_file} ]" \
-        || abort "Model file ${model_file} not found in /AI/hipfire/models/ — was hipfire installed?"
-    pass "Model file ${model_file} present"
-
-    # --- Start serve ---
-    info "Starting hipfire serve on port ${api_port}..."
-    podman exec -d rocm bash -c "hipfire serve ${api_port}"
-
-    # --- Wait for API ---
-    info "Waiting for hipfire API (up to 120s)..."
-    local waited=0 max_wait=120 ready=false
+    # --- Wait for Gradio API (model downloads + loads at startup) ---
+    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
+    local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${api_port}/v1/models | grep -q '${model_file}'" 2>/dev/null; then
+               "curl -sf http://localhost:${app_port}/gradio_api/info \
+                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
             ready=true; break
         fi
-        if ! podman exec -t rocm bash -c \
-               "pgrep -f 'examples/daemon' > /dev/null" 2>/dev/null; then
-            abort "hipfire daemon died during startup"
-        fi
-        sleep 3; waited=$((waited + 3))
+        sleep 5; waited=$((waited + 5))
         info "  ...waiting ($waited/${max_wait}s)"
     done
-    $ready || abort "hipfire API did not respond within ${max_wait}s"
-    pass "hipfire API ready on port ${api_port}"
+    if ! $ready; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "PartCrafter did not become ready within ${max_wait}s"
+    fi
+    pass "PartCrafter Gradio API ready on port ${app_port}"
 
-    # --- Query model ---
-    info "Querying ${model_file}: 'What is 2+2?'"
-    local response
-    response=$(podman exec -t rocm bash -c "curl -sf http://localhost:${api_port}/v1/chat/completions \
-        -H 'Content-Type: application/json' \
-        -d '{
-            \"model\": \"${model_file}\",
-            \"messages\": [{\"role\": \"user\", \"content\": \"What is 2+2? Answer with just the number.\"}],
-            \"max_tokens\": 32,
-            \"temperature\": 0
-        }' 2>&1" | tr -d '\r') || true
-
-    if echo "$response" | grep -qiE '"content"\s*:\s*"[^"]*4'; then
-        local content
-        content=$(echo "$response" | grep -oP '"content"\s*:\s*"\K[^"]+' | head -1)
-        pass "Model answered correctly: '$content'"
-    elif echo "$response" | grep -q '"content"'; then
-        local content
-        content=$(echo "$response" | grep -oP '"content"\s*:\s*"\K[^"]+' | head -1)
-        info "Response content: '$content'"
-        pass "Model responded (content present)"
+    # --- Resolve actual endpoint name from /gradio_api/info ---
+    local endpoint_name
+    endpoint_name=$(podman exec -t rocm bash -c "
+        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
+    | head -1 | tr -d '"') || endpoint_name=""
+    if [ -z "$endpoint_name" ]; then
+        endpoint_name="/generate_parts"
+        info "Could not detect endpoint from info – using default: ${endpoint_name}"
     else
-        info "Full response: $response"
-        abort "No valid response from model"
+        info "Detected endpoint: ${endpoint_name}"
     fi
 
-    # --- Stop serve ---
-    info "Stopping hipfire serve..."
-    podman exec -t rocm bash -c "hipfire stop 2>/dev/null; true" || true
+    # --- Upload example image ---
+    info "Uploading example image..."
+    local upload_response
+    upload_response=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
+            -F 'files=@${example_img}' | tr -d '\r'
+    " 2>/dev/null) || upload_response=""
+
+    local uploaded_path
+    uploaded_path=$(echo "$upload_response" \
+        | grep -o '"[^"]*"' | head -1 \
+        | tr -d '"') || uploaded_path=""
+
+    if [ -z "$uploaded_path" ]; then
+        info "Upload response: $upload_response"
+        abort "PartCrafter: failed to upload example image"
+    fi
+    info "Image uploaded: ${uploaded_path}"
+
+    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
+    info "Requesting 3D generation (2 parts, 10 inference steps)..."
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
+                2,
+                42,
+                512,
+                10,
+                7.0,
+                false,
+                false,
+                false
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "PartCrafter: no event_id returned from ${endpoint_name}"
+    fi
+    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
+
+    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 1800 \
+            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "PartCrafter 3D generation OK (files returned)"
+
+        # Extract object.glb path (first output = merged model)
+        local glb_path
+        glb_path=$(echo "$gen_result" \
+            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
+            | sed 's/"path": *"//;s/"//') || glb_path=""
+
+        if [ -n "$glb_path" ]; then
+            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
+            local fsize
+            fsize=$(podman exec -t rocm bash -c \
+                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || fsize=0
+            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 1024 ]; then
+                abort "object.glb is suspiciously small (${fsize} bytes)"
+            fi
+        else
+            info "  Warning: could not extract GLB path from result"
+            info "  Raw result: $gen_result"
+        fi
+    else
+        info "Raw result: $gen_result"
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "PartCrafter generation did not return file data"
+    fi
+
+    # --- Stop server ---
+    info "Stopping PartCrafter..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c "fuser ${api_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2))
-        [ $kw -ge 20 ] && break
+    while podman exec -t rocm bash -c \
+            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
+        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "hipfire stopped"
+    pass "PartCrafter stopped"
 
     info "Phase 24 DONE"
 }
 
-main() { phase24_verify_hipfire; }
+main() { phase24_verify_partcrafter; }
 main "$@"

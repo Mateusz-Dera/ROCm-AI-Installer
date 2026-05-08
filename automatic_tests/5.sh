@@ -5,112 +5,128 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 5: WhisperSpeech web UI – startup and generation test
+# PHASE 5: RUN AND VERIFY – llama.cpp-vulkan
 # ============================================================
-phase5_whisperspeech() {
+phase5_verify_llama_vulkan() {
     info "============================================="
-    info "PHASE 5: WHISPERSPEECH WEB UI"
+    info "PHASE 5: RUN AND VERIFY (llama.cpp-vulkan)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local ws_dir="/AI/whisperspeech-webui"
-    local ws_port=7860
-    local ws_log="/tmp/whisper_server.log"
+    # --- Download model ---
+    local model_dir="/AI/llama.cpp-vulkan"
+    local model_file="$model_dir/model.gguf"
+    local hf_repo="https://huggingface.co/unsloth/Mistral-Nemo-Instruct-2407-GGUF"
+    # Q4_K_M: good quality/size tradeoff (~7.5 GB)
+    local hf_file="Mistral-Nemo-Instruct-2407.Q4_K_M.gguf"
 
-    # Kill old instances and clear log
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '$ws_log'" || true
+    info "Downloading $hf_file from HuggingFace..."
+    # Remove old/empty file if it exists
+    podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
+
+    podman exec -t rocm bash -c "
+        mkdir -p '${model_dir}' && \
+        wget -q '${hf_repo}/resolve/main/${hf_file}' -O '${model_file}' \
+        || curl --fail -L '${hf_repo}/resolve/main/${hf_file}' -o '${model_file}'
+    " || abort "Failed to download Mistral-Nemo model"
+
+    # Verify: file must exist and have size > 0
+    # tr -d '\r' removes carriage return added by podman exec -t via TTY layer
+    local fsize
+    fsize=$(podman exec -t rocm bash -c "stat -c%s '${model_file}' 2>/dev/null || echo 0" \
+            | tr -d '\r\n') || fsize=0
+    fsize="${fsize:-0}"
+    if [[ "$fsize" =~ ^[0-9]+$ ]] && [ "$fsize" -gt 1048576 ]; then
+        pass "model.gguf downloaded successfully ($(( fsize / 1024 / 1024 )) MB)"
+    else
+        abort "model.gguf is missing or empty after download (size=${fsize} bytes)"
+    fi
 
     # --- Start server in background ---
-    info "Starting WhisperSpeech web UI (port $ws_port)..."
+    local server_port=8080
+    # Kill old server instances and clear log before starting
+    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > /tmp/llama_vulkan_server.log" || true
+
+    info "Starting llama.cpp-vulkan server on port $server_port..."
+    # Mistral-Nemo GGUF (unsloth): rope.dimension_count=160 in metadata,
+    # but tensors have head_dim=128 → llama.cpp rejects the model without override.
     podman exec -d rocm bash -c \
-        "cd '$ws_dir' && source .venv/bin/activate \
-         && uv run --extra rocm webui.py --listen --api \
-         >> '$ws_log' 2>&1"
+        "cd '$model_dir' && ./build/bin/llama-server \
+            -m model.gguf \
+            --host 0.0.0.0 \
+            --port $server_port \
+            --ctx-size 32768 \
+            --gpu-layers 31 \
+            --override-kv llama.attention.key_length=int:128,llama.attention.value_length=int:128,llama.rope.dimension_count=int:128 \
+        >> /tmp/llama_vulkan_server.log 2>&1"
 
-    # --- Wait for readiness (up to 180 s – model loads at startup) ---
-    info "Waiting for WhisperSpeech web UI to become ready..."
-    local waited=0 max_wait=180 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${ws_port}/ > /dev/null" 2>/dev/null; then
-            ready=true
-            break
+    # --- Wait for server to become ready (up to 300 s) ---
+    info "Waiting for llama.cpp-vulkan server to become ready..."
+    local max_wait=300
+    local wait_rc=0
+    wait_for_http \
+        "curl -sf http://localhost:${server_port}/health | grep -q 'ok'" \
+        "llama-server" \
+        "/tmp/llama_vulkan_server.log" \
+        "$max_wait" \
+        "llama server listening" || wait_rc=$?
+
+    if [ $wait_rc -eq 0 ]; then
+        pass "llama.cpp-vulkan server is running and /health responded OK"
+    else
+        podman exec -t rocm bash -c "cat /tmp/llama_vulkan_server.log" 2>/dev/null || true
+        if [ $wait_rc -eq 1 ]; then
+            abort "llama.cpp-vulkan server process died unexpectedly"
+        else
+            abort "llama.cpp-vulkan server did not become ready within ${max_wait}s"
         fi
-        sleep 5
-        waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech web UI did not start within ${max_wait}s"
     fi
-    pass "WhisperSpeech web UI is running on port $ws_port"
 
-    # --- Wait for Gradio API to become ready (/gradio_api/info) ---
-    info "Waiting for Gradio API to become ready..."
-    # api_max=600: first run requires model download (~several minutes)
-    local api_info="" api_waited=0 api_max=600
-    while [ $api_waited -lt $api_max ]; do
-        api_info=$(podman exec -t rocm bash -c \
-            "curl -sf http://localhost:${ws_port}/gradio_api/info" 2>/dev/null \
-            | tr -d '\r') || true
-        if echo "$api_info" | grep -q '"named_endpoints"'; then break; fi
-        sleep 5; api_waited=$((api_waited + 5))
-        info "  ...API not ready yet ($api_waited/${api_max}s)"
-    done
-
-    if ! echo "$api_info" | grep -q '"named_endpoints"'; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech Gradio API did not become ready within ${api_max}s"
-    fi
-    pass "Gradio API ready"
-
-    # Extract first named endpoint name, strip leading /
-    local tts_fn
-    tts_fn=$(echo "$api_info" \
-        | grep -o '"named_endpoints":{"[^"]*"' \
-        | grep -o '"[^"]*"$' | tr -d '"' | sed 's|^/||')
-    info "TTS endpoint: /gradio_api/call/${tts_fn}"
-
-    # --- TTS generation test (Gradio 6.x: POST /gradio_api/call/{fn}) ---
-    info "Testing TTS generation (text: 'Test audio generation')..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${ws_port}/gradio_api/call/${tts_fn} \
+    # --- Send test API query (/v1/chat/completions) ---
+    info "Sending test query to llama.cpp-vulkan API..."
+    local api_response
+    api_response=$(podman exec -t rocm bash -c "
+        curl -sf http://localhost:${server_port}/v1/chat/completions \
             -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"collabora/whisperspeech:s2a-q4-tiny-en+pl.model\",
-                \"Test audio generation\",
-                13.5, null, \"wav\", false
-            ]}' | tr -d '\r'
-    " 2>/dev/null | grep -o '"event_id":"[^"]*"' | grep -o '[^:]*$' | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech TTS: no event_id returned from /gradio_api/call/${tts_fn}"
-    fi
-    info "TTS event_id: $event_id – polling result..."
-
-    local tts_result
-    tts_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 120 \
-            http://localhost:${ws_port}/gradio_api/call/${tts_fn}/${event_id} \
-        | tr -d '\r'
+            -d '{
+                \"model\": \"local\",
+                \"messages\": [{\"role\": \"user\", \"content\": \"Reply with one word: OK\"}],
+                \"max_tokens\": 16,
+                \"temperature\": 0
+            }'
     " 2>/dev/null) || true
 
-    if echo "$tts_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "WhisperSpeech TTS generation OK (audio file returned)"
+    if echo "$api_response" | grep -q '"content"'; then
+        local answer
+        answer=$(echo "$api_response" \
+            | grep -o '"content": *"[^"]*"' \
+            | head -1 \
+            | sed 's/"content": *"//;s/"//') || answer=""
+        info "  Query:  \"Reply with one word: OK\""
+        info "  Answer: \"$answer\""
+        pass "llama.cpp-vulkan API responded"
     else
-        info "Raw TTS result: $tts_result"
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech TTS API did not return audio data"
+        # Print server log and raw response for diagnostics
+        info "Raw API response: $api_response"
+        podman exec -t rocm bash -c "cat /tmp/llama_vulkan_server.log" 2>/dev/null || true
+        abort "llama.cpp-vulkan API did not return expected response (missing 'content' field)"
     fi
+
+    # --- Stop server ---
+    info "Stopping llama.cpp-vulkan server..."
+    podman exec -t rocm bash -c "pkill -f 'llama-server'" 2>/dev/null || true
+    # Wait until the process is gone
+    local kill_wait=0
+    while podman exec -t rocm bash -c "pgrep -f 'llama-server' > /dev/null" 2>/dev/null; do
+        sleep 2
+        kill_wait=$((kill_wait + 2))
+        if [ $kill_wait -ge 20 ]; then break; fi
+    done
+    pass "llama.cpp-vulkan server stopped"
 
     info "Phase 5 DONE"
 }
 
-main() { phase5_whisperspeech; }
-
+main() { phase5_verify_llama_vulkan; }
 main "$@"

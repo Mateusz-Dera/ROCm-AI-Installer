@@ -4,142 +4,264 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+_ST_CFG_BACKUP="/AI/SillyTavern/config.yaml.test_bak"
+
+_restore_st_config() {
+    if podman exec rocm bash -c "[ -f '$_ST_CFG_BACKUP' ]" 2>/dev/null; then
+        podman exec rocm bash -c \
+            "cp '$_ST_CFG_BACKUP' /AI/SillyTavern/config.yaml && rm -f '$_ST_CFG_BACKUP'" \
+            2>/dev/null || true
+        info "config.yaml restored from test backup"
+    fi
+}
+trap _restore_st_config EXIT
+
 # ============================================================
-# PHASE 10: RUN AND VERIFY – ACE-Step-1.5 (text-to-music)
+# PHASE 10: SillyTavern + WhisperSpeech integration
 # ============================================================
-phase10_verify_ace_step_1_5() {
+phase10_sillytavern_integration() {
     info "============================================="
-    info "PHASE 10: RUN AND VERIFY (ACE-Step-1.5)"
+    info "PHASE 10: SILLYTAVERN + WHISPERSPEECH INTEGRATION"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/ACE-Step-1.5"
-    local app_port=7860
-    local app_log="/tmp/acestep15_server.log"
+    local st_dir="/AI/SillyTavern"
+    local st_port=8000
+    # WhisperSpeech exposes two servers:
+    #   7860 – Gradio web UI
+    #   5050 – REST API used by the SillyTavern plugin (POST /generate → audio)
+    local ws_api_port=5050
+    local ws_gui_port=7860
+    local st_log="/tmp/st_server.log"
+    local ws_log="/tmp/whisper_server.log"
+    local ws_api_url="http://127.0.0.1:${ws_api_port}"
 
-    # --- Kill old instances and clear log ---
-    podman exec -t rocm bash -c \
-        "pkill -f 'acestep_v15_pipeline' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
-
-    # --- Start ACE-Step-1.5 ---
-    info "Starting ACE-Step-1.5 on port ${app_port}..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST \
-         python -m acestep.acestep_v15_pipeline \
-             --server-name 0.0.0.0 \
-             --port ${app_port} \
-             --config_path acestep-v15-turbo \
-             --lm_model_path acestep-5Hz-lm-4B \
-             --init_service true \
-             --backend pt \
-         >> '${app_log}' 2>&1"
-
-    # --- Wait for Gradio API (up to 600s – models download on first run) ---
-    info "Waiting for ACE-Step-1.5 Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 10; waited=$((waited + 10))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5 did not become ready within ${max_wait}s"
-    fi
-    pass "ACE-Step-1.5 Gradio API ready on port ${app_port}"
-
-    # --- Generate a short test song via /generation_wrapper ---
-    # Parameters: 64 total (59 visible + 5 hidden gr.State components)
-    # DiT Inference Steps max = 20 for acestep-v15-turbo config
-    # Audio Duration = 30s (minimum)
-    # Hidden gr.State positions: index 42 (after CoT Language Detection),
-    #   and indices 60-63 (at the end)
-    info "Requesting music generation (30s clip, DiT steps=20)..."
-    local gen_event_id
-    gen_event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generation_wrapper \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"pop, simple, guitar\",
-                \"[Verse]\\nThis is a test song\\nWith a simple melody\",
-                120, \"C Major\", \"4/4\", \"en\",
-                20, 7.0, true, \"\", null, 30, 1, null, \"\",
-                0, -1, \"\", 0.0, 0.0, \"text2music\",
-                false, 0.0, 1.0, 3.0, \"ode\", \"euler\", 0.0, 0.0, \"\",
-                \"wav\", \"128k\", 48000, 1.0, false, 1.0, 0, 1.0, \"\",
-                false, false, true,
-                null,
-                false, false, false, false, 0.01, 1,
-                \"woodwinds\", [\"woodwinds\"],
-                false, -10.0, 0.0, 0.0, -0.2, 0.5, \"conservative\", 0.0, false,
-                null, null, null, null
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$gen_event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5: no event_id returned from /generation_wrapper"
-    fi
-    info "Generation started (event_id: $gen_event_id) – polling result (up to 300s)..."
-
-    # --- Poll result (SSE stream) ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/generation_wrapper/${gen_event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$gen_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "ACE-Step-1.5 music generation OK (audio file returned)"
-        local audio_path
-        audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*\.wav[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
-        if [ -n "$audio_path" ]; then
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 102400 ]; then
-                abort "ACE-Step-1.5: audio file suspiciously small (${fsize} bytes)"
-            fi
-        fi
+    # --- Verify WhisperSpeech plugin is installed in SillyTavern ---
+    local ws_ext_dir="${st_dir}/public/scripts/extensions/third-party/whisperspeech-webui"
+    if container_dir_exists "$ws_ext_dir"; then
+        pass "WhisperSpeech extension installed at $ws_ext_dir"
     else
-        local err_line
-        err_line=$(podman exec -t rocm bash -c \
-            "grep -iE 'error|exception|fatal|traceback' '${app_log}' 2>/dev/null \
-             | tail -3" | tr -d '\r') || err_line=""
-        [ -n "$err_line" ] && info "  Last error in log: $err_line"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5 generation did not return audio data"
+        abort "WhisperSpeech extension NOT installed – ${ws_ext_dir} missing"
     fi
 
-    # --- Stop server ---
-    info "Stopping ACE-Step-1.5..."
+    # --- Ensure WhisperSpeech is running (REST API on port 5050) ---
+    # The plugin connects to the REST API, not the Gradio GUI.
+    if ! podman exec -t rocm bash -c \
+           "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
+        info "WhisperSpeech REST API not running – starting it now..."
+        podman exec -t rocm bash -c \
+            "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '${ws_log}'" || true
+        podman exec -d rocm bash -c \
+            "cd /AI/whisperspeech-webui && source .venv/bin/activate \
+             && uv run --extra rocm webui.py --listen --api \
+             >> '${ws_log}' 2>&1"
+        info "Waiting for WhisperSpeech REST API to become ready (up to 600s)..."
+        local ws_waited=0 ws_ready=false
+        while [ $ws_waited -lt 600 ]; do
+            if podman exec -t rocm bash -c \
+                   "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
+                ws_ready=true; break
+            fi
+            sleep 5; ws_waited=$((ws_waited + 5))
+            info "  ...waiting for WhisperSpeech REST API ($ws_waited/600s)"
+        done
+        if ! $ws_ready; then
+            podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
+            abort "WhisperSpeech REST API did not become ready within 600s"
+        fi
+        pass "WhisperSpeech REST API ready on port ${ws_api_port}"
+    else
+        info "WhisperSpeech REST API already running on port ${ws_api_port}"
+    fi
+
+    # --- Kill any leftover SillyTavern processes (including start.sh) ---
     podman exec -t rocm bash -c \
-        "pkill -f 'acestep_v15_pipeline' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; true" || true
+    sleep 3
+    podman exec -t rocm bash -c \
+        "fuser -k ${st_port}/tcp 2>/dev/null; true" || true
+    sleep 1
+    podman exec -t rocm bash -c ": > '$st_log'" || true
+
+    # --- Ensure config.yaml exists (SillyTavern creates it on first run) ---
+    if ! container_file_exists "$st_dir/config.yaml"; then
+        info "config.yaml missing – starting SillyTavern briefly to initialize it..."
+        local init_log="/tmp/st_init.log"
+        podman exec -d rocm bash -c ": > '$init_log'; cd '$st_dir' && bash start.sh >> '$init_log' 2>&1"
+        local cw=0
+        while ! container_file_exists "$st_dir/config.yaml" && [ $cw -lt 300 ]; do
+            sleep 5; cw=$((cw + 5))
+            info "  ...waiting for config.yaml ($cw/300s)"
+        done
+        podman exec -t rocm bash -c \
+            "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+             fuser -k ${st_port}/tcp 2>/dev/null; true" || true
+        sleep 3
+        podman exec -t rocm bash -c ": > '$st_log'" || true
+        if ! container_file_exists "$st_dir/config.yaml"; then
+            abort "SillyTavern did not generate config.yaml within 300s"
+        fi
+        pass "SillyTavern config.yaml initialized"
+    fi
+
+    # --- Patch config.yaml if basicAuth is not enabled with user/password credentials ---
+    if ! podman exec rocm bash -c \
+           "grep -q 'basicAuthMode: true' '$st_dir/config.yaml' && \
+            grep -q 'username: \"user\"' '$st_dir/config.yaml' && \
+            grep -q 'password: \"password\"' '$st_dir/config.yaml'" 2>/dev/null; then
+        info "Patching config.yaml (basicAuth) for test – original will be restored on exit..."
+        podman exec rocm bash -c "cp '$st_dir/config.yaml' '$_ST_CFG_BACKUP'" \
+            || abort "Failed to backup config.yaml"
+        podman exec rocm bash -c "
+            sed -i 's/basicAuthMode: false/basicAuthMode: true/' '$st_dir/config.yaml'
+            sed -i 's/^  username: .*/  username: \"user\"/' '$st_dir/config.yaml'
+            sed -i 's/^  password: .*/  password: \"password\"/' '$st_dir/config.yaml'
+        " || abort "Failed to patch config.yaml"
+        pass "config.yaml patched for test (will be restored on exit)"
+    fi
+
+    # --- Read basicAuth credentials from config.yaml ---
+    local st_user st_pass
+    st_user=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'username:' \
+         | sed 's/.*username: *\"//;s/\"//'") || st_user=""
+    st_pass=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'password:' \
+         | sed 's/.*password: *\"//;s/\"//'") || st_pass=""
+    st_user=$(printf '%s' "$st_user" | tr -d '\r'); st_user="${st_user:-user}"
+    st_pass=$(printf '%s' "$st_pass" | tr -d '\r'); st_pass="${st_pass:-password}"
+    info "SillyTavern basicAuth: user='$st_user'"
+
+    # --- Start SillyTavern (WhisperSpeech keeps running) ---
+    info "Starting SillyTavern (WhisperSpeech keeps running)..."
+    podman exec -d rocm bash -c \
+        "cd '$st_dir' && bash start.sh >> '$st_log' 2>&1"
+
+    # --- Wait for SillyTavern to become ready ---
+    # SillyTavern startup can take up to ~10 min on first run (content file sync +
+    # webpack compilation). "Go to:" is printed right after webpack finishes,
+    # immediately before the server starts accepting HTTP connections.
+    # The log is cleared above (: > '$st_log') so the log-based signal is safe.
+    # The process monitor uses 'start.sh' (present from launch until ST exits).
+    info "Waiting for SillyTavern to become ready (up to 900s)..."
+    local max_wait=900
+    local wait_rc=0
+    wait_for_http \
+        "curl -sf -u '${st_user}:${st_pass}' --max-time 5 http://localhost:${st_port}/ -o /dev/null" \
+        "start\.sh" \
+        "$st_log" \
+        "$max_wait" \
+        "Go to:" || wait_rc=$?
+
+    if [ $wait_rc -ne 0 ]; then
+        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
+        if [ $wait_rc -eq 1 ]; then
+            abort "SillyTavern process died unexpectedly"
+        else
+            abort "SillyTavern did not start within ${max_wait}s"
+        fi
+    fi
+    pass "SillyTavern is running on port $st_port"
+
+    # --- Verify main page ---
+    info "Verifying SillyTavern main page..."
+    # No -t to avoid TTY \r injection into 700KB HTML; retry up to 3x for race
+    local st_html_ok=false
+    for _i in 1 2 3; do
+        info "  HTML check attempt $_i..."
+        if podman exec rocm bash -c \
+            "curl -sf -u '${st_user}:${st_pass}' http://localhost:${st_port}/ 2>/dev/null \
+             | grep -qiE 'SillyTavern|<!DOCTYPE html'" 2>/dev/null; then
+            st_html_ok=true; break
+        fi
+        sleep 2
+    done
+    if $st_html_ok; then
+        pass "SillyTavern main page loads correctly (HTML content verified)"
+    else
+        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
+        abort "SillyTavern page did not return expected HTML content"
+    fi
+
+    # --- Configure WhisperSpeech plugin URL in SillyTavern settings ---
+    # The plugin connects to the REST API (port 5050), not the Gradio GUI (port 7860).
+    info "Configuring WhisperSpeech extension URL in SillyTavern settings..."
+    local settings_file="$st_dir/data/default-user/settings.json"
+
+    # Wait for SillyTavern to write default settings (up to 30 s)
+    local sw=0
+    while ! container_file_exists "$settings_file" && [ $sw -lt 30 ]; do
+        sleep 3; sw=$((sw + 3))
+    done
+
+    if container_file_exists "$settings_file"; then
+        # Update plugin URL via python3 (available in container)
+        podman exec -t rocm bash -c "
+python3 - <<'PYEOF'
+import json, sys
+path = '$settings_file'
+try:
+    with open(path, 'r') as f:
+        s = json.load(f)
+except Exception:
+    s = {}
+ext = s.setdefault('extension_settings', {})
+ws  = ext.setdefault('whisperspeech_webui', {})
+ws['server_url'] = '$ws_api_url'
+with open(path, 'w') as f:
+    json.dump(s, f, indent=2)
+print('Settings updated: whisperspeech_webui.server_url =', ws['server_url'])
+PYEOF
+        " || abort "Failed to update SillyTavern extension settings"
+        pass "WhisperSpeech extension URL set to: $ws_api_url"
+    else
+        abort "SillyTavern settings.json not found – cannot configure extension"
+    fi
+
+    # --- Test TTS generation via the REST API (replicates the plugin's Test button) ---
+    # The plugin sends POST /generate with JSON and expects a binary audio response.
+    info "Testing TTS generation via WhisperSpeech REST API (POST /generate)..."
+    local tts_size
+    tts_size=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${ws_api_port}/generate \
+            -H 'Content-Type: application/json' \
+            -d '{\"text\": \"Hello, this is a test message!\", \"speed\": 13.5, \"format\": \"wav\", \"model\": \"tiny\"}' \
+            -o /tmp/whisperspeech_test.wav \
+            -w '%{size_download}' \
+            --max-time 120
+    " 2>/dev/null | tr -d '\r') || tts_size=0
+    tts_size="${tts_size:-0}"
+
+    if [[ "$tts_size" =~ ^[0-9]+$ ]] && [ "$tts_size" -gt 1000 ]; then
+        pass "TTS generation OK – received ${tts_size} bytes of audio (WAV)"
+    else
+        podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
+        abort "TTS generation FAILED – /generate returned ${tts_size} bytes (expected > 1000)"
+    fi
+
+    # --- Shut down SillyTavern and WhisperSpeech ---
+    info "Stopping SillyTavern..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+         fuser -k ${st_port}/tcp 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c \
-            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f 'node.*server' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "ACE-Step-1.5 stopped"
+    pass "SillyTavern stopped"
+
+    info "Stopping WhisperSpeech web UI..."
+    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null || true" || true
+    kw=0
+    while podman exec -t rocm bash -c "pgrep -f 'webui.py' > /dev/null" 2>/dev/null; do
+        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+    done
+    pass "WhisperSpeech web UI stopped"
 
     info "Phase 10 DONE"
 }
 
-main() { phase10_verify_ace_step_1_5; }
+main() { phase10_sillytavern_integration; }
+
 main "$@"

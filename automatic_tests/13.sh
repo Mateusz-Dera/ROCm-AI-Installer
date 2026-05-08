@@ -5,35 +5,53 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 13: RUN AND VERIFY – PartCrafter (image-to-3D parts)
+# PHASE 13: RUN AND VERIFY – Soprano (text-to-speech)
 # ============================================================
-phase13_verify_partcrafter() {
+phase13_verify_soprano() {
     info "============================================="
-    info "PHASE 13: RUN AND VERIFY (PartCrafter)"
+    info "PHASE 13: RUN AND VERIFY (Soprano)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/PartCrafter"
-    local app_port=7860
-    local app_log="/tmp/partcrafter_server.log"
-    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
-    local output_glb="/tmp/partcrafter_object.glb"
+    local app_dir="/AI/soprano-rocm"
+    local app_log="/tmp/soprano_server.log"
+    local ref_wav="/tmp/soprano_voice_ref.wav"
+    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
     # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c \
-        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+        "pkill -f 'soprano-webui' 2>/dev/null; pkill -f 'soprano' 2>/dev/null; \
+         sleep 2; : > '${app_log}'" || true
 
-    # --- Start PartCrafter ---
-    info "Starting PartCrafter on port ${app_port}..."
+    # --- Start Soprano ---
+    info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
+         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
+         >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API (model downloads + loads at startup) ---
-    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
+    # --- Detect port from log (Soprano finds free port starting at 7860) ---
+    info "Waiting for Soprano to start and detect port (up to 120s)..."
+    local app_port="" waited=0 max_wait=120
+    while [ $waited -lt $max_wait ]; do
+        app_port=$(podman exec -t rocm bash -c \
+            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
+            | tr -d '\r\n') || app_port=""
+        [ -n "$app_port" ] && break
+        sleep 3; waited=$((waited + 3))
+        info "  ...waiting ($waited/${max_wait}s)"
+    done
+    if [ -z "$app_port" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: could not detect port from log"
+    fi
+    info "Soprano detected port: ${app_port}"
+
+    # --- Wait for Gradio API to become ready ---
+    info "Waiting for Soprano Gradio API on port ${app_port} (up to 300s)..."
+    local ready=false
+    waited=0; max_wait=300
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
                "curl -sf http://localhost:${app_port}/gradio_api/info \
@@ -45,122 +63,79 @@ phase13_verify_partcrafter() {
     done
     if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter did not become ready within ${max_wait}s"
+        abort "Soprano did not become ready within ${max_wait}s"
     fi
-    pass "PartCrafter Gradio API ready on port ${app_port}"
+    pass "Soprano Gradio API ready on port ${app_port}"
 
-    # --- Resolve actual endpoint name from /gradio_api/info ---
-    local endpoint_name
-    endpoint_name=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
-    | head -1 | tr -d '"') || endpoint_name=""
-    if [ -z "$endpoint_name" ]; then
-        endpoint_name="/generate_parts"
-        info "Could not detect endpoint from info – using default: ${endpoint_name}"
-    else
-        info "Detected endpoint: ${endpoint_name}"
-    fi
-
-    # --- Upload example image ---
-    info "Uploading example image..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${example_img}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
-
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-
-    if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
-        abort "PartCrafter: failed to upload example image"
-    fi
-    info "Image uploaded: ${uploaded_path}"
-
-    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
-    info "Requesting 3D generation (2 parts, 10 inference steps)..."
+    # --- Generate speech (streaming=false → single audio file returned) ---
+    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
     local event_id
     event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                2,
-                42,
-                512,
-                10,
-                7.0,
-                false,
-                false,
+                \"${REF_TEXT}\",
+                0.0,
+                0.95,
+                1.2,
+                1,
                 false
             ]}' | tr -d '\r'
     " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '"event_id":"[^"]*"' \
     | grep -o '[^:]*$' \
     | tr -d '"') || true
 
     if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter: no event_id returned from ${endpoint_name}"
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: no event_id returned from /generate_speech"
     fi
-    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
+    info "Generation started (event_id: $event_id) – polling result..."
 
-    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
+    # --- Poll result (SSE stream) ---
     local gen_result
     gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 1800 \
-            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
+        curl -sf --max-time 120 \
+            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
         | tr -d '\r'
     " 2>/dev/null) || true
 
     if echo "$gen_result" | grep -q '"path"'; then
-        pass "PartCrafter 3D generation OK (files returned)"
-
-        # Extract object.glb path (first output = merged model)
-        local glb_path
-        glb_path=$(echo "$gen_result" \
-            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
-            | sed 's/"path": *"//;s/"//') || glb_path=""
-
-        if [ -n "$glb_path" ]; then
-            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
+        pass "Soprano speech generation OK (audio returned)"
+        # Extract audio path and copy to stable location for F5-TTS (test 12)
+        local audio_path
+        audio_path=$(echo "$gen_result" \
+            | grep -oP '"path":\s*"\K[^"]*\.wav[^"]*' | head -1) || audio_path=""
+        if [ -n "$audio_path" ]; then
+            podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" 2>/dev/null || true
             local fsize
             fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
+                "stat -c%s '${ref_wav}' 2>/dev/null || echo 0" \
                 | tr -d '\r\n') || fsize=0
-            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "object.glb is suspiciously small (${fsize} bytes)"
-            fi
+            info "  Voice reference saved: ${ref_wav} ($(( ${fsize:-0} / 1024 )) KB)"
         else
-            info "  Warning: could not extract GLB path from result"
-            info "  Raw result: $gen_result"
+            info "  Warning: could not extract audio path from result"
         fi
     else
         info "Raw result: $gen_result"
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter generation did not return file data"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "Soprano generation did not return audio data"
     fi
 
     # --- Stop server ---
-    info "Stopping PartCrafter..."
+    info "Stopping Soprano..."
     podman exec -t rocm bash -c \
-        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
+        "pkill -f 'soprano-webui' 2>/dev/null; pkill -f 'soprano' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "PartCrafter stopped"
+    pass "Soprano stopped"
 
     info "Phase 13 DONE"
 }
 
-main() { phase13_verify_partcrafter; }
+main() { phase13_verify_soprano; }
 main "$@"
