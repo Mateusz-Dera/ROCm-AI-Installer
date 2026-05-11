@@ -39,7 +39,7 @@ phase9_verify_hipfire() {
 
     # --- Start serve ---
     info "Starting hipfire serve on port ${api_port}..."
-    podman exec -d rocm bash -c "hipfire serve ${api_port}"
+    podman exec -d rocm bash -c "cd /AI/hipfire && hipfire serve ${api_port}"
 
     # --- Wait for API ---
     info "Waiting for hipfire API (up to 120s)..."

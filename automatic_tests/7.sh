@@ -72,7 +72,7 @@ CFGEOF
 
     # --- Wait for HTTP server start ---
     info "Waiting for TabbyAPI HTTP server..."
-    local waited=0 max_wait=30 ready=false
+    local waited=0 max_wait=300 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
                "curl -sf http://localhost:${tabby_port}/health > /dev/null" 2>/dev/null; then

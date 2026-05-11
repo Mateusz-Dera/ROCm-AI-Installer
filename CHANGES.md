@@ -1,8 +1,13 @@
-Updated ROCm to 7.2.3
-Added Kimodo
-Added hipfire
-Added turboquant-rocm-llamacpp
-Added Z-Anime to ComfyUI
-Updated llama.cpp
-Updated SillyTavern
-Updated WhisperSpeech web UI
+Updated:
+- ROCm to 7.2.3
+- llama.cpp
+- TabbyAPI
+- SillyTavern
+- WhisperSpeech web UI
+- ComfyUI
+
+Added 
+- Kimodo
+- hipfire
+- turboquant-rocm-llamacpp
+- Z-Anime to ComfyUI

@@ -18,8 +18,8 @@ phase8_verify_turboquant_rocm_llamacpp() {
     local model_file="$app_dir/model.gguf"
     local server_port=8080
     local server_log="/tmp/turboquant_rocm_llamacpp_server.log"
-    local hf_repo="https://huggingface.co/unsloth/Mistral-Nemo-Instruct-2407-GGUF"
-    local hf_file="Mistral-Nemo-Instruct-2407.Q4_K_M.gguf"
+    local hf_repo="https://huggingface.co/bartowski/Mistral-Nemo-Instruct-2407-GGUF"
+    local hf_file="Mistral-Nemo-Instruct-2407-Q4_K_M.gguf"
 
     # --- Download model ---
     info "Downloading $hf_file from HuggingFace..."

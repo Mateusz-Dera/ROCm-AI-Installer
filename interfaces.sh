@@ -204,7 +204,7 @@ install_llama_cpp_vulkan() {
 
 install_turboquant_rocm_llamacpp() {
     REPO="https://github.com/jagsan-cyber/turboquant-rocm-llamacpp"
-    COMMIT="22cce31b6e58f3e945fbc7f2f5eb06a509e64fcc"
+    COMMIT="bc5de12c82add9a6b9e5adfc276012b250859505"
     FOLDER=$(basename "$REPO")
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 -c 262144 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
 
@@ -218,7 +218,7 @@ install_turboquant_rocm_llamacpp() {
 # hipfire
 install_hipfire() {
     REPO="https://github.com/Kaden-Schutt/hipfire"
-    COMMIT="c0d45b9aed82304a039aafdc8ce7ddcc0c1663cb"
+    COMMIT="e1e2bb854d0c30d80f392ccb33be691012cc3f9a"
     FOLDER=$(basename "$REPO")
     basic_container
     basic_git "$REPO" "$COMMIT"
@@ -255,7 +255,7 @@ if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then
     echo \"Container rocm is not running. Starting...\"
     podman start rocm
 fi
-podman exec -it rocm bash -c \"hipfire serve\"
+podman exec -it rocm bash -c \"cd /AI/$FOLDER && hipfire serve\"
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
@@ -276,10 +276,14 @@ install_sillytavern(){
     podman exec -t rocm bash -c "cd $FOLDER/default && sed -i 's/basicAuthMode: false/basicAuthMode: true/' config.yaml"
 }
 
+# WhisperSpeech
+WS_REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
+WS_COMMIT="55368e08774e3ea6ab0a864aafa2a3506b7c7059"
+
 # SillyTavern WhisperSpeech web UI
 install_sillytavern_whisperspeech_web_ui() {
-    REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="6e1657aee30dea11558ffe4cefc2588e0f6c7db7"
+    REPO="$WS_REPO"
+    COMMIT="$WS_COMMIT"
 
     basic_container
 
@@ -450,7 +454,7 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="fed8d5efa6b70d5b24c4c33cb643bfccc39d45b5"
+    COMMIT="d3c18c163665a6f94e7dc56823aabcb93ebf7e5e"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -638,8 +642,8 @@ install_ace_step_1_5() {
 
 # WhisperSpeech web UI
 install_whisperspeech_web_ui(){
-    REPO="https://github.com/Mateusz-Dera/whisperspeech-webui"
-    COMMIT="55368e08774e3ea6ab0a864aafa2a3506b7c7059"
+    REPO=$WS_REPO
+    COMMIT=$WS_COMMIT
     COMMAND="uv run --extra rocm webui.py --listen --api"
     FOLDER=$(basename "$REPO")
 
@@ -856,7 +860,7 @@ install_trellis_2_rocm() {
 
 # Kimodo
 install_kimodo() {
-    REPO="https://github.com/nv-tlabs/kimodo.git"
+    REPO="https://github.com/nv-tlabs/kimodo"
     COMMIT="c6c8ba766e52172f1ad34cd1fbe912115c82ce34"
     FOLDER=$(basename "$REPO")
 
