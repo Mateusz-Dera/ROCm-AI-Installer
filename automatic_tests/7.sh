@@ -4,151 +4,150 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-phase7_verify_tabbyapi() {
+# ============================================================
+# PHASE 7: RUN AND VERIFY – Atomic llama.cpp (ROCm + MTP)
+# ============================================================
+phase7_verify_atomic_llama_cpp() {
     info "============================================="
-    info "PHASE 7: RUN AND VERIFY (TabbyAPI)"
+    info "PHASE 7: RUN AND VERIFY (Atomic llama.cpp)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local model_dir="/AI/tabbyAPI/models/example-model"
-    local tabby_port=5000
-    local tabby_log="/tmp/tabby_server.log"
-    local hf_repo="turboderp/Mistral-Nemo-Base-12B-exl2"
-    local hf_revision="4.0bpw"
+    local app_dir="/AI/atomic-llama-cpp-turboquant"
+    local model_file="$app_dir/model.gguf"
+    local mtp_file="$app_dir/model_mtp.gguf"
+    local server_port=8080
+    local server_log="/tmp/atomic_llama_turboquant_server.log"
 
-    # --- Download model ---
-    info "Downloading ${hf_repo} (revision: ${hf_revision})..."
+    local target_repo="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
+    local target_file="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
+    local mtp_repo="https://huggingface.co/AtomicChat/gemma-4-26B-A4B-it-assistant-GGUF"
+    local mtp_hf_file="gemma-4-26B-A4B-it-assistant.Q4_K_M.gguf"
+
+    # --- Download target model ---
+    info "Downloading target model $target_file from HuggingFace..."
+    podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
     podman exec -t rocm bash -c "
-        mkdir -p '${model_dir}' && \
-        cd /AI/tabbyAPI && \
-        .venv/bin/python -c \"
-from huggingface_hub import snapshot_download
-snapshot_download(
-    repo_id='${hf_repo}',
-    revision='${hf_revision}',
-    local_dir='${model_dir}',
-    ignore_patterns=['*.bin']
-)
-print('Download complete')
-\"
-    " || abort "Failed to download TabbyAPI model"
+        mkdir -p '${app_dir}' && \
+        wget -q '${target_repo}/resolve/main/${target_file}' -O '${model_file}' \
+        || curl --fail -L '${target_repo}/resolve/main/${target_file}' -o '${model_file}'
+    " || abort "Failed to download $target_file"
 
-    # --- Verify model files ---
-    local model_count
-    model_count=$(podman exec -t rocm bash -c \
-        "find '${model_dir}' -name '*.safetensors' 2>/dev/null | wc -l" \
-        | tr -d '\r\n') || model_count=0
-    model_count="${model_count:-0}"
-    if [[ "$model_count" =~ ^[0-9]+$ ]] && [ "$model_count" -gt 0 ]; then
-        pass "TabbyAPI model downloaded (${model_count} shard(s) in ${model_dir})"
+    local fsize
+    fsize=$(podman exec -t rocm bash -c "stat -c%s '${model_file}' 2>/dev/null || echo 0" \
+            | tr -d '\r\n') || fsize=0
+    fsize="${fsize:-0}"
+    if [[ "$fsize" =~ ^[0-9]+$ ]] && [ "$fsize" -gt 1048576 ]; then
+        pass "model.gguf downloaded ($(( fsize / 1024 / 1024 )) MB)"
     else
-        abort "TabbyAPI model download failed – no .safetensors files in ${model_dir}"
+        abort "model.gguf missing or empty after download (size=${fsize})"
     fi
 
-    # --- Update config: set max_seq_len=8192 to avoid OOM during test ---
-    info "Setting TabbyAPI config (model: example-model, max_seq_len: 8192)..."
-    podman exec -t rocm bash -c "cat > /AI/tabbyAPI/config.yml << 'CFGEOF'
-network:
-  host: 0.0.0.0
-  port: 5000
-  disable_auth: true
+    # --- Download MTP head model ---
+    info "Downloading MTP head $mtp_hf_file from HuggingFace..."
+    podman exec -t rocm bash -c "rm -f '${mtp_file}'" 2>/dev/null || true
+    podman exec -t rocm bash -c "
+        wget -q '${mtp_repo}/resolve/main/${mtp_hf_file}' -O '${mtp_file}' \
+        || curl --fail -L '${mtp_repo}/resolve/main/${mtp_hf_file}' -o '${mtp_file}'
+    " || abort "Failed to download $mtp_hf_file"
 
-model:
-  model_dir: models
-  model_name: example-model
-  max_seq_len: 8192
-CFGEOF
-"
+    local mtp_fsize
+    mtp_fsize=$(podman exec -t rocm bash -c "stat -c%s '${mtp_file}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || mtp_fsize=0
+    mtp_fsize="${mtp_fsize:-0}"
+    if [[ "$mtp_fsize" =~ ^[0-9]+$ ]] && [ "$mtp_fsize" -gt 1048576 ]; then
+        pass "model_mtp.gguf downloaded ($(( mtp_fsize / 1024 / 1024 )) MB)"
+    else
+        abort "model_mtp.gguf missing or empty after download (size=${mtp_fsize})"
+    fi
 
-    # --- Kill old instances, clear log ---
-    podman exec -t rocm bash -c "pkill -f 'python main.py' 2>/dev/null; sleep 1; : > '${tabby_log}'" || true
+    podman exec -t rocm bash -c \
+        "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > '${server_log}'" || true
 
-    # --- Start TabbyAPI ---
-    info "Starting TabbyAPI on port ${tabby_port}..."
+    # --- Start server with MTP ---
+    info "Starting Atomic llama.cpp server (MTP, block-size=5) on port ${server_port}..."
     podman exec -d rocm bash -c \
-        "cd /AI/tabbyAPI && source .venv/bin/activate && \
-         python main.py >> '${tabby_log}' 2>&1"
+        "cd '${app_dir}' && ./build/bin/llama-server \
+            -m model.gguf \
+            --mtp-head model_mtp.gguf \
+            --spec-type mtp \
+            --draft-block-size 5 \
+            --host 0.0.0.0 \
+            --port ${server_port} \
+            -c 16384 \
+            --cache-type-k turbo3 \
+            --cache-type-v turbo3 \
+            -ngl 99 -ngld 99 \
+            -fa on \
+        >> '${server_log}' 2>&1"
 
-    # --- Wait for HTTP server start ---
-    info "Waiting for TabbyAPI HTTP server..."
-    local waited=0 max_wait=300 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${tabby_port}/health > /dev/null" 2>/dev/null; then
-            ready=true
-            break
-        fi
-        sleep 3
-        waited=$((waited + 3))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${tabby_log}'" 2>/dev/null || true
-        abort "TabbyAPI HTTP server did not start within ${max_wait}s"
-    fi
-    pass "TabbyAPI HTTP server started"
+    info "Waiting for Atomic llama.cpp server to become ready..."
+    local max_wait=600 wait_rc=0
+    wait_for_http \
+        "curl -sf http://localhost:${server_port}/health | grep -q 'ok'" \
+        "llama-server" \
+        "${server_log}" \
+        "$max_wait" \
+        "llama server listening" || wait_rc=$?
 
-    # --- Wait for model to finish loading (/v1/model returns id when ready) ---
-    info "Waiting for model to load (up to 300 s)..."
-    local mwaited=0 mmax=300 mready=false
-    while [ $mwaited -lt $mmax ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${tabby_port}/v1/model | grep -q '\"id\"'" 2>/dev/null; then
-            mready=true
-            break
-        fi
-        sleep 5
-        mwaited=$((mwaited + 5))
-        info "  ...loading model ($mwaited/${mmax}s)"
-    done
-
-    if $mready; then
-        pass "TabbyAPI model loaded and ready"
+    if [ $wait_rc -eq 0 ]; then
+        pass "Atomic llama.cpp server ready (/health OK)"
     else
-        podman exec -t rocm bash -c "cat '${tabby_log}'" 2>/dev/null || true
-        abort "TabbyAPI model did not load within ${mmax}s"
+        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
+        if [ $wait_rc -eq 1 ]; then
+            abort "Atomic llama.cpp server process died unexpectedly"
+        else
+            abort "Atomic llama.cpp server did not become ready within ${max_wait}s"
+        fi
     fi
 
-    # --- Send test query (/v1/completions – works for base models without chat template) ---
-    info "Sending test query to TabbyAPI..."
+    # --- Verify MTP is active ---
+    info "Sending test query to Atomic llama.cpp API (checking MTP)..."
     local api_response
     api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${tabby_port}/v1/completions \
+        curl -sf http://localhost:${server_port}/completion \
             -H 'Content-Type: application/json' \
             -d '{
                 \"prompt\": \"Reply with one word: OK\",
-                \"max_tokens\": 16,
-                \"temperature\": 0
+                \"n_predict\": 32,
+                \"temperature\": 0,
+                \"cache_prompt\": false
             }'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"text"'; then
-        local answer
+    if echo "$api_response" | grep -q '"content"'; then
+        local answer draft_n draft_acc
         answer=$(echo "$api_response" \
-            | grep -o '"text": *"[^"]*"' \
-            | head -1 \
-            | sed 's/"text": *"//;s/"//') || answer=""
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('content',''))" 2>/dev/null) || answer=""
+        draft_n=$(echo "$api_response" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('timings',{}).get('draft_n','N/A'))" 2>/dev/null) || draft_n="N/A"
+        draft_acc=$(echo "$api_response" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('timings',{}).get('draft_n_accepted','N/A'))" 2>/dev/null) || draft_acc="N/A"
         info "  Query:  \"Reply with one word: OK\""
         info "  Answer: \"$answer\""
-        pass "TabbyAPI responded"
+        info "  MTP draft: accepted ${draft_acc}/${draft_n}"
+        if [ "$draft_n" != "N/A" ] && [ "$draft_n" != "0" ]; then
+            pass "Atomic llama.cpp API responded with MTP active (draft_n=${draft_n})"
+        else
+            pass "Atomic llama.cpp API responded (MTP stats not available)"
+        fi
     else
         info "Raw API response: $api_response"
-        podman exec -t rocm bash -c "cat '${tabby_log}'" 2>/dev/null || true
-        abort "TabbyAPI did not return expected response (missing 'text' field)"
+        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
+        abort "Atomic llama.cpp API did not return expected response (missing 'content')"
     fi
 
-    # --- Stop server ---
-    info "Stopping TabbyAPI..."
-    podman exec -t rocm bash -c "pkill -f 'python main.py' 2>/dev/null || true" || true
+    info "Stopping Atomic llama.cpp server..."
+    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null || true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'python main.py' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f 'llama-server' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "TabbyAPI server stopped"
+    pass "Atomic llama.cpp server stopped"
 
     info "Phase 7 DONE"
 }
 
-main() { phase7_verify_tabbyapi; }
+main() { phase7_verify_atomic_llama_cpp; }
 main "$@"

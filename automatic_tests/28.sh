@@ -5,16 +5,16 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 27: RUN AND VERIFY – kimodo (motion generation UI)
+# PHASE 28: RUN AND VERIFY – kimodo (motion generation UI)
 # ============================================================
-phase27_verify_kimodo() {
+phase28_verify_kimodo() {
     info "============================================="
-    info "PHASE 27: RUN AND VERIFY (kimodo)"
+    info "PHASE 28: RUN AND VERIFY (kimodo)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/kimodo.git"
+    local app_dir="/AI/kimodo"
     local app_port=7860
     local app_log="/tmp/kimodo_server.log"
 
@@ -69,8 +69,8 @@ phase27_verify_kimodo() {
     done
     pass "kimodo stopped"
 
-    info "Phase 27 DONE"
+    info "Phase 28 DONE"
 }
 
-main() { phase27_verify_kimodo; }
+main() { phase28_verify_kimodo; }
 main "$@"

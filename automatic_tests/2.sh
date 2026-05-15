@@ -41,6 +41,8 @@ phase2_install() {
     run_install "llama.cpp"              install_llama_cpp              "/AI/llama.cpp"
     run_install "llama.cpp-vulkan"       install_llama_cpp_vulkan       "/AI/llama.cpp-vulkan"
     run_install "turboquant-rocm-llamacpp"   install_turboquant_rocm_llamacpp   "/AI/turboquant-rocm-llamacpp"
+    run_install "Atomic llama.cpp" install_atomic_llama_cpp_turboquant "/AI/atomic-llama-cpp-turboquant"
+    run_install "hipfire"          install_hipfire          "/AI/hipfire"
 
     # SillyTavern (run.sh uses &&, no venv activate needed)
     run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
@@ -83,8 +85,10 @@ phase2_install() {
     run_install "OmniVoice"           install_omnivoice           "/AI/OmniVoice"
 
     # ---- 3D generation ----
-    run_install "PartCrafter" install_partcrafter "/AI/PartCrafter"
-    run_install "TRELLIS-AMD" install_trellis     "/AI/TRELLIS-AMD"
+    run_install "PartCrafter"   install_partcrafter    "/AI/PartCrafter"
+    run_install "TRELLIS-AMD"   install_trellis        "/AI/TRELLIS-AMD"
+    run_install "TRELLIS.2_rocm" install_trellis_2_rocm "/AI/TRELLIS.2_rocm"
+    run_install "Kimodo"        install_kimodo         "/AI/kimodo"
 
     info "Phase 2 DONE"
 }

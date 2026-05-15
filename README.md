@@ -31,7 +31,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
 |TabbyAPI|https://github.com/theroyallab/tabbyAPI|1. Put ExLlamaV2 model files into the <b>models/example-model</b> folder.<br> 2. In run.sh change <b>example-model</b> to the name of your model folder.|
 |llama.cpp|https://github.com/ggml-org/llama.cpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. A Vulkan version is also available.|
-|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. 4-bit KV-cache quantization (TurboQuant)|
+|Atomic llama.cpp|https://github.com/AtomicBot-ai/atomic-llama-cpp-turboquant<br> https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF<br> https://huggingface.co/AtomicChat/gemma-4-26B-A4B-it-assistant-GGUF|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. TurboQuant 3-bit KV-cache quantization (trubo3)<br> 4. Multi-Token Prediction (MTP)<br> 5. By default, it downloads model.gguf (Q4_K_M) and model_mtp.gguf|
+|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp|1. Put model.gguf into llama.cpp folder.<br> 2. In run.sh file, change the values of GPU offload layers and context size to match your model.<br> 3. TurboQuant 4-bit KV-cache quantization (trubo4)|
 |hipfire|https://github.com/Kaden-Schutt/hipfire.git|1. Paste compatible models into the <b>models</b> folder, or use "<b>Prepare model</b>" to manually convert model to a compatible format.|
 
 #### SillyTavern Extensions:

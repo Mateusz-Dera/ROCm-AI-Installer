@@ -169,8 +169,8 @@ EOF"
 
 # ----- llama.cpp -----
 
-LLAMA_COMMIT="994118a1831fdede28ee2d228e0570db9b728c45"
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
+LLAMA_COMMIT="ac33f032ac41748ffa9aaefca07cfc16e732f73f"
 
 # llama.cpp
 install_llama_cpp() {
@@ -202,9 +202,37 @@ install_llama_cpp_vulkan() {
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
 }
 
+install_atomic_llama_cpp_turboquant() {
+    REPO="https://github.com/AtomicBot-ai/atomic-llama-cpp-turboquant"
+    COMMIT="0a635dcd92ba66c75fccfef91c3e106f4668f367"
+    FOLDER=$(basename "$REPO")
+    COMMAND="./build/bin/llama-server -m model.gguf --mtp-head model_mtp.gguf --spec-type mtp --draft-block-size 5 --host 0.0.0.0 --port 8080 -c 262144 --cache-type-k turbo3 --cache-type-v turbo3 -ngl 99 -ngld 99 -fa on"
+
+    local TARGET_REPO="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
+    local TARGET_COMMIT="cb1f989321df6baa8c647aea074fbad465962bb1"
+    local TARGET_FILE="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
+    local MTP_REPO="https://huggingface.co/AtomicChat/gemma-4-26B-A4B-it-assistant-GGUF"
+    local MTP_COMMIT="171ecca181ec00ed6ffacb573195aa7c644bbdc6"
+    local MTP_FILE="gemma-4-26B-A4B-it-assistant.Q4_K_M.gguf"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+
+    podman exec -it rocm bash -c "
+        wget -q '${TARGET_REPO}/resolve/${TARGET_COMMIT}/${TARGET_FILE}' -O '/AI/$FOLDER/model.gguf'
+    "
+    podman exec -it rocm bash -c "
+        wget -q '${MTP_REPO}/resolve/${MTP_COMMIT}/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'
+    "
+
+    basic_run "$REPO" "$COMMAND" "&&"
+}
+
 install_turboquant_rocm_llamacpp() {
     REPO="https://github.com/jagsan-cyber/turboquant-rocm-llamacpp"
-    COMMIT="bc5de12c82add9a6b9e5adfc276012b250859505"
+    COMMIT="22cce31b6e58f3e945fbc7f2f5eb06a509e64fcc"
     FOLDER=$(basename "$REPO")
     COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 -c 262144 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
 
@@ -228,7 +256,7 @@ install_hipfire() {
 
     # Build inference daemon and quantizer
     podman exec -it rocm bash -c "cd /AI/$FOLDER && \
-        cargo build --release --features deltanet --example daemon -p engine && \
+        cargo build --release --features deltanet --example daemon -p hipfire-runtime && \
         cargo build --release -p hipfire-quantize"
 
     # Install Bun (runtime for the hipfire CLI wrapper)
@@ -532,6 +560,39 @@ class ModelMMAP:
 PYEOF
 "
 
+    # torchaudio 2.10+ uses torchcodec (CUDA-only) – patch to soundfile fallback
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+import pathlib
+path = pathlib.Path('/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py')
+src = path.read_text()
+OLD = '''    # Import torchcodec here to provide clear error if not available
+    try:
+        from torchcodec.decoders import AudioDecoder
+    except ImportError as e:
+        raise ImportError(
+            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
+        ) from e'''
+NEW = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
+    try:
+        from torchcodec.decoders import AudioDecoder
+        _USE_SF = False
+    except (ImportError, RuntimeError):
+        _USE_SF = True
+    if _USE_SF:
+        import soundfile as sf, numpy as np, torch
+        data, sr = sf.read(str(uri), dtype=\"float32\", always_2d=True)
+        w = torch.from_numpy(data.T)
+        if frame_offset > 0: w = w[:, frame_offset:]
+        if num_frames != -1: w = w[:, :num_frames]
+        if not channels_first: w = w.T
+        return w, sr'''
+if OLD in src:
+    path.write_text(src.replace(OLD, NEW))
+    print('torchaudio soundfile patch applied')
+else:
+    print('WARNING: torchaudio patch target not found - may already be patched')
+PYEOF"
+
     basic_run "$REPO" "$COMMAND"
 
     # Extensions
@@ -618,6 +679,40 @@ install_ace_step() {
     podman cp "$SCRIPT_DIR/custom_files/ace-step/patch_rocm.py" "rocm:/AI/$FOLDER/patch_rocm.py"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && python patch_rocm.py"
 
+    # torchaudio 2.10+ uses torchcodec (CUDA-only) – patch to soundfile fallback
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+import pathlib
+path = pathlib.Path('/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py')
+src = path.read_text()
+OLD = '''    # Import torchcodec here to provide clear error if not available
+    try:
+        from torchcodec.decoders import AudioDecoder
+    except ImportError as e:
+        raise ImportError(
+            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
+        ) from e'''
+NEW = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
+    try:
+        from torchcodec.decoders import AudioDecoder
+        _USE_SF = False
+    except (ImportError, RuntimeError):
+        _USE_SF = True
+    if _USE_SF:
+        import soundfile as sf, numpy as np, torch
+        data, sr = sf.read(str(uri), dtype=\"float32\", always_2d=True)
+        w = torch.from_numpy(data.T)
+        if frame_offset > 0: w = w[:, frame_offset:]
+        if num_frames != -1: w = w[:, :num_frames]
+        if not channels_first: w = w.T
+        return w, sr'''
+if OLD in src:
+    path.write_text(src.replace(OLD, NEW, 1))
+    print('torchaudio soundfile patch applied')
+else:
+    print('torchaudio patch: OLD string not found, may already be patched')
+PYEOF
+"
+
     basic_run "$REPO" "$COMMAND"
 }
 
@@ -636,6 +731,39 @@ install_ace_step_1_5() {
     # Fix: torchaudio 2.10+ requires torchcodec for MP3 – change default to WAV
     podman cp "$SCRIPT_DIR/custom_files/ACE-Step-1.5/generation_advanced_output_controls.py" \
         "rocm:/AI/$FOLDER/acestep/ui/gradio/interfaces/generation_advanced_output_controls.py"
+
+    # torchaudio 2.10+ uses torchcodec (CUDA-only) – patch to soundfile fallback
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+import pathlib
+path = pathlib.Path('/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py')
+src = path.read_text()
+OLD = '''    # Import torchcodec here to provide clear error if not available
+    try:
+        from torchcodec.decoders import AudioDecoder
+    except ImportError as e:
+        raise ImportError(
+            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
+        ) from e'''
+NEW = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
+    try:
+        from torchcodec.decoders import AudioDecoder
+        _USE_SF = False
+    except (ImportError, RuntimeError):
+        _USE_SF = True
+    if _USE_SF:
+        import soundfile as sf, numpy as np, torch
+        data, sr = sf.read(str(uri), dtype=\"float32\", always_2d=True)
+        w = torch.from_numpy(data.T)
+        if frame_offset > 0: w = w[:, frame_offset:]
+        if num_frames != -1: w = w[:, :num_frames]
+        if not channels_first: w = w.T
+        return w, sr'''
+if OLD in src:
+    path.write_text(src.replace(OLD, NEW))
+    print('torchaudio soundfile patch applied')
+else:
+    print('WARNING: torchaudio patch target not found - may already be patched')
+PYEOF"
 
     basic_run "$REPO" "$COMMAND"
 }
@@ -678,6 +806,54 @@ install_f5_tts(){
 
     # torchcodec is incompatible with ROCm (built for CUDA only) – remove it
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip uninstall torchcodec 2>/dev/null; true"
+
+    # float16 model.to() segfaults on ROCm in PyTorch 2.7+ – force float32
+    podman exec -t rocm bash -c "sed -i 's/torch\.float16/torch.float32/g' /AI/$FOLDER/src/f5_tts/infer/utils_infer.py"
+
+    # torch.stft segfaults on ROCm GPU – compute mel spectrogram on CPU
+    podman exec -t rocm bash -c "sed -i 's|).to(waveform.device)|)  # keep on CPU - GPU STFT segfaults on ROCm|' /AI/$FOLDER/src/f5_tts/model/modules.py && sed -i 's|    mel = mel_stft(waveform)|    orig_device = waveform.device\n    mel = mel_stft(waveform.cpu()).clamp(min=1e-5).log().to(orig_device)|' /AI/$FOLDER/src/f5_tts/model/modules.py"
+
+    # torchaudio 2.9+ requires torchcodec (CUDA only, incompatible with ROCm) – patch to use soundfile fallback
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+import re
+path = '/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py'
+with open(path, 'r') as f:
+    content = f.read()
+old = '''    # Import torchcodec here to provide clear error if not available
+    try:
+        from torchcodec.decoders import AudioDecoder
+    except ImportError as e:
+        raise ImportError(
+            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
+        ) from e'''
+new = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
+    try:
+        from torchcodec.decoders import AudioDecoder
+        _USE_SOUNDFILE_FALLBACK = False
+    except (ImportError, RuntimeError):
+        _USE_SOUNDFILE_FALLBACK = True
+
+    if _USE_SOUNDFILE_FALLBACK:
+        import soundfile as sf
+        import numpy as np
+        import torch
+        data, sample_rate = sf.read(str(uri), dtype=\"float32\", always_2d=True)
+        waveform = torch.from_numpy(data.T)
+        if frame_offset > 0:
+            waveform = waveform[:, frame_offset:]
+        if num_frames != -1:
+            waveform = waveform[:, :num_frames]
+        if not channels_first:
+            waveform = waveform.T
+        return waveform, sample_rate'''
+if old in content:
+    content = content.replace(old, new)
+    with open(path, 'w') as f:
+        f.write(content)
+    print('torchaudio soundfile patch applied')
+else:
+    print('WARNING: torchaudio patch old string not found - may already be patched')
+PYEOF"
 
     basic_run "$REPO" "$COMMAND"
 }
@@ -739,6 +915,126 @@ install_omnivoice(){
     basic_venv "$REPO"
     basic_requirements "$REPO"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install --no-deps  -e ."
+
+    # ROCm: HiggsAudioV2TokenizerModel crashes when loaded directly to GPU via device_map='cuda'.
+    # Patch from_pretrained to load everything on CPU then move to GPU.
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+path = '/AI/$FOLDER/omnivoice/models/omnivoice.py'
+with open(path) as f:
+    c = f.read()
+
+old1 = '''    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
+        train_mode = kwargs.pop(\"train\", False)
+        load_asr = kwargs.pop(\"load_asr\", False)
+        asr_model_name = kwargs.pop(\"asr_model_name\", \"openai/whisper-large-v3-turbo\")
+
+        # Suppress noisy INFO logs from transformers/huggingface_hub during loading
+        _prev_disable = logging.root.manager.disable
+        logging.disable(logging.INFO)
+
+        try:
+            model = super().from_pretrained(
+                pretrained_model_name_or_path, *args, **kwargs
+            )'''
+new1 = '''    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
+        train_mode = kwargs.pop(\"train\", False)
+        load_asr = kwargs.pop(\"load_asr\", False)
+        asr_model_name = kwargs.pop(\"asr_model_name\", \"openai/whisper-large-v3-turbo\")
+
+        _target_device_map = kwargs.pop(\"device_map\", None)
+        if _target_device_map is not None and str(_target_device_map) not in (\"cpu\", \"auto\"):
+            _move_to_device = str(_target_device_map)
+        else:
+            _move_to_device = None
+        kwargs[\"device_map\"] = \"cpu\"
+
+        _prev_disable = logging.root.manager.disable
+        logging.disable(logging.INFO)
+
+        try:
+            model = super().from_pretrained(
+                pretrained_model_name_or_path, *args, **kwargs
+            )'''
+
+old2 = '''                # higgs-audio-v2-tokenizer does not support MPS (output channels > 65536)
+                tokenizer_device = (
+                    \"cpu\" if str(model.device).startswith(\"mps\") else model.device
+                )
+                model.audio_tokenizer = HiggsAudioV2TokenizerModel.from_pretrained(
+                    audio_tokenizer_path, device_map=tokenizer_device
+                )'''
+new2 = '''                model.audio_tokenizer = HiggsAudioV2TokenizerModel.from_pretrained(
+                    audio_tokenizer_path, device_map=\"cpu\"
+                )'''
+
+old3 = '''                if load_asr:
+                    model.load_asr_model(model_name=asr_model_name)
+        finally:
+            logging.disable(_prev_disable)
+
+        return model'''
+new3 = '''                if load_asr:
+                    model.load_asr_model(model_name=asr_model_name)
+
+                if _move_to_device is not None:
+                    _td = _move_to_device
+                    model = model.to(_td)
+                    model.audio_tokenizer = model.audio_tokenizer.to(_td)
+        finally:
+            logging.disable(_prev_disable)
+
+        return model'''
+
+for old, new in [(old1, new1), (old2, new2), (old3, new3)]:
+    if old in c:
+        c = c.replace(old, new)
+        print('patch applied')
+    else:
+        print('WARNING: patch not applied - string not found')
+
+with open(path, 'w') as f:
+    f.write(c)
+PYEOF"
+
+    # torchaudio 2.10+ requires torchcodec (CUDA-only) – patch to use soundfile fallback
+    podman exec -t rocm bash -c "python3 - << 'PYEOF'
+path = '/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py'
+with open(path) as f:
+    c = f.read()
+old = '''    # Import torchcodec here to provide clear error if not available
+    try:
+        from torchcodec.decoders import AudioDecoder
+    except ImportError as e:
+        raise ImportError(
+            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
+        ) from e'''
+new = '''    try:
+        from torchcodec.decoders import AudioDecoder
+        _USE_SF = False
+    except (ImportError, RuntimeError):
+        _USE_SF = True
+    if _USE_SF:
+        import soundfile as sf, numpy as np, torch
+        data, sr = sf.read(str(uri), dtype=\"float32\", always_2d=True)
+        w = torch.from_numpy(data.T)
+        if frame_offset > 0: w = w[:, frame_offset:]
+        if num_frames != -1: w = w[:, :num_frames]
+        if not channels_first: w = w.T
+        return w, sr'''
+if old in c:
+    c = c.replace(old, new)
+    print('torchaudio patch applied')
+else:
+    print('WARNING: torchaudio patch not found')
+with open(path, 'w') as f:
+    f.write(c)
+PYEOF"
+
+    # Also patch demo.py to use float32 (float16 causes instability on ROCm)
+    podman exec -t rocm bash -c "sed -i 's/dtype=torch\.float16/dtype=torch.float32/' /AI/$FOLDER/omnivoice/cli/demo.py"
+
     basic_run "$REPO" "$COMMAND"
 }
 
@@ -820,6 +1116,13 @@ install_trellis_2_rocm() {
     basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO" "3.11"
+
+    # Requirements use ROCm 7.2.2 packages; override uv.toml to point at the 7.2.2 repo.
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/uv.toml << 'EOF'
+[[index]]
+url = \"https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2.2/\"
+format = \"flat\"
+EOF"
     basic_requirements "$REPO"
 
     # flash-attn has no prebuilt ROCm wheel; build from source using the venv's torch
@@ -871,7 +1174,27 @@ install_kimodo() {
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install 'viser @ git+https://github.com/nv-tlabs/kimodo-viser.git'"
 
-    basic_run "$REPO" "TEXT_ENCODER_DEVICE=cpu kimodo_demo"
+    # viser extracts node-v20 tarball lazily on first server start with UID 1000 inside
+    # container (→ ~101000 on host via rootless podman UID remapping), making files
+    # undeletable from host. Fix: chown at install time AND at every run.sh invocation.
+    podman exec -t rocm bash -c "chown -R root:root /AI/$FOLDER/ 2>/dev/null || true"
+
+    # Custom run.sh: chown before start so viser node files created on any previous run
+    # are fixed before the next run, keeping all files deletable from the host.
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
+#!/bin/bash
+if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm$'; then
+    echo 'Error: Container rocm does not exist.'
+    exit 1
+fi
+if ! podman ps --format '{{.Names}}' | grep -q '^rocm$'; then
+    echo 'Container rocm is not running. Starting...'
+    podman start rocm
+fi
+podman exec -t rocm bash -c 'chown -R root:root /AI/kimodo/ 2>/dev/null || true'
+podman exec -it rocm bash -c 'cd /AI/kimodo && source .venv/bin/activate && TEXT_ENCODER_DEVICE=cpu kimodo_demo'
+RUNEOF
+chmod +x /AI/$FOLDER/run.sh"
 }
 
 # Backup and Restore Manager

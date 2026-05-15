@@ -5,22 +5,20 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 23: ComfyUI workflow – Wan-2.2-5B-image-to-video
-# Input image: bottle.png
+# PHASE 23: ComfyUI workflow – Wan-2.2-5B-text-to-video
 # ============================================================
-phase23_comfyui_wan_i2v() {
+phase23_comfyui_wan_t2v() {
     info "============================================="
-    info "PHASE 23: ComfyUI – Wan-2.2-5B-image-to-video"
+    info "PHASE 23: ComfyUI – Wan-2.2-5B-text-to-video"
     info "============================================="
 
     local app_port=8188
     local app_dir="/AI/ComfyUI"
     local app_log="/tmp/comfyui_server.log"
-    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-image-to-video.json"
-    local workflow_dst="/tmp/comfyui_workflow_19.json"
+    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-text-to-video.json"
+    local workflow_dst="/tmp/comfyui_workflow_18.json"
     local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
     local helper_dst="/tmp/comfyui_run_workflow.py"
-    local bottle_img_src="${SCRIPT_DIR}/workflows/images/bottle.png"
 
     basic_container || abort "Container 'rocm' is not running."
 
@@ -54,13 +52,6 @@ phase23_comfyui_wan_i2v() {
     fi
     pass "ComfyUI ready"
 
-    # --- Copy input image into ComfyUI input directory ---
-    info "Copying bottle.png into ComfyUI input directory..."
-    podman exec -t rocm bash -c "mkdir -p '${app_dir}/input'" 2>/dev/null || true
-    podman cp "${bottle_img_src}" "rocm:${app_dir}/input/bottle.png" || \
-        abort "Failed to copy bottle.png into container"
-    pass "bottle.png copied to ${app_dir}/input/"
-
     # --- Copy workflow JSON and helper into container ---
     podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
         abort "Failed to copy workflow JSON into container"
@@ -68,25 +59,25 @@ phase23_comfyui_wan_i2v() {
         abort "Failed to copy comfyui_run_workflow.py into container"
 
     # --- Run workflow ---
-    # NOTE: Wan 5B image-to-video with 97 frames / 20 steps can take 1-3 hours.
-    info "Running Wan-2.2-5B-image-to-video workflow (up to 3h)..."
+    # NOTE: Wan 5B text-to-video with 97 frames / 20 steps can take 1-3 hours.
+    info "Running Wan-2.2-5B-text-to-video workflow (up to 3h)..."
     local test_output
     test_output=$(podman exec -t rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_19_stderr.txt" \
+         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_18_stderr.txt" \
         | tr -d '\r') || true
 
     if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
-        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_19_stderr.txt" 2>/dev/null || true
+        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_18_stderr.txt" 2>/dev/null || true
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "Wan-2.2-5B-image-to-video workflow FAILED"
+        abort "Wan-2.2-5B-text-to-video workflow FAILED"
     fi
 
     local out_line out_path out_sz
     out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
     out_path=$(echo "$out_line" | cut -d: -f2)
     out_sz=$(echo "$out_line"   | cut -d: -f3)
-    pass "Wan-2.2-5B-image-to-video output OK (${out_path}, ${out_sz} bytes)"
+    pass "Wan-2.2-5B-text-to-video output OK (${out_path}, ${out_sz} bytes)"
     if [ "${out_sz:-0}" -lt 10240 ]; then
         abort "Output video suspiciously small (${out_sz} bytes)"
     fi
@@ -107,5 +98,5 @@ phase23_comfyui_wan_i2v() {
     info "Phase 23 DONE"
 }
 
-main() { phase23_comfyui_wan_i2v; }
+main() { phase23_comfyui_wan_t2v; }
 main "$@"

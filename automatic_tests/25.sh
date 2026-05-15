@@ -5,39 +5,38 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 25: RUN AND VERIFY – TRELLIS-AMD (image-to-3D: GLB + Gaussian)
+# PHASE 25: RUN AND VERIFY – PartCrafter (image-to-3D parts)
 # ============================================================
-phase25_verify_trellis() {
+phase25_verify_partcrafter() {
     info "============================================="
-    info "PHASE 25: RUN AND VERIFY (TRELLIS-AMD)"
+    info "PHASE 25: RUN AND VERIFY (PartCrafter)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/TRELLIS-AMD"
+    local app_dir="/AI/PartCrafter"
     local app_port=7860
-    local app_log="/tmp/trellis_server.log"
-    local helper_src="${TESTS_DIR}/trellis_api_helper.py"
-    local helper_dst="/tmp/trellis_api_helper.py"
+    local app_log="/tmp/partcrafter_server.log"
+    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
+    local output_glb="/tmp/partcrafter_object.glb"
 
     # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
+        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
 
-    # --- Start TRELLIS-AMD ---
-    info "Starting TRELLIS-AMD on port ${app_port}..."
+    # --- Start PartCrafter ---
+    info "Starting PartCrafter on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse \
-         uv run app.py >> '${app_log}' 2>&1"
+         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
 
-    # --- Wait for /info endpoint (model loads at startup, can take >2 min) ---
-    info "Waiting for TRELLIS-AMD to become ready (up to 600s)..."
+    # --- Wait for Gradio API (model downloads + loads at startup) ---
+    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
     local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/info \
+               "curl -sf http://localhost:${app_port}/gradio_api/info \
                 | grep -q '\"named_endpoints\"'" 2>/dev/null; then
             ready=true; break
         fi
@@ -46,89 +45,122 @@ phase25_verify_trellis() {
     done
     if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "TRELLIS-AMD did not become ready within ${max_wait}s"
+        abort "PartCrafter did not become ready within ${max_wait}s"
     fi
-    pass "TRELLIS-AMD API ready on port ${app_port}"
+    pass "PartCrafter Gradio API ready on port ${app_port}"
 
-    # --- Copy Python helper into container ---
-    podman cp "${helper_src}" "rocm:${helper_dst}" || \
-        abort "Failed to copy trellis_api_helper.py into container"
+    # --- Resolve actual endpoint name from /gradio_api/info ---
+    local endpoint_name
+    endpoint_name=$(podman exec -t rocm bash -c "
+        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
+    | head -1 | tr -d '"') || endpoint_name=""
+    if [ -z "$endpoint_name" ]; then
+        endpoint_name="/generate_parts"
+        info "Could not detect endpoint from info – using default: ${endpoint_name}"
+    else
+        info "Detected endpoint: ${endpoint_name}"
+    fi
 
-    # --- Run API test helper (generate + extract GLB + extract Gaussian) ---
-    info "Running TRELLIS-AMD API test (Generate → Extract GLB → Extract Gaussian)..."
-    local test_output
-    test_output=$(podman exec -t rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' 2>/tmp/trellis_helper_stderr.txt" \
-        | tr -d '\r') || true   # preserve output even on non-zero exit
+    # --- Upload example image ---
+    info "Uploading example image..."
+    local upload_response
+    upload_response=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
+            -F 'files=@${example_img}' | tr -d '\r'
+    " 2>/dev/null) || upload_response=""
 
-    # Show stderr for debugging if test failed
-    if ! echo "$test_output" | grep -q "GAUSSIAN_OK"; then
-        podman exec -t rocm bash -c "cat /tmp/trellis_helper_stderr.txt" 2>/dev/null || true
+    local uploaded_path
+    uploaded_path=$(echo "$upload_response" \
+        | grep -o '"[^"]*"' | head -1 \
+        | tr -d '"') || uploaded_path=""
+
+    if [ -z "$uploaded_path" ]; then
+        info "Upload response: $upload_response"
+        abort "PartCrafter: failed to upload example image"
+    fi
+    info "Image uploaded: ${uploaded_path}"
+
+    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
+    info "Requesting 3D generation (2 parts, 10 inference steps)..."
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
+                2,
+                42,
+                512,
+                10,
+                7.0,
+                false,
+                false,
+                false
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "PartCrafter: no event_id returned from ${endpoint_name}"
+    fi
+    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
+
+    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 1800 \
+            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "PartCrafter 3D generation OK (files returned)"
+
+        # Extract object.glb path (first output = merged model)
+        local glb_path
+        glb_path=$(echo "$gen_result" \
+            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
+            | sed 's/"path": *"//;s/"//') || glb_path=""
+
+        if [ -n "$glb_path" ]; then
+            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
+            local fsize
+            fsize=$(podman exec -t rocm bash -c \
+                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || fsize=0
+            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 1024 ]; then
+                abort "object.glb is suspiciously small (${fsize} bytes)"
+            fi
+        else
+            info "  Warning: could not extract GLB path from result"
+            info "  Raw result: $gen_result"
+        fi
+    else
+        info "Raw result: $gen_result"
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-    fi
-
-    # --- Check Generate ---
-    if echo "$test_output" | grep -q "^GENERATE_OK:"; then
-        local gen_line video_path gen_sz
-        gen_line=$(echo "$test_output" | grep "^GENERATE_OK:" | head -1)
-        video_path=$(echo "$gen_line" | cut -d: -f2)
-        gen_sz=$(echo "$gen_line"    | cut -d: -f3)
-        pass "TRELLIS Generate OK (video: ${video_path}, ${gen_sz} bytes)"
-    else
-        abort "TRELLIS Generate FAILED"
-    fi
-
-    # --- Check Extract GLB ---
-    if echo "$test_output" | grep -q "^GLB_OK:"; then
-        local glb_line glb_path glb_sz
-        glb_line=$(echo "$test_output" | grep "^GLB_OK:" | head -1)
-        glb_path=$(echo "$glb_line" | cut -d: -f2)
-        glb_sz=$(echo "$glb_line"   | cut -d: -f3)
-        pass "TRELLIS Extract GLB OK (${glb_path}, ${glb_sz} bytes)"
-        if [ "${glb_sz:-0}" -lt 1024 ]; then
-            abort "GLB file suspiciously small (${glb_sz} bytes)"
-        fi
-    elif echo "$test_output" | grep -q "^GLB_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GLB_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract GLB FAILED: ${fail_msg}"
-    else
-        abort "TRELLIS Extract GLB: no result"
-    fi
-
-    # --- Check Extract Gaussian ---
-    if echo "$test_output" | grep -q "^GAUSSIAN_OK:"; then
-        local gs_line ply_path ply_sz
-        gs_line=$(echo "$test_output" | grep "^GAUSSIAN_OK:" | head -1)
-        ply_path=$(echo "$gs_line" | cut -d: -f2)
-        ply_sz=$(echo "$gs_line"   | cut -d: -f3)
-        pass "TRELLIS Extract Gaussian OK (${ply_path}, ${ply_sz} bytes)"
-        if [ "${ply_sz:-0}" -lt 1024 ]; then
-            abort "PLY file suspiciously small (${ply_sz} bytes)"
-        fi
-    elif echo "$test_output" | grep -q "^GAUSSIAN_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GAUSSIAN_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract Gaussian FAILED: ${fail_msg}"
-    else
-        abort "TRELLIS Extract Gaussian: no result"
+        abort "PartCrafter generation did not return file data"
     fi
 
     # --- Stop server ---
-    info "Stopping TRELLIS-AMD..."
+    info "Stopping PartCrafter..."
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
+        "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "TRELLIS-AMD stopped"
+    pass "PartCrafter stopped"
 
     info "Phase 25 DONE"
 }
 
-main() { phase25_verify_trellis; }
+main() { phase25_verify_partcrafter; }
 main "$@"

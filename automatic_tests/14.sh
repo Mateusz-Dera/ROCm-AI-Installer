@@ -5,38 +5,53 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 14: RUN AND VERIFY – OmniVoice
-#   Step 1: Voice Design  (no reference) → save output as ref
-#   Step 2: Voice Clone   (use step-1 output as reference)
+# PHASE 14: RUN AND VERIFY – Soprano (text-to-speech)
 # ============================================================
-phase14_verify_omnivoice() {
+phase14_verify_soprano() {
     info "============================================="
-    info "PHASE 14: RUN AND VERIFY (OmniVoice)"
+    info "PHASE 14: RUN AND VERIFY (Soprano)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/OmniVoice"
-    local app_port=7860
-    local app_log="/tmp/omnivoice_server.log"
-    local ref_wav="/tmp/omnivoice_ref.wav"
-    local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
+    local app_dir="/AI/soprano-rocm"
+    local app_log="/tmp/soprano_server.log"
+    local ref_wav="/tmp/soprano_voice_ref.wav"
+    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
     # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c \
-        "pkill -f 'omnivoice-demo' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+        "pkill -f 'soprano-webui' 2>/dev/null; pkill -f 'soprano' 2>/dev/null; \
+         sleep 2; : > '${app_log}'" || true
 
-    # --- Start OmniVoice ---
-    info "Starting OmniVoice on port ${app_port}..."
+    # --- Start Soprano ---
+    info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         omnivoice-demo --ip 0.0.0.0 --port ${app_port} \
+         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API to become ready (model download + load) ---
-    info "Waiting for OmniVoice Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
+    # --- Detect port from log (Soprano finds free port starting at 7860) ---
+    info "Waiting for Soprano to start and detect port (up to 120s)..."
+    local app_port="" waited=0 max_wait=120
+    while [ $waited -lt $max_wait ]; do
+        app_port=$(podman exec -t rocm bash -c \
+            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
+            | tr -d '\r\n') || app_port=""
+        [ -n "$app_port" ] && break
+        sleep 3; waited=$((waited + 3))
+        info "  ...waiting ($waited/${max_wait}s)"
+    done
+    if [ -z "$app_port" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: could not detect port from log"
+    fi
+    info "Soprano detected port: ${app_port}"
+
+    # --- Wait for Gradio API to become ready ---
+    info "Waiting for Soprano Gradio API on port ${app_port} (up to 300s)..."
+    local ready=false
+    waited=0; max_wait=300
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
                "curl -sf http://localhost:${app_port}/gradio_api/info \
@@ -48,186 +63,79 @@ phase14_verify_omnivoice() {
     done
     if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice did not become ready within ${max_wait}s"
+        abort "Soprano did not become ready within ${max_wait}s"
     fi
-    pass "OmniVoice Gradio API ready on port ${app_port}"
+    pass "Soprano Gradio API ready on port ${app_port}"
 
-    # ================================================================
-    # STEP 1 – Voice Design (no reference audio)
-    # Endpoint: /_design_fn
-    # Inputs (15): text, lang, ns, gs, dn, sp, du, pp, po, 6×group
-    # ================================================================
-    info "--- Step 1: Voice Design (no reference) ---"
-    info "Requesting Voice Design: \"${GEN_TEXT}\"..."
-
+    # --- Generate speech (streaming=false → single audio file returned) ---
+    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
     local event_id
     event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                32,
-                2.0,
-                true,
-                1.0,
-                null,
-                true,
-                true,
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\"
+                \"${REF_TEXT}\",
+                0.0,
+                0.95,
+                1.2,
+                1,
+                false
             ]}' | tr -d '\r'
     " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '"event_id":"[^"]*"' \
     | grep -o '[^:]*$' \
     | tr -d '"') || true
 
     if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_design_fn"
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: no event_id returned from /generate_speech"
     fi
-    info "Voice Design started (event_id: $event_id) – polling result (up to 300s)..."
+    info "Generation started (event_id: $event_id) – polling result..."
 
-    local design_result
-    design_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
+    # --- Poll result (SSE stream) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 120 \
+            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
         | tr -d '\r'
     " 2>/dev/null) || true
 
-    if ! echo "$design_result" | grep -q '"path"'; then
-        info "Raw result: $design_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Design did not return audio data"
-    fi
-    pass "OmniVoice Voice Design OK (audio returned)"
-
-    # Extract audio path and copy to persistent location
-    local audio_path
-    audio_path=$(echo "$design_result" \
-        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
-
-    if [ -z "$audio_path" ]; then
-        info "Raw result: $design_result"
-        abort "OmniVoice: could not extract audio path from Voice Design result"
-    fi
-    info "  Voice Design output: ${audio_path}"
-
-    # Verify size
-    local fsize
-    fsize=$(podman exec -t rocm bash -c \
-        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-        | tr -d '\r\n') || fsize=0
-    if [ "${fsize:-0}" -lt 1024 ]; then
-        abort "OmniVoice: Voice Design audio suspiciously small (${fsize} bytes)"
-    fi
-    info "  Size: $(( ${fsize} / 1024 )) KB"
-
-    # Copy to persistent location for use as reference
-    podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" || \
-        abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
-    pass "Voice Design audio saved as reference: ${ref_wav}"
-
-    # ================================================================
-    # STEP 2 – Voice Clone (use step-1 output as reference)
-    # Endpoint: /_clone_fn
-    # Inputs (11): text, lang, ref_audio, ref_text, ns, gs, dn, sp, du, pp, po
-    # ================================================================
-    info "--- Step 2: Voice Clone (using generated audio as reference) ---"
-
-    # Upload reference audio via /gradio_api/upload
-    info "Uploading reference audio to OmniVoice..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${ref_wav}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
-
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-
-    if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
-        abort "OmniVoice: failed to upload reference audio"
-    fi
-    info "Reference audio uploaded: ${uploaded_path}"
-
-    info "Requesting Voice Clone: \"${GEN_TEXT}\"..."
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_clone_fn \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                \"\",
-                32,
-                2.0,
-                true,
-                1.0,
-                null,
-                true,
-                true
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_clone_fn"
-    fi
-    info "Voice Clone started (event_id: $event_id) – polling result (up to 300s)..."
-
-    local clone_result
-    clone_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_clone_fn/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$clone_result" | grep -q '"path"'; then
-        pass "OmniVoice Voice Clone OK (audio returned)"
-        local clone_path
-        clone_path=$(echo "$clone_result" \
-            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
-        if [ -n "$clone_path" ]; then
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "Soprano speech generation OK (audio returned)"
+        # Extract audio path and copy to stable location for F5-TTS (test 12)
+        local audio_path
+        audio_path=$(echo "$gen_result" \
+            | grep -oP '"path":\s*"\K[^"]*\.wav[^"]*' | head -1) || audio_path=""
+        if [ -n "$audio_path" ]; then
+            podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" 2>/dev/null || true
+            local fsize
             fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \
+                "stat -c%s '${ref_wav}' 2>/dev/null || echo 0" \
                 | tr -d '\r\n') || fsize=0
-            info "  Clone output: ${clone_path} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "OmniVoice: Voice Clone audio suspiciously small (${fsize} bytes)"
-            fi
+            info "  Voice reference saved: ${ref_wav} ($(( ${fsize:-0} / 1024 )) KB)"
+        else
+            info "  Warning: could not extract audio path from result"
         fi
-        pass "Voice Clone audio size OK"
     else
-        info "Raw result: $clone_result"
+        info "Raw result: $gen_result"
         podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Clone did not return audio data"
+        abort "Soprano generation did not return audio data"
     fi
 
     # --- Stop server ---
-    info "Stopping OmniVoice..."
+    info "Stopping Soprano..."
     podman exec -t rocm bash -c \
-        "pkill -f 'omnivoice-demo' 2>/dev/null; \
+        "pkill -f 'soprano-webui' 2>/dev/null; pkill -f 'soprano' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "OmniVoice stopped"
+    pass "Soprano stopped"
 
     info "Phase 14 DONE"
 }
 
-main() { phase14_verify_omnivoice; }
+main() { phase14_verify_soprano; }
 main "$@"
