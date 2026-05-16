@@ -1116,13 +1116,6 @@ install_trellis_2_rocm() {
     basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO" "3.11"
-
-    # Requirements use ROCm 7.2.2 packages; override uv.toml to point at the 7.2.2 repo.
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/uv.toml << 'EOF'
-[[index]]
-url = \"https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2.2/\"
-format = \"flat\"
-EOF"
     basic_requirements "$REPO"
 
     # flash-attn has no prebuilt ROCm wheel; build from source using the venv's torch

@@ -5,9 +5,7 @@ Updated:
 - SillyTavern
 - WhisperSpeech web UI
 - ComfyUI
-
-Fixed:
-- TRELLIS.2_rocm: CuMesh, FlexGEMM, o-voxel were compiled for gfx906 instead of gfx1100 due to cached build artifacts; added build dir cleanup before compilation
+- TRELLIS.2 ROCm
 
 Added 
 - Kimodo
