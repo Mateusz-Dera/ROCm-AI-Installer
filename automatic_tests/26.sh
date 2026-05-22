@@ -5,130 +5,117 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 26: RUN AND VERIFY – TRELLIS-AMD (image-to-3D: GLB + Gaussian)
+# PHASE 26: RUN AND VERIFY – TRELLIS.2_rocm (3D + GLB export)
+# resolution=512, steps=4 per phase; est. ~20 min generation
+# + ~5 min GLB extraction
 # ============================================================
-phase26_verify_trellis() {
+phase26_verify_trellis2_rocm() {
     info "============================================="
-    info "PHASE 26: RUN AND VERIFY (TRELLIS-AMD)"
+    info "PHASE 26: RUN AND VERIFY (TRELLIS.2_rocm)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/TRELLIS-AMD"
+    local app_dir="/AI/TRELLIS.2_rocm"
     local app_port=7860
-    local app_log="/tmp/trellis_server.log"
-    local helper_src="${TESTS_DIR}/trellis_api_helper.py"
-    local helper_dst="/tmp/trellis_api_helper.py"
+    local app_log="/tmp/trellis2_rocm_server.log"
+    local helper_src="$TESTS_DIR/trellis2_rocm_api_helper.py"
+    local helper_dst="/tmp/trellis2_rocm_api_helper.py"
 
-    # --- Kill old instances and clear log ---
+    # --- Kill any leftover processes ---
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+        "pkill -f 'python.*app\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start TRELLIS-AMD ---
-    info "Starting TRELLIS-AMD on port ${app_port}..."
+    # --- Start TRELLIS.2_rocm ---
+    info "Starting TRELLIS.2_rocm on port ${app_port} (model loading may take several minutes)..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse \
-         uv run app.py >> '${app_log}' 2>&1"
+         ATTN_BACKEND=flash_attn HSA_XNACK=1 ROCM_SAFE_SPCONV=1 \
+         PYTORCH_HIP_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128 \
+         PYTORCH_ALLOC_CONF=expandable_segments:True \
+         GRADIO_SERVER_NAME=0.0.0.0 \
+         python -u app.py >> '${app_log}' 2>&1"
+    sleep 5
 
-    # --- Wait for /info endpoint (model loads at startup, can take >2 min) ---
-    info "Waiting for TRELLIS-AMD to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "TRELLIS-AMD did not become ready within ${max_wait}s"
-    fi
-    pass "TRELLIS-AMD API ready on port ${app_port}"
+    # --- Wait for HTTP ---
+    wait_for_http \
+        "curl -sf --max-time 3 http://localhost:${app_port}/ > /dev/null" \
+        "python.*app\.py" \
+        "${app_log}" \
+        600 \
+        "Running on local URL"
 
-    # --- Copy Python helper into container ---
-    podman cp "${helper_src}" "rocm:${helper_dst}" || \
-        abort "Failed to copy trellis_api_helper.py into container"
-
-    # --- Run API test helper (generate + extract GLB + extract Gaussian) ---
-    info "Running TRELLIS-AMD API test (Generate → Extract GLB → Extract Gaussian)..."
-    local test_output
-    test_output=$(podman exec -t rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' 2>/tmp/trellis_helper_stderr.txt" \
-        | tr -d '\r') || true   # preserve output even on non-zero exit
-
-    # Show stderr for debugging if test failed
-    if ! echo "$test_output" | grep -q "GAUSSIAN_OK"; then
-        podman exec -t rocm bash -c "cat /tmp/trellis_helper_stderr.txt" 2>/dev/null || true
+    local wait_rc=$?
+    if [ $wait_rc -eq 1 ]; then
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "TRELLIS.2_rocm process died during startup"
+    elif [ $wait_rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "TRELLIS.2_rocm did not become ready within 600s"
+    fi
+    pass "TRELLIS.2_rocm HTTP server ready on port ${app_port}"
+
+    # --- Copy API helper into container ---
+    podman cp "$helper_src" "rocm:${helper_dst}"
+
+    # --- Run generation + GLB export (timeout: 6000s = ~100 min) ---
+    info "Running 3D generation + GLB export (resolution=512, 4 steps/phase)..."
+    info "Expected: ~20 min generation + ~5 min GLB extraction"
+
+    local api_out
+    api_out=$(podman exec -t rocm bash -c \
+        "source '${app_dir}/.venv/bin/activate' && \
+         python3 '${helper_dst}' 2>/dev/null" \
+        | tr -d '\r') || {
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "trellis2_rocm_api_helper.py failed"
+    }
+
+    # --- Check GENERATE_OK ---
+    if ! printf '%s' "$api_out" | grep -q "^GENERATE_OK"; then
+        info "API output: $api_out"
+        abort "3D generation did not complete (GENERATE_OK not found)"
+    fi
+    pass "3D generation completed"
+
+    # --- Check GLB_OK and file size ---
+    local glb_line
+    glb_line=$(printf '%s' "$api_out" | grep "^GLB_OK:" | head -1)
+    if [ -z "$glb_line" ]; then
+        info "API output: $api_out"
+        abort "GLB extraction did not complete (GLB_OK not found)"
     fi
 
-    # --- Check Generate ---
-    if echo "$test_output" | grep -q "^GENERATE_OK:"; then
-        local gen_line video_path gen_sz
-        gen_line=$(echo "$test_output" | grep "^GENERATE_OK:" | head -1)
-        video_path=$(echo "$gen_line" | cut -d: -f2)
-        gen_sz=$(echo "$gen_line"    | cut -d: -f3)
-        pass "TRELLIS Generate OK (video: ${video_path}, ${gen_sz} bytes)"
-    else
-        abort "TRELLIS Generate FAILED"
+    local glb_size
+    glb_size=$(printf '%s' "$glb_line" | cut -d: -f3)
+    if [ -z "$glb_size" ] || [ "$glb_size" -le 0 ] 2>/dev/null; then
+        abort "GLB file is empty or size unknown: $glb_line"
     fi
+    pass "GLB exported successfully (${glb_size} bytes)"
 
-    # --- Check Extract GLB ---
-    if echo "$test_output" | grep -q "^GLB_OK:"; then
-        local glb_line glb_path glb_sz
-        glb_line=$(echo "$test_output" | grep "^GLB_OK:" | head -1)
-        glb_path=$(echo "$glb_line" | cut -d: -f2)
-        glb_sz=$(echo "$glb_line"   | cut -d: -f3)
-        pass "TRELLIS Extract GLB OK (${glb_path}, ${glb_sz} bytes)"
-        if [ "${glb_sz:-0}" -lt 1024 ]; then
-            abort "GLB file suspiciously small (${glb_sz} bytes)"
-        fi
-    elif echo "$test_output" | grep -q "^GLB_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GLB_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract GLB FAILED: ${fail_msg}"
-    else
-        abort "TRELLIS Extract GLB: no result"
-    fi
+    # --- Verify GLB exists in container ---
+    local glb_path
+    glb_path=$(printf '%s' "$glb_line" | cut -d: -f2)
+    podman exec -t rocm bash -c "[ -s '${glb_path}' ] || [ -s '/tmp/trellis2_rocm_test.glb' ]" \
+        || abort "GLB file not found in container: ${glb_path}"
+    pass "GLB file verified in container"
 
-    # --- Check Extract Gaussian ---
-    if echo "$test_output" | grep -q "^GAUSSIAN_OK:"; then
-        local gs_line ply_path ply_sz
-        gs_line=$(echo "$test_output" | grep "^GAUSSIAN_OK:" | head -1)
-        ply_path=$(echo "$gs_line" | cut -d: -f2)
-        ply_sz=$(echo "$gs_line"   | cut -d: -f3)
-        pass "TRELLIS Extract Gaussian OK (${ply_path}, ${ply_sz} bytes)"
-        if [ "${ply_sz:-0}" -lt 1024 ]; then
-            abort "PLY file suspiciously small (${ply_sz} bytes)"
-        fi
-    elif echo "$test_output" | grep -q "^GAUSSIAN_FAIL:"; then
-        local fail_msg
-        fail_msg=$(echo "$test_output" | grep "^GAUSSIAN_FAIL:" | head -1 | cut -d: -f2-)
-        abort "TRELLIS Extract Gaussian FAILED: ${fail_msg}"
-    else
-        abort "TRELLIS Extract Gaussian: no result"
-    fi
-
-    # --- Stop server ---
-    info "Stopping TRELLIS-AMD..."
+    # --- Stop TRELLIS.2_rocm ---
+    info "Stopping TRELLIS.2_rocm..."
     podman exec -t rocm bash -c \
-        "pkill -f 'app\.py' 2>/dev/null; pkill -f 'trellis' 2>/dev/null; \
+        "pkill -f 'python.*app\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+        sleep 2; kw=$((kw + 2))
+        [ $kw -ge 20 ] && break
     done
-    pass "TRELLIS-AMD stopped"
+    pass "TRELLIS.2_rocm stopped"
 
     info "Phase 26 DONE"
 }
 
-main() { phase26_verify_trellis; }
+main() { phase26_verify_trellis2_rocm; }
 main "$@"

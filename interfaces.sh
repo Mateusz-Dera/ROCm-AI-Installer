@@ -65,8 +65,9 @@ basic_requirements(){
     local REPO=$1
     local FOLDER=${2:-$(basename "$REPO")}
     local BASENAME=$(basename "$REPO")
+    local UV_TOML="${3:-$SCRIPT_DIR/uv.toml}"
 
-    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
+    podman cp "$UV_TOML" "rocm:/AI/$FOLDER/uv.toml"
     podman cp "$SCRIPT_DIR/requirements/$BASENAME.txt" "rocm:/AI/$FOLDER/requirements.txt"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install --override requirements.txt -r requirements.txt"
 }
@@ -170,7 +171,7 @@ EOF"
 # ----- llama.cpp -----
 
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
-LLAMA_COMMIT="ac33f032ac41748ffa9aaefca07cfc16e732f73f"
+LLAMA_COMMIT="053e01dff68dc3419ae8337ea566722138e4376c"
 
 # llama.cpp
 install_llama_cpp() {
@@ -241,51 +242,6 @@ install_turboquant_rocm_llamacpp() {
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
     basic_run "$REPO" "$COMMAND" "&&"
-}
-
-# hipfire
-install_hipfire() {
-    REPO="https://github.com/Kaden-Schutt/hipfire"
-    COMMIT="e1e2bb854d0c30d80f392ccb33be691012cc3f9a"
-    FOLDER=$(basename "$REPO")
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-
-    # Redirect HIPFIRE_DIR from ~/.hipfire to /AI/hipfire (patch CLI before first run)
-    podman exec -t rocm bash -c "sed -i 's|const HIPFIRE_DIR = .*|const HIPFIRE_DIR = \"/AI/$FOLDER\";|' /AI/$FOLDER/cli/index.ts"
-
-    # Build inference daemon and quantizer
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && \
-        cargo build --release --features deltanet --example daemon -p hipfire-runtime && \
-        cargo build --release -p hipfire-quantize"
-
-    # Install Bun (runtime for the hipfire CLI wrapper)
-    podman exec -it rocm bash -c "curl -fsSL https://bun.sh/install | bash && \
-        ln -sf /root/.bun/bin/bun /usr/local/bin/bun"
-
-    # Create hipfire wrapper that explicitly calls bun with the repo's CLI
-    podman exec -t rocm bash -c "printf '#!/bin/bash\nexec bun run /AI/$FOLDER/cli/index.ts \"\$@\"\n' > /usr/local/bin/hipfire && chmod +x /usr/local/bin/hipfire"
-
-    # Create data dirs directly in /AI/hipfire (no ~/.hipfire needed)
-    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/model_to_convert /AI/$FOLDER/models /AI/$FOLDER/hf-cache"
-
-    # Pull default model into /AI/hipfire/models
-    podman exec -it rocm bash -c "hipfire pull qwen3.5:4b"
-
-    # Generate run.sh: always serve from /AI/hipfire/models (via ~/.hipfire/models symlink)
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
-#!/bin/bash
-if ! podman ps -a --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then
-    echo \"Error: Container 'rocm' does not exist.\"
-    exit 1
-fi
-if ! podman ps --format \"{{.Names}}\" | grep -q \"^rocm\$\"; then
-    echo \"Container rocm is not running. Starting...\"
-    podman start rocm
-fi
-podman exec -it rocm bash -c \"cd /AI/$FOLDER && hipfire serve\"
-RUNEOF
-chmod +x /AI/$FOLDER/run.sh"
 }
 
 # SillyTavern
@@ -482,12 +438,12 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="d3c18c163665a6f94e7dc56823aabcb93ebf7e5e"
+    COMMIT="264b003286c731f5d219d747622643e9dd50503b"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
     #fi
-    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --normalvram --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
     ADDONS="$@"
 
@@ -785,79 +741,6 @@ install_whisperspeech_web_ui(){
     basic_run "$REPO" "$COMMAND"
 }
 
-# F5-TTS
-install_f5_tts(){
-    REPO="https://github.com/SWivid/F5-TTS"
-    COMMIT="54c50eb8f655590ff6d7ad64aa065e61946621be"
-    COMMAND="f5-tts_infer-gradio --host 0.0.0.0"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-
-    # Initialize git submodules
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && git submodule update --init --recursive"
-
-    basic_requirements "$REPO"
-
-    # Install package in editable mode
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
-
-    # torchcodec is incompatible with ROCm (built for CUDA only) – remove it
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip uninstall torchcodec 2>/dev/null; true"
-
-    # float16 model.to() segfaults on ROCm in PyTorch 2.7+ – force float32
-    podman exec -t rocm bash -c "sed -i 's/torch\.float16/torch.float32/g' /AI/$FOLDER/src/f5_tts/infer/utils_infer.py"
-
-    # torch.stft segfaults on ROCm GPU – compute mel spectrogram on CPU
-    podman exec -t rocm bash -c "sed -i 's|).to(waveform.device)|)  # keep on CPU - GPU STFT segfaults on ROCm|' /AI/$FOLDER/src/f5_tts/model/modules.py && sed -i 's|    mel = mel_stft(waveform)|    orig_device = waveform.device\n    mel = mel_stft(waveform.cpu()).clamp(min=1e-5).log().to(orig_device)|' /AI/$FOLDER/src/f5_tts/model/modules.py"
-
-    # torchaudio 2.9+ requires torchcodec (CUDA only, incompatible with ROCm) – patch to use soundfile fallback
-    podman exec -t rocm bash -c "python3 - << 'PYEOF'
-import re
-path = '/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py'
-with open(path, 'r') as f:
-    content = f.read()
-old = '''    # Import torchcodec here to provide clear error if not available
-    try:
-        from torchcodec.decoders import AudioDecoder
-    except ImportError as e:
-        raise ImportError(
-            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
-        ) from e'''
-new = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
-    try:
-        from torchcodec.decoders import AudioDecoder
-        _USE_SOUNDFILE_FALLBACK = False
-    except (ImportError, RuntimeError):
-        _USE_SOUNDFILE_FALLBACK = True
-
-    if _USE_SOUNDFILE_FALLBACK:
-        import soundfile as sf
-        import numpy as np
-        import torch
-        data, sample_rate = sf.read(str(uri), dtype=\"float32\", always_2d=True)
-        waveform = torch.from_numpy(data.T)
-        if frame_offset > 0:
-            waveform = waveform[:, frame_offset:]
-        if num_frames != -1:
-            waveform = waveform[:, :num_frames]
-        if not channels_first:
-            waveform = waveform.T
-        return waveform, sample_rate'''
-if old in content:
-    content = content.replace(old, new)
-    with open(path, 'w') as f:
-        f.write(content)
-    print('torchaudio soundfile patch applied')
-else:
-    print('WARNING: torchaudio patch old string not found - may already be patched')
-PYEOF"
-
-    basic_run "$REPO" "$COMMAND"
-}
-
 # Soprano
 install_soprano(){
     REPO="https://github.com/Mateusz-Dera/soprano-rocm"
@@ -1116,7 +999,7 @@ install_trellis_2_rocm() {
     basic_container
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO" "3.11"
-    basic_requirements "$REPO"
+    basic_requirements "$REPO" "$FOLDER" "$SCRIPT_DIR/custom_files/$FOLDER/uv.toml"
 
     # flash-attn has no prebuilt ROCm wheel; build from source using the venv's torch
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
@@ -1127,6 +1010,12 @@ install_trellis_2_rocm() {
         uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
 
     podman exec -it rocm bash -c "sed -i 's/hashmap_build_submanifold_conv_neighbour_map_cuda/hashmap_build_submanifold_conv_neighbour_map/g' \
+        /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
+
+    # ROCM_SAFE_SPCONV safe path must apply for any N (not just N > ROCM_SAFE_CHUNK),
+    # because small inputs (N=59) also trigger segfault in SubmanifoldConv3d HIP kernel.
+    podman exec -it rocm bash -c "sed -i \
+        's/if sparse_config.ROCM_SAFE_SPCONV and N > ROCM_SAFE_CHUNK:/if sparse_config.ROCM_SAFE_SPCONV:/' \
         /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
 
     podman exec -it rocm bash -c "
@@ -1186,6 +1075,7 @@ if ! podman ps --format '{{.Names}}' | grep -q '^rocm$'; then
 fi
 podman exec -t rocm bash -c 'chown -R root:root /AI/kimodo/ 2>/dev/null || true'
 podman exec -it rocm bash -c 'cd /AI/kimodo && source .venv/bin/activate && TEXT_ENCODER_DEVICE=cpu kimodo_demo'
+podman exec -t rocm bash -c 'chown -R root:root /AI/kimodo/ 2>/dev/null || true'
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }

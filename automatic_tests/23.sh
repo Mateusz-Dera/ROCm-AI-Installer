@@ -5,98 +5,163 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 23: ComfyUI workflow – Wan-2.2-5B-text-to-video
+# PHASE 23: RUN AND VERIFY – PartCrafter (image-to-3D parts)
 # ============================================================
-phase23_comfyui_wan_t2v() {
+phase23_verify_partcrafter() {
     info "============================================="
-    info "PHASE 23: ComfyUI – Wan-2.2-5B-text-to-video"
+    info "PHASE 23: RUN AND VERIFY (PartCrafter)"
     info "============================================="
-
-    local app_port=8188
-    local app_dir="/AI/ComfyUI"
-    local app_log="/tmp/comfyui_server.log"
-    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-text-to-video.json"
-    local workflow_dst="/tmp/comfyui_workflow_18.json"
-    local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
-    local helper_dst="/tmp/comfyui_run_workflow.py"
 
     basic_container || abort "Container 'rocm' is not running."
 
-    # --- Kill old ComfyUI instances ---
-    podman exec -t rocm bash -c \
-        "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+    local app_dir="/AI/PartCrafter"
+    local app_port=7860
+    local app_log="/tmp/partcrafter_server.log"
+    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
+    local output_glb="/tmp/partcrafter_object.glb"
 
-    # --- Start ComfyUI ---
-    info "Starting ComfyUI on port ${app_port}..."
+    # --- Kill old instances and clear log ---
+    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
+    sleep 3
+    podman exec -t rocm bash -c \
+        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+
+    # --- Start PartCrafter ---
+    info "Starting PartCrafter on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
-         uv run main.py --listen 0.0.0.0 --enable-manager --normalvram \
-         --preview-method auto --dont-upcast-attention --bf16-vae \
-         --use-pytorch-cross-attention --reserve-vram 2.0 \
-         >> '${app_log}' 2>&1"
+         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
 
-    info "Waiting for ComfyUI to become ready (up to 300s)..."
-    local rc
-    wait_for_http \
-        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
-        "main\.py" "${app_log}" 300 "Starting server"
-    rc=$?
-    if [ $rc -eq 1 ]; then
+    # --- Wait for Gradio API (model downloads + loads at startup) ---
+    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
+    local waited=0 max_wait=600 ready=false
+    while [ $waited -lt $max_wait ]; do
+        if podman exec -t rocm bash -c \
+               "curl -sf http://localhost:${app_port}/gradio_api/info \
+                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
+            ready=true; break
+        fi
+        sleep 5; waited=$((waited + 5))
+        info "  ...waiting ($waited/${max_wait}s)"
+    done
+    if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ComfyUI process died"
-    elif [ $rc -eq 2 ]; then
+        abort "PartCrafter did not become ready within ${max_wait}s"
+    fi
+    pass "PartCrafter Gradio API ready on port ${app_port}"
+
+    # --- Resolve actual endpoint name from /gradio_api/info ---
+    local endpoint_name
+    endpoint_name=$(podman exec -t rocm bash -c "
+        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
+    | head -1 | tr -d '"') || endpoint_name=""
+    if [ -z "$endpoint_name" ]; then
+        endpoint_name="/generate_parts"
+        info "Could not detect endpoint from info – using default: ${endpoint_name}"
+    else
+        info "Detected endpoint: ${endpoint_name}"
+    fi
+
+    # --- Upload example image ---
+    info "Uploading example image..."
+    local upload_response
+    upload_response=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
+            -F 'files=@${example_img}' | tr -d '\r'
+    " 2>/dev/null) || upload_response=""
+
+    local uploaded_path
+    uploaded_path=$(echo "$upload_response" \
+        | grep -o '"[^"]*"' | head -1 \
+        | tr -d '"') || uploaded_path=""
+
+    if [ -z "$uploaded_path" ]; then
+        info "Upload response: $upload_response"
+        abort "PartCrafter: failed to upload example image"
+    fi
+    info "Image uploaded: ${uploaded_path}"
+
+    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
+    info "Requesting 3D generation (2 parts, 10 inference steps)..."
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
+                2,
+                42,
+                512,
+                10,
+                7.0,
+                false,
+                false,
+                false
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "PartCrafter: no event_id returned from ${endpoint_name}"
+    fi
+    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
+
+    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 1800 \
+            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "PartCrafter 3D generation OK (files returned)"
+
+        # Extract object.glb path (first output = merged model)
+        local glb_path
+        glb_path=$(echo "$gen_result" \
+            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
+            | sed 's/"path": *"//;s/"//') || glb_path=""
+
+        if [ -n "$glb_path" ]; then
+            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
+            local fsize
+            fsize=$(podman exec -t rocm bash -c \
+                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || fsize=0
+            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 1024 ]; then
+                abort "object.glb is suspiciously small (${fsize} bytes)"
+            fi
+        else
+            info "  Warning: could not extract GLB path from result"
+            info "  Raw result: $gen_result"
+        fi
+    else
+        info "Raw result: $gen_result"
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "ComfyUI did not become ready within 300s"
-    fi
-    pass "ComfyUI ready"
-
-    # --- Copy workflow JSON and helper into container ---
-    podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
-        abort "Failed to copy workflow JSON into container"
-    podman cp "${helper_src}" "rocm:${helper_dst}" || \
-        abort "Failed to copy comfyui_run_workflow.py into container"
-
-    # --- Run workflow ---
-    # NOTE: Wan 5B text-to-video with 97 frames / 20 steps can take 1-3 hours.
-    info "Running Wan-2.2-5B-text-to-video workflow (up to 3h)..."
-    local test_output
-    test_output=$(podman exec -t rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_18_stderr.txt" \
-        | tr -d '\r') || true
-
-    if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
-        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_18_stderr.txt" 2>/dev/null || true
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "Wan-2.2-5B-text-to-video workflow FAILED"
+        abort "PartCrafter generation did not return file data"
     fi
 
-    local out_line out_path out_sz
-    out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
-    out_path=$(echo "$out_line" | cut -d: -f2)
-    out_sz=$(echo "$out_line"   | cut -d: -f3)
-    pass "Wan-2.2-5B-text-to-video output OK (${out_path}, ${out_sz} bytes)"
-    if [ "${out_sz:-0}" -lt 10240 ]; then
-        abort "Output video suspiciously small (${out_sz} bytes)"
-    fi
-    pass "Output size OK (${out_sz} bytes >= 10 KB)"
-
-    # --- Stop ComfyUI ---
-    info "Stopping ComfyUI..."
-    podman exec -t rocm bash -c \
-        "pkill -f 'main\.py' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    # --- Stop server ---
+    info "Stopping PartCrafter..."
+    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
+    sleep 2
+    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "ComfyUI stopped"
+    pass "PartCrafter stopped"
 
     info "Phase 23 DONE"
 }
 
-main() { phase23_comfyui_wan_t2v; }
+main() { phase23_verify_partcrafter; }
 main "$@"

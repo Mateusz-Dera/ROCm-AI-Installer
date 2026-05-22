@@ -5,137 +5,78 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 16: RUN AND VERIFY – ACE-Step (text-to-music)
+# PHASE 16: RUN AND VERIFY – ComfyUI (startup + API ready)
 # ============================================================
-phase16_verify_acestep() {
+phase16_verify_comfyui() {
     info "============================================="
-    info "PHASE 16: RUN AND VERIFY (ACE-Step)"
+    info "PHASE 16: RUN AND VERIFY (ComfyUI startup)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/ACE-Step"
-    local app_port=7860
-    local app_log="/tmp/acestep_server.log"
+    local app_dir="/AI/ComfyUI"
+    local app_port=8188
+    local app_log="/tmp/comfyui_server.log"
 
     # --- Kill old instances and clear log ---
+    podman exec -t rocm bash -c "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; true" 2>/dev/null || true
+    sleep 3
     podman exec -t rocm bash -c \
-        "pkill -f 'acestep' 2>/dev/null; pkill -f 'MIOPEN_FIND_MODE' 2>/dev/null; \
-         fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; : > '${app_log}'" || true
+        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start ACE-Step ---
-    info "Starting ACE-Step on port ${app_port}..."
+    # --- Start ComfyUI ---
+    info "Starting ComfyUI on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         MIOPEN_FIND_MODE=3 PYTORCH_TUNABLEOP_ENABLED=1 \
-         uv run acestep --checkpoint_path ./checkpoints \
-             --server_name 0.0.0.0 --bf16 True \
+         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
+         uv run main.py --listen 0.0.0.0 --enable-manager \
+         --preview-method auto --dont-upcast-attention --bf16-vae \
+         --use-pytorch-cross-attention --reserve-vram 2.0 \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API to become ready (model loads at startup) ---
-    info "Waiting for ACE-Step Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
+    # --- Wait for /system_stats (ComfyUI ready) ---
+    info "Waiting for ComfyUI to become ready (up to 300s)..."
+    local waited rc
+    wait_for_http \
+        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
+        "main\.py" \
+        "${app_log}" \
+        300 \
+        "Starting server"
+    rc=$?
+    if [ $rc -eq 1 ]; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step did not become ready within ${max_wait}s"
+        abort "ComfyUI process died before becoming ready"
+    elif [ $rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "ComfyUI did not become ready within 300s"
     fi
-    pass "ACE-Step Gradio API ready on port ${app_port}"
+    pass "ComfyUI API ready on port ${app_port}"
 
-    # --- Generate a short test song via the /__call__ endpoint ---
-    # infer_step=20 (faster than default 60), audio_duration=15s
-    info "Requesting music generation (15s, 20 infer steps)..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/__call__ \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"wav\",
-                15,
-                \"pop, simple, calm, test\",
-                \"[verse]\nThis is a test song\nSimple melody\n\",
-                20,
-                15.0,
-                \"euler\",
-                \"apg\",
-                10.0,
-                null,
-                0.5,
-                0.0,
-                3.0,
-                true,
-                false,
-                true,
-                null,
-                0.0,
-                0.0,
-                false,
-                0.5,
-                null,
-                \"none\",
-                1.0
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step: no event_id returned from /__call__"
+    # --- Quick sanity check: /object_info returns known node types ---
+    local node_count
+    node_count=$(podman exec -t rocm bash -c \
+        "curl -sf http://localhost:${app_port}/object_info | python3 -c 'import sys,json; d=json.load(sys.stdin); print(len(d))'" \
+        | tr -d '\r\n') || node_count=0
+    if [ "${node_count:-0}" -lt 50 ]; then
+        abort "ComfyUI /object_info returned only ${node_count} node types (expected >=50)"
     fi
-    info "Generation started (event_id: $event_id) – polling result..."
-
-    # --- Poll result (SSE stream) – up to 600s ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 600 \
-            http://localhost:${app_port}/gradio_api/call/__call__/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$gen_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "ACE-Step music generation OK (audio file returned)"
-        # Extract and log the file path
-        local audio_path
-        audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
-        if [ -n "$audio_path" ]; then
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
-        fi
-    else
-        info "Raw generation result: $gen_result"
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step generation did not return audio data"
-    fi
+    pass "ComfyUI /object_info OK (${node_count} node types)"
 
     # --- Stop server ---
-    info "Stopping ACE-Step..."
+    info "Stopping ComfyUI..."
     podman exec -t rocm bash -c \
-        "pkill -f 'acestep' 2>/dev/null; pkill -f 'MIOPEN_FIND_MODE' 2>/dev/null; \
-         fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+        "pkill -f 'main\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "ACE-Step stopped"
+    pass "ComfyUI stopped"
 
     info "Phase 16 DONE"
 }
 
-main() { phase16_verify_acestep; }
+main() { phase16_verify_comfyui; }
 main "$@"

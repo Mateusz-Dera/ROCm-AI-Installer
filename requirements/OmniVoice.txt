@@ -59,11 +59,11 @@ sympy==1.14.0
 tensorboardx==2.6.4
 tokenizers==0.22.2
 tomlkit==0.13.3
-torch==2.8.0+rocm7.2.3.lw.git2742f6d1
-torchaudio==2.8.0+rocm7.2.3.git6e1c7fe9
+torch==2.10.0+rocm7.2.3.lw.git1a270074
+torchaudio==2.10.0+rocm7.2.3.git5047768f
 tqdm==4.67.3
 transformers==5.3.0
-triton==3.4.0+rocm7.2.3.git0cace8d2
+triton==3.6.0+rocm7.2.3.git4ed88892
 typer==0.24.1
 typing-extensions==4.15.0
 typing-inspection==0.4.2

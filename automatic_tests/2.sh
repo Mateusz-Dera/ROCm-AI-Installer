@@ -42,7 +42,6 @@ phase2_install() {
     run_install "llama.cpp-vulkan"       install_llama_cpp_vulkan       "/AI/llama.cpp-vulkan"
     run_install "turboquant-rocm-llamacpp"   install_turboquant_rocm_llamacpp   "/AI/turboquant-rocm-llamacpp"
     run_install "Atomic llama.cpp" install_atomic_llama_cpp_turboquant "/AI/atomic-llama-cpp-turboquant"
-    run_install "hipfire"          install_hipfire          "/AI/hipfire"
 
     # SillyTavern (run.sh uses &&, no venv activate needed)
     run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
@@ -80,7 +79,6 @@ phase2_install() {
 
     # ---- Voice generation ----
     run_install "WhisperSpeech web UI" install_whisperspeech_web_ui "/AI/whisperspeech-webui"
-    run_install "F5-TTS"              install_f5_tts              "/AI/F5-TTS"
     run_install "Soprano"             install_soprano             "/AI/soprano-rocm"
     run_install "OmniVoice"           install_omnivoice           "/AI/OmniVoice"
 

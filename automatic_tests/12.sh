@@ -5,112 +5,113 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 12: WhisperSpeech web UI – startup and generation test
+# PHASE 12: RUN AND VERIFY – Soprano (text-to-speech)
 # ============================================================
-phase12_whisperspeech() {
+phase12_verify_soprano() {
     info "============================================="
-    info "PHASE 12: WHISPERSPEECH WEB UI"
+    info "PHASE 12: RUN AND VERIFY (Soprano)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local ws_dir="/AI/whisperspeech-webui"
-    local ws_port=7860
-    local ws_log="/tmp/whisper_server.log"
+    local app_dir="/AI/soprano-rocm"
+    local app_log="/tmp/soprano_server.log"
+    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
-    # Kill old instances and clear log
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '$ws_log'" || true
+    # --- Kill old instances, free port, clear log ---
+    # pkill -f 'soprano' kills bash itself (its cmdline contains 'soprano'),
+    # so run in isolation. VLLM EngineCore renames its cmdline to
+    # "VLLM::EngineCore" — use pgrep (matches comm, not bash) to kill safely.
+    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
+    sleep 3
+    podman exec -t rocm bash -c \
+        "fuser -k 7860/tcp 2>/dev/null; fuser -k 7861/tcp 2>/dev/null; \
+         sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start server in background ---
-    info "Starting WhisperSpeech web UI (port $ws_port)..."
+    # --- Start Soprano ---
+    info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
-        "cd '$ws_dir' && source .venv/bin/activate \
-         && uv run --extra rocm webui.py --listen --api \
-         >> '$ws_log' 2>&1"
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
+         >> '${app_log}' 2>&1"
 
-    # --- Wait for readiness (up to 180 s – model loads at startup) ---
-    info "Waiting for WhisperSpeech web UI to become ready..."
-    local waited=0 max_wait=180 ready=false
+    # Wait for Soprano to load the model and start Gradio (model loads BEFORE
+    # Gradio starts, so "Starting Gradio interface" implies model is ready).
+    # Initial sleep avoids reading stale log content from a previous run.
+    info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
+    sleep 5
+    local app_port="" waited=5 max_wait=300
     while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${ws_port}/ > /dev/null" 2>/dev/null; then
-            ready=true
-            break
-        fi
-        sleep 5
-        waited=$((waited + 5))
+        app_port=$(podman exec -t rocm bash -c \
+            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
+            | tr -d '\r\n') || app_port=""
+        [ -n "$app_port" ] && break
+        sleep 5; waited=$((waited + 5))
         info "  ...waiting ($waited/${max_wait}s)"
     done
-
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech web UI did not start within ${max_wait}s"
+    if [ -z "$app_port" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: could not detect port from log within ${max_wait}s"
     fi
-    pass "WhisperSpeech web UI is running on port $ws_port"
+    pass "Soprano ready on port ${app_port} (model loaded)"
 
-    # --- Wait for Gradio API to become ready (/gradio_api/info) ---
-    info "Waiting for Gradio API to become ready..."
-    # api_max=600: first run requires model download (~several minutes)
-    local api_info="" api_waited=0 api_max=600
-    while [ $api_waited -lt $api_max ]; do
-        api_info=$(podman exec -t rocm bash -c \
-            "curl -sf http://localhost:${ws_port}/gradio_api/info" 2>/dev/null \
-            | tr -d '\r') || true
-        if echo "$api_info" | grep -q '"named_endpoints"'; then break; fi
-        sleep 5; api_waited=$((api_waited + 5))
-        info "  ...API not ready yet ($api_waited/${api_max}s)"
-    done
-
-    if ! echo "$api_info" | grep -q '"named_endpoints"'; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech Gradio API did not become ready within ${api_max}s"
-    fi
-    pass "Gradio API ready"
-
-    # Extract first named endpoint name, strip leading /
-    local tts_fn
-    tts_fn=$(echo "$api_info" \
-        | grep -o '"named_endpoints":{"[^"]*"' \
-        | grep -o '"[^"]*"$' | tr -d '"' | sed 's|^/||')
-    info "TTS endpoint: /gradio_api/call/${tts_fn}"
-
-    # --- TTS generation test (Gradio 6.x: POST /gradio_api/call/{fn}) ---
-    info "Testing TTS generation (text: 'Test audio generation')..."
+    # --- Generate speech (streaming=false → single audio file returned) ---
+    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
     local event_id
     event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${ws_port}/gradio_api/call/${tts_fn} \
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
-                \"collabora/whisperspeech:s2a-q4-tiny-en+pl.model\",
-                \"Test audio generation\",
-                13.5, null, \"wav\", false
+                \"${REF_TEXT}\",
+                0.0,
+                0.95,
+                1.2,
+                1,
+                false
             ]}' | tr -d '\r'
-    " 2>/dev/null | grep -o '"event_id":"[^"]*"' | grep -o '[^:]*$' | tr -d '"') || true
+    " 2>/dev/null \
+    | grep -o '"event_id":"[^"]*"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
 
     if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech TTS: no event_id returned from /gradio_api/call/${tts_fn}"
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: no event_id returned from /generate_speech"
     fi
-    info "TTS event_id: $event_id – polling result..."
+    info "Generation started (event_id: $event_id) – polling result..."
 
-    local tts_result
-    tts_result=$(podman exec -t rocm bash -c "
+    # --- Poll result (SSE stream) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
         curl -sf --max-time 120 \
-            http://localhost:${ws_port}/gradio_api/call/${tts_fn}/${event_id} \
+            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
         | tr -d '\r'
     " 2>/dev/null) || true
 
-    if echo "$tts_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "WhisperSpeech TTS generation OK (audio file returned)"
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "Soprano speech generation OK (audio returned)"
     else
-        info "Raw TTS result: $tts_result"
-        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
-        abort "WhisperSpeech TTS API did not return audio data"
+        info "Raw result: $gen_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "Soprano generation did not return audio data"
     fi
+
+    # --- Stop server ---
+    info "Stopping Soprano..."
+    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
+    sleep 2
+    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    local kw=0
+    while podman exec -t rocm bash -c \
+            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
+        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+    done
+    pass "Soprano stopped"
 
     info "Phase 12 DONE"
 }
 
-main() { phase12_whisperspeech; }
-
+main() { phase12_verify_soprano; }
 main "$@"
