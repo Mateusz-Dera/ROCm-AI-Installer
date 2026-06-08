@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-15-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-15.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 ![ROCm](https://img.shields.io/badge/ROCm-7.2.3-red.svg)
 
@@ -21,8 +21,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |GPU|AMD Radeon 7900XTX|
 |RAM|64GB DDR5 6600MHz|
 |Motherboard|Gigabyte X870 AORUS ELITE WIFI7 (BIOS F8)|
-|OS|Debian 13.4|
-|Kernel|6.12.74+deb13+1-amd64|
+|OS|Debian 13.5|
+|Kernel|6.12.90+deb13.1-amd64|
 
 ###  Text generation:
 |Name|Links|Additional information|
@@ -73,13 +73,14 @@ Installation scripts for an AI applications using ROCm on Linux.
 |TRELLIS-AMD|https://github.com/CalebisGross/TRELLIS-AMD|GLB Export Takes 5-10 Minutes.<br> Mesh preview may show grey, but the actual export works correctly.|
 |TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.|
 |Kimodo|https://github.com/nv-tlabs/kimodo|1. Set <b>HuggingFace Token</b> in Variables.<br> 2. Request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (required for text encoder).|
+|TripoSplat|https://github.com/VAST-AI-Research/TripoSplat||
 
 ## Instalation:
 
 1\. Install Podman.
 
 > [!Note]
-> If you are using Debian 13.4, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 26.04)
+> If you are using Debian 13.5, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 26.04)
 
 2\. Make sure that <b>/dev/dri</b> and <b>/dev/kfd</b> are accessible.
 ```bash

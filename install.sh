@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="15"
+VERSION="15.1"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -634,11 +634,12 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
             1 "Install PartCrafter" \
             2 "InstallTRELLIS-AMD" \
             3 "Install TRELLIS.2_rocm" \
             4 "Install Kimodo" \
+            5 "Install TripoSplat" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -653,6 +654,9 @@ d3_generation() {
                 ;;
             "4")
                 install_kimodo
+                ;;
+            "5")
+                install_triposplat
                 ;;
             "")
                 echo "Previous menu..."

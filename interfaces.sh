@@ -1080,6 +1080,22 @@ RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
 
+# TripoSplat
+install_triposplat(){
+    REPO="https://github.com/VAST-AI-Research/TripoSplat"
+    COMMIT="a78fa12d06dbf1381ca548bfac32bb68cb8c451d"
+    COMMAND="python run_gradio.py"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+    basic_run "$REPO" "$COMMAND"
+
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && hf download VAST-AI/TripoSplat --local-dir ckpts/"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"
