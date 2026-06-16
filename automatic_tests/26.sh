@@ -16,6 +16,14 @@ phase26_verify_trellis2_rocm() {
 
     basic_container || abort "Container 'rocm' is not running."
 
+    # --- Require HF_TOKEN ---
+    local hf_tok
+    hf_tok=$(podman exec -t rocm bash -c 'printf "%s" "${HF_TOKEN:-}"' | tr -d '\r')
+    if [ -z "$hf_tok" ]; then
+        abort "HF_TOKEN is not set in the container — required for TRELLIS.2_rocm model download"
+    fi
+    info "HF_TOKEN is set"
+
     local app_dir="/AI/TRELLIS.2_rocm"
     local app_port=7860
     local app_log="/tmp/trellis2_rocm_server.log"

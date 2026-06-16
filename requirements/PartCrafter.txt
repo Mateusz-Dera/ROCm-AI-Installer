@@ -69,12 +69,12 @@ sympy==1.14.0
 tifffile==2026.2.24
 tokenizers==0.22.2
 tomlkit==0.13.3
-torch==2.10.0+rocm7.2.3.lw.git1a270074
-torchvision==0.25.0+rocm7.2.3.git82df5f59
+torch==2.10.0+rocm7.2.4.lw.git3d3aa833
+torchvision==0.25.0+rocm7.2.4.git82df5f59
 tqdm==4.67.3
 transformers==5.2.0
 trimesh==4.11.2
-triton==3.6.0+rocm7.2.3.git4ed88892
+triton==3.6.0+rocm7.2.4.git4ed88892
 typer==0.24.1
 typer-slim==0.24.0
 typing-extensions==4.15.0

@@ -125,9 +125,9 @@ install_koboldcpp() {
 # TabbyAPI
 install_tabbyapi() {
     REPO="https://github.com/theroyallab/tabbyAPI"
-    COMMIT="41511f56c65ff0d5d7d7fca2adc07a0b0a7a508a"
+    COMMIT="d2d87bb9e0eca60fce92e9f2d163289f9580f8a3"
     EXLLAMA_REPO="https://github.com/turboderp-org/exllamav2"
-    EXLLAMA_COMMIT="6a2d8311408aa23af34e8ec32e28085ea68dada7"
+    EXLLAMA_COMMIT="7dc12af3a81f34ac3f27cd7602ed539b638933ca"
     COMMAND="python main.py"
     FOLDER=$(basename "$REPO")
 
@@ -171,7 +171,7 @@ EOF"
 # ----- llama.cpp -----
 
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
-LLAMA_COMMIT="053e01dff68dc3419ae8337ea566722138e4376c"
+LLAMA_COMMIT="32120c10e33baae8061e9961e6c3f1248302a331"
 
 # llama.cpp
 install_llama_cpp() {
@@ -205,7 +205,7 @@ install_llama_cpp_vulkan() {
 
 install_atomic_llama_cpp_turboquant() {
     REPO="https://github.com/AtomicBot-ai/atomic-llama-cpp-turboquant"
-    COMMIT="0a635dcd92ba66c75fccfef91c3e106f4668f367"
+    COMMIT="cc59fcb6a8765a9711cb3a2c349a788a40cca6ce"
     FOLDER=$(basename "$REPO")
     COMMAND="./build/bin/llama-server -m model.gguf --mtp-head model_mtp.gguf --spec-type mtp --draft-block-size 5 --host 0.0.0.0 --port 8080 -c 262144 --cache-type-k turbo3 --cache-type-v turbo3 -ngl 99 -ngld 99 -fa on"
 
@@ -438,7 +438,7 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="264b003286c731f5d219d747622643e9dd50503b"
+    COMMIT="b732aa192f83f926b4ce7e54e6a6224d8e312ce4"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -604,7 +604,7 @@ PYEOF"
 # ACE-Step
 install_ace_step() {
     REPO="https://github.com/ace-step/ACE-Step"
-    COMMIT="6ae0852b1388de6dc0cca26b31a86d711f723cb3"
+    COMMIT="1bee4c9f5b43e30995f8d4d33b3919197ce1bd68"
     COMMAND="MIOPEN_FIND_MODE=3 PYTORCH_TUNABLEOP_ENABLED=1 uv run acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0 --bf16 True"
     FOLDER=$(basename "$REPO")
 
@@ -675,7 +675,7 @@ PYEOF
 # ACE-Step-1.5
 install_ace_step_1_5() {
     REPO="https://github.com/ace-step/ACE-Step-1.5"
-    COMMIT="97ac5116c103c05532e4968a83b9046181248da6"
+    COMMIT="dce621408bee8c31b4fcf4811682eb9359e1bc94"
     COMMAND="ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST python -m acestep.acestep_v15_pipeline --server-name 0.0.0.0 --port 7860 --config_path acestep-v15-turbo --lm_model_path acestep-5Hz-lm-4B --init_service true --backend pt"
     FOLDER=$(basename "$REPO")
 
@@ -776,11 +776,15 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     basic_git "$REPO" "$COMMIT"
     basic_venv "$REPO" "3.12"
 
+    # vllm must be installed first — it manages torch/torchaudio/torchvision/triton/amd-aiter
+    # (vllm 0.23.0+rocm723 bundles its own torch build, not from ROCm manylinux)
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install 'vllm==0.23.0+rocm723' --extra-index-url https://wheels.vllm.ai/rocm/"
+
     basic_requirements "$REPO"
 
     basic_pip "$REPO" "/opt/rocm/share/amd_smi"
 
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install vllm --extra-index-url https://wheels.vllm.ai/rocm/"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
 
     basic_run "$REPO" "$COMMAND"

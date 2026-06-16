@@ -47,10 +47,10 @@ six==1.17.0
 starlette==1.2.1
 sympy==1.14.0
 tomlkit==0.14.0
-torch==2.10.0+rocm7.2.3.lw.git1a270074
-torchvision==0.25.0+rocm7.2.3.git82df5f59
+torch==2.10.0+rocm7.2.4.lw.git3d3aa833
+torchvision==0.25.0+rocm7.2.4.git82df5f59
 tqdm==4.68.1
-triton==3.6.0+rocm7.2.3.git4ed88892
+triton==3.6.0+rocm7.2.4.git4ed88892
 typer==0.25.1
 typing-extensions==4.15.0
 typing-inspection==0.4.2

@@ -16,6 +16,14 @@ phase25_verify_kimodo() {
 
     basic_container || abort "Container 'rocm' is not running."
 
+    # --- Require HF_TOKEN ---
+    local hf_tok
+    hf_tok=$(podman exec -t rocm bash -c 'printf "%s" "${HF_TOKEN:-}"' | tr -d '\r')
+    if [ -z "$hf_tok" ]; then
+        abort "HF_TOKEN is not set in the container — required for kimodo model download"
+    fi
+    info "HF_TOKEN is set"
+
     local app_dir="/AI/kimodo"
     local app_port=7860
     local out_npz="/tmp/kimodo_test_gen.npz"

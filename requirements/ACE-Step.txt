@@ -126,13 +126,13 @@ thinc==8.3.10
 threadpoolctl==3.6.0
 tokenizers==0.22.2
 tomlkit==0.13.3
-torch==2.10.0+rocm7.2.3.lw.git1a270074
-torchaudio==2.10.0+rocm7.2.3.git5047768f
+torch==2.10.0+rocm7.2.4.lw.git3d3aa833
+torchaudio==2.10.0+rocm7.2.4.git5047768f
 torchmetrics==1.8.2
-torchvision==0.25.0+rocm7.2.3.git82df5f59
+torchvision==0.25.0+rocm7.2.4.git82df5f59
 tqdm==4.67.3
 transformers==5.1.0
-triton==3.6.0+rocm7.2.3.git4ed88892
+triton==3.6.0+rocm7.2.4.git4ed88892
 typer==0.21.1
 typer-slim==0.21.1
 typing-extensions==4.15.0
