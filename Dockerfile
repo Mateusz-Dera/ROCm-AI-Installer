@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y \
 # Add AMD ROCm repositories
 RUN mkdir -p /etc/apt/keyrings && \
     wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null
-RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/31.30/ubuntu noble main" \
+RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/31.30/ubuntu resolute main" \
         > /etc/apt/sources.list.d/amdgpu.list && \
     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.2.4 noble main" \
         > /etc/apt/sources.list.d/rocm.list && \
@@ -80,8 +80,8 @@ RUN apt-get install -y \
     rocrand rocrand-dev rocfft rocfft-dev rocprim rocprim-dev rocthrust rocthrust-dev rocprofiler-sdk hsa-amd-aqlprofile \
     miopen-hip miopen-hip-dev
 
-# libxml2 symlink: ROCm lld was built against libxml2.so.2 (Ubuntu 24.04 soname),
-# Ubuntu 26.04 ships libxml2.so.16 — create compat symlink
+# libxml2 symlink: ROCm apt packages (noble) were built against libxml2.so.2,
+# Ubuntu 26.04 (resolute) ships libxml2.so.16 — create compat symlink
 RUN ln -sf /usr/lib/x86_64-linux-gnu/libxml2.so.16 /usr/lib/x86_64-linux-gnu/libxml2.so.2
 
 # Vulkan
