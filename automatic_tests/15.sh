@@ -57,11 +57,14 @@ phase15_verify_ace_step_1_5() {
     pass "ACE-Step-1.5 Gradio API ready on port ${app_port}"
 
     # --- Generate a short test song via /generation_wrapper ---
-    # Parameters: 64 total (59 visible + 5 hidden gr.State components)
+    # Parameters: 78 total (72 visible + 6 hidden gr.State)
+    #   Hidden: task_type (gr.State, pos 20), is_format_caption_state (pos 48),
+    #           current_batch_index/total_batches/batch_queue/generation_params_state (pos 74-77)
     # DiT Inference Steps max = 20 for acestep-v15-turbo config
     # Audio Duration = 30s (minimum)
-    # Hidden gr.State positions: index 42 (after CoT Language Detection),
-    #   and indices 60-63 (at the end)
+    # New params vs previous: use_adg(22), dcw_mode/scaler/high_scaler/wavelet/custom_timesteps(31-35),
+    #   retake_seed(66), flow_edit_morph/source_caption/source_lyrics/n_min/n_max/n_avg(67-72),
+    #   autogen_checkbox(73)
     info "Requesting music generation (30s clip, DiT steps=20)..."
     local gen_event_id
     gen_event_id=$(podman exec -t rocm bash -c "
@@ -72,14 +75,20 @@ phase15_verify_ace_step_1_5() {
                 \"[Verse]\\nThis is a test song\\nWith a simple melody\",
                 120, \"C Major\", \"4/4\", \"en\",
                 20, 7.0, true, \"\", null, 30, 1, null, \"\",
-                0, -1, \"\", 0.0, 0.0, \"text2music\",
-                false, 0.0, 1.0, 3.0, \"ode\", \"euler\", 0.0, 0.0, \"\",
+                0, -1, \"\", 0.0, 0.0,
+                \"text2music\",
+                false, false,
+                0.0, 1.0, 3.0, \"ode\", \"euler\", 0.0, 0.0,
+                false, \"double\", 0.05, 0.02, \"haar\", \"\",
                 \"wav\", \"128k\", 48000, 1.0, false, 1.0, 0, 1.0, \"\",
                 false, false, true,
                 null,
                 false, false, false, false, 0.01, 1,
                 \"woodwinds\", [\"woodwinds\"],
-                false, -10.0, 0.0, 0.0, -0.2, 0.5, \"conservative\", 0.0, false,
+                false, -10.0, 0.0, 0.0, -0.2, 0.5, \"conservative\", 0.0,
+                0.0, \"\",
+                false, null, null, 0.0, 1.0, 1,
+                false,
                 null, null, null, null
             ]}' | tr -d '\r'
     " 2>/dev/null \
