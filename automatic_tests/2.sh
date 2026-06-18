@@ -87,6 +87,7 @@ phase2_install() {
     run_install "TRELLIS-AMD"   install_trellis        "/AI/TRELLIS-AMD"
     run_install "TRELLIS.2_rocm" install_trellis_2_rocm "/AI/TRELLIS.2_rocm"
     run_install "Kimodo"        install_kimodo         "/AI/kimodo"
+    run_install "TripoSplat"   install_triposplat     "/AI/TripoSplat"
 
     info "Phase 2 DONE"
 }

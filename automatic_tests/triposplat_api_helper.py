@@ -6,7 +6,7 @@ verifies PLY output exists and is non-empty.
 Prints PLY_OK:<path>:<size> on success.
 """
 import os, json, uuid, subprocess
-import requests
+import httpx
 
 BASE_URL   = "http://localhost:7860"
 IMAGE_PATH = "/AI/TripoSplat/static/example_inputs/creature_butterfly.webp"
@@ -23,10 +23,9 @@ def log(msg):
 
 def _stream_queue_data(event_id, timeout):
     url = f"{BASE_URL}/gradio_api/queue/data?session_hash={SESSION_HASH}"
-    resp = requests.get(url, stream=True, timeout=timeout + 10)
-    resp.raise_for_status()
-    try:
-        for raw in resp.iter_lines(decode_unicode=True):
+    with httpx.stream("GET", url, timeout=httpx.Timeout(timeout + 10)) as resp:
+        resp.raise_for_status()
+        for raw in resp.iter_lines():
             line = raw.strip()
             if not line.startswith("data:"):
                 continue
@@ -48,13 +47,11 @@ def _stream_queue_data(event_id, timeout):
                 log(f"  generating: {str(data)[:80]}")
             elif kind == "unexpected_error":
                 raise RuntimeError(f"unexpected_error: {msg.get('message')}")
-    finally:
-        resp.close()
     raise RuntimeError("queue/data SSE stream ended unexpectedly")
 
 
 def call(name, data, timeout=3600):
-    r = requests.post(
+    r = httpx.post(
         f"{BASE_URL}/gradio_api/call/{name}",
         json={"data": data, "session_hash": SESSION_HASH},
         timeout=30,
@@ -72,7 +69,7 @@ def main():
     # 1. Upload image
     log(f"Uploading {IMAGE_PATH}...")
     with open(IMAGE_PATH, "rb") as f:
-        r = requests.post(f"{BASE_URL}/gradio_api/upload", files={"files": f}, timeout=30)
+        r = httpx.post(f"{BASE_URL}/gradio_api/upload", files={"files": f}, timeout=30)
     r.raise_for_status()
     uploaded_path = r.json()[0]
     log(f"Uploaded: {uploaded_path}")
