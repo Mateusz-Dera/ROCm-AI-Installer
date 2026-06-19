@@ -76,28 +76,34 @@ phase8_verify_koboldcpp() {
     info "Sending test query to KoboldCPP API..."
     local api_response
     api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${kobold_port}/api/v1/generate \
+        curl -sf http://localhost:${kobold_port}/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{
-                \"prompt\": \"Reply with one word: OK\",
-                \"max_length\": 16,
+                \"model\": \"local\",
+                \"messages\": [
+                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
+                    {\"role\": \"user\", \"content\": \"2+2\"}
+                ],
+                \"max_tokens\": 64,
                 \"temperature\": 0
             }'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"results"'; then
+    if echo "$api_response" | grep -q '"choices"'; then
         local answer
         answer=$(echo "$api_response" \
-            | grep -o '"text": *"[^"]*"' \
-            | head -1 \
-            | sed 's/"text": *"//;s/"//') || answer=""
-        info "  Query:  \"Reply with one word: OK\""
+            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
+        info "  Query:  \"2+2\""
         info "  Answer: \"$answer\""
-        pass "KoboldCPP API responded"
+        if echo "$answer" | grep -q '4'; then
+            pass "KoboldCPP API responded correctly (answer contains 4)"
+        else
+            abort "KoboldCPP API returned wrong answer: \"$answer\" (expected 4)"
+        fi
     else
         info "Raw API response: $api_response"
         podman exec -t rocm bash -c "cat '${kobold_log}'" 2>/dev/null || true
-        abort "KoboldCPP API did not return expected response (missing 'results')"
+        abort "KoboldCPP API did not return expected response"
     fi
 
     info "Stopping KoboldCPP..."

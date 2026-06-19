@@ -16,8 +16,8 @@ phase6_verify_turboquant_rocm_llamacpp() {
 
     local app_dir="/AI/turboquant-rocm-llamacpp"
     local model_file="$app_dir/model.gguf"
-    local hf_repo="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
-    local hf_file="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
+    local hf_repo="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
+    local hf_file="gemma-4-12b-it-Q8_0.gguf"
     local server_port=8080
     local server_log="/tmp/turboquant_server.log"
 
@@ -82,25 +82,30 @@ phase6_verify_turboquant_rocm_llamacpp() {
             -H 'Content-Type: application/json' \
             -d '{
                 \"model\": \"local\",
-                \"messages\": [{\"role\": \"user\", \"content\": \"Reply with one word: OK\"}],
-                \"max_tokens\": 16,
+                \"messages\": [
+                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
+                    {\"role\": \"user\", \"content\": \"2+2\"}
+                ],
+                \"max_tokens\": 64,
                 \"temperature\": 0
             }'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"content"'; then
+    if echo "$api_response" | grep -q '"choices"'; then
         local answer
         answer=$(echo "$api_response" \
-            | grep -o '"content": *"[^"]*"' \
-            | head -1 \
-            | sed 's/"content": *"//;s/"//') || answer=""
-        info "  Query:  \"Reply with one word: OK\""
+            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
+        info "  Query:  \"2+2\""
         info "  Answer: \"$answer\""
-        pass "turboquant-rocm-llamacpp API responded"
+        if echo "$answer" | grep -q '4'; then
+            pass "turboquant-rocm-llamacpp API responded correctly (answer contains 4)"
+        else
+            abort "turboquant-rocm-llamacpp API returned wrong answer: \"$answer\" (expected 4)"
+        fi
     else
         info "Raw API response: $api_response"
         podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "turboquant-rocm-llamacpp API did not return expected response (missing 'content')"
+        abort "turboquant-rocm-llamacpp API did not return expected response"
     fi
 
     info "Stopping turboquant-rocm-llamacpp server..."

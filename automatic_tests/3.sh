@@ -51,21 +51,7 @@ phase3_restore() {
         fi
     fi
 
-    # --- TabbyAPI restore ---
-    if $TABBYAPI_WAS_INSTALLED; then
-        info "Restoring TabbyAPI models..."
-        reset_backup_tracking
-
-        restore_directory "/AI/Backups/tabbyAPI/models" "/AI/tabbyAPI/models" "models" || true
-
-        if container_dir_exists "/AI/tabbyAPI/models"; then
-            pass "TabbyAPI restore verified (models directory present)"
-        else
-            abort "TabbyAPI restore FAILED – /AI/tabbyAPI/models missing after restore"
-        fi
-    fi
-
-    if ! $SILLYTAVERN_WAS_INSTALLED && ! $TABBYAPI_WAS_INSTALLED; then
+    if ! $SILLYTAVERN_WAS_INSTALLED; then
         info "No backups were created in phase 1 – restore skipped"
     fi
 

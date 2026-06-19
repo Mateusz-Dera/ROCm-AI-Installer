@@ -97,7 +97,6 @@ wait_for_http() {
 # ------------------------------------------------------------
 TEST_STATE_FILE="/tmp/rocm_ai_test_state.sh"
 SILLYTAVERN_WAS_INSTALLED=false
-TABBYAPI_WAS_INSTALLED=false
 # Load state from previous phase if it exists
 if [ -f "$TEST_STATE_FILE" ]; then
     source "$TEST_STATE_FILE"

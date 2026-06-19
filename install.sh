@@ -344,85 +344,18 @@ sillytavern_restore() {
     perform_sillytavern_restore "$CHOICES"
 }
 
-tabbyapi() {
-    second=true
-    while $second; do
-
-        choice=$(whiptail --title "TabbyAPI" --menu "Choose an option:" 15 100 3 --cancel-button "Back" \
-            1 "Backup" \
-            2 "Install" \
-            3 "Restore" \
-            2>&1 > /dev/tty)
-        status=$?
-
-
-        if [ $status -ne 0 ]; then
-            return 0
-        fi
-
-        case "$choice" in
-            "1")
-                tabbyapi_backup
-                ;;
-            "2")
-                install_tabbyapi
-                ;;
-            "3")
-                tabbyapi_restore
-                ;;
-            "")
-                echo "Previous menu..."
-                second=true
-                ;;
-            *)
-                echo "Invalid selection."
-                second=true
-                ;;
-        esac
-    done
-}
-
-# Backup TabbyAPI
-tabbyapi_backup() {
-    CHOICES=$(whiptail --checklist "Backup:" 10 50 1 --cancel-button "Back" \
-        1 "Backup models" ON 3>&1 1>&2 2>&3)
-
-    status=$?
-
-    if [ $status -ne 0 ]; then
-        return 0
-    fi
-
-    perform_tabbyapi_backup "$CHOICES"
-}
-
-# Restore TabbyAPI
-tabbyapi_restore() {
-    CHOICES=$(whiptail --checklist "Restore:" 10 50 1 --cancel-button "Back" \
-        1 "Restore models" ON 3>&1 1>&2 2>&3)
-
-    status=$?
-
-    if [ $status -ne 0 ]; then
-        return 0
-    fi
-
-    perform_tabbyapi_restore "$CHOICES"
-}
-
 # Text generation
 text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 7 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
             1 "Install KoboldCPP" \
-            2 "TabbyAPI" \
-            3 "SillyTavern" \
-            4 "Install llama.cpp" \
-            5 "Install llama.cpp Vulkan" \
-            6 "Atomic llama.cpp" \
-            7 "turboquant-rocm-llamacpp" \
+            2 "SillyTavern" \
+            3 "Install llama.cpp" \
+            4 "Install llama.cpp Vulkan" \
+            5 "Atomic llama.cpp" \
+            6 "turboquant-rocm-llamacpp" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -436,21 +369,18 @@ text_generation() {
                 install_koboldcpp
                 ;;
             "2")
-                tabbyapi
-                ;;
-            "3")
                 sillytavern
                 ;;
-            "4")
+            "3")
                 install_llama_cpp
                 ;;
-            "5")
+            "4")
                 install_llama_cpp_vulkan
                 ;;
-            "6")
+            "5")
                 install_atomic_llama_cpp_turboquant
                 ;;
-            "7")
+            "6")
                 install_turboquant_rocm_llamacpp
                 ;;
             "")

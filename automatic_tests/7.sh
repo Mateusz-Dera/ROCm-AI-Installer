@@ -106,36 +106,34 @@ phase7_verify_atomic_llama_cpp() {
     info "Sending test query to Atomic llama.cpp API (checking MTP)..."
     local api_response
     api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${server_port}/completion \
+        curl -sf http://localhost:${server_port}/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{
-                \"prompt\": \"Reply with one word: OK\",
-                \"n_predict\": 32,
-                \"temperature\": 0,
-                \"cache_prompt\": false
+                \"model\": \"local\",
+                \"messages\": [
+                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
+                    {\"role\": \"user\", \"content\": \"2+2\"}
+                ],
+                \"max_tokens\": 64,
+                \"temperature\": 0
             }'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"content"'; then
-        local answer draft_n draft_acc
+    if echo "$api_response" | grep -q '"choices"'; then
+        local answer
         answer=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('content',''))" 2>/dev/null) || answer=""
-        draft_n=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('timings',{}).get('draft_n','N/A'))" 2>/dev/null) || draft_n="N/A"
-        draft_acc=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('timings',{}).get('draft_n_accepted','N/A'))" 2>/dev/null) || draft_acc="N/A"
-        info "  Query:  \"Reply with one word: OK\""
+            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
+        info "  Query:  \"2+2\""
         info "  Answer: \"$answer\""
-        info "  MTP draft: accepted ${draft_acc}/${draft_n}"
-        if [ "$draft_n" != "N/A" ] && [ "$draft_n" != "0" ]; then
-            pass "Atomic llama.cpp API responded with MTP active (draft_n=${draft_n})"
+        if echo "$answer" | grep -q '4'; then
+            pass "Atomic llama.cpp API responded correctly (answer contains 4)"
         else
-            pass "Atomic llama.cpp API responded (MTP stats not available)"
+            abort "Atomic llama.cpp API returned wrong answer: \"$answer\" (expected 4)"
         fi
     else
         info "Raw API response: $api_response"
         podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "Atomic llama.cpp API did not return expected response (missing 'content')"
+        abort "Atomic llama.cpp API did not return expected response"
     fi
 
     info "Stopping Atomic llama.cpp server..."

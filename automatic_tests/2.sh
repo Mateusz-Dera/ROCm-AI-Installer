@@ -37,7 +37,6 @@ phase2_install() {
 
     # ---- Text generation ----
     run_install "KoboldCPP"        install_koboldcpp        "/AI/koboldcpp-rocm"
-    run_install "TabbyAPI"         install_tabbyapi         "/AI/tabbyAPI"
     run_install "llama.cpp"              install_llama_cpp              "/AI/llama.cpp"
     run_install "llama.cpp-vulkan"       install_llama_cpp_vulkan       "/AI/llama.cpp-vulkan"
     run_install "turboquant-rocm-llamacpp"   install_turboquant_rocm_llamacpp   "/AI/turboquant-rocm-llamacpp"

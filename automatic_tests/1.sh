@@ -22,13 +22,6 @@ phase1_backup() {
         info "SillyTavern not installed – skipping backup"
     fi
 
-    if container_dir_exists "/AI/tabbyAPI"; then
-        TABBYAPI_WAS_INSTALLED=true
-        info "TabbyAPI detected – will create backup"
-    else
-        info "TabbyAPI not installed – skipping backup"
-    fi
-
     # --- SillyTavern backup ---
     if $SILLYTAVERN_WAS_INSTALLED; then
         info "Starting SillyTavern backup..."
@@ -66,25 +59,7 @@ phase1_backup() {
         fi
     fi
 
-    # --- TabbyAPI backup ---
-    if $TABBYAPI_WAS_INSTALLED; then
-        info "Starting TabbyAPI backup..."
-        reset_backup_tracking
-
-        backup_directory "/AI/tabbyAPI/models" "/AI/Backups/tabbyAPI/models" "models" || true
-
-        if container_dir_exists "/AI/tabbyAPI/models"; then
-            if container_dir_exists "/AI/Backups/tabbyAPI/models"; then
-                pass "TabbyAPI backup verified (models directory present)"
-            else
-                abort "TabbyAPI backup FAILED – /AI/Backups/tabbyAPI/models missing"
-            fi
-        else
-            pass "TabbyAPI backup – models directory not present at source, skipped"
-        fi
-    fi
-
-    if ! $SILLYTAVERN_WAS_INSTALLED && ! $TABBYAPI_WAS_INSTALLED; then
+    if ! $SILLYTAVERN_WAS_INSTALLED; then
         info "No apps with backup support were previously installed – phase skipped"
     fi
 
@@ -93,9 +68,9 @@ phase1_backup() {
 
 main() {
     phase1_backup
-    # Save state so phase3 can use SILLYTAVERN_WAS_INSTALLED / TABBYAPI_WAS_INSTALLED
-    printf 'SILLYTAVERN_WAS_INSTALLED=%s\nTABBYAPI_WAS_INSTALLED=%s\n' \
-        "$SILLYTAVERN_WAS_INSTALLED" "$TABBYAPI_WAS_INSTALLED" > "$TEST_STATE_FILE"
+    # Save state so phase3 can use SILLYTAVERN_WAS_INSTALLED
+    printf 'SILLYTAVERN_WAS_INSTALLED=%s\n' \
+        "$SILLYTAVERN_WAS_INSTALLED" > "$TEST_STATE_FILE"
 }
 
 main "$@"

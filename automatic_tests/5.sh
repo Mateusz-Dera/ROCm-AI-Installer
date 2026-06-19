@@ -16,8 +16,8 @@ phase5_verify_llama_vulkan() {
 
     local model_dir="/AI/llama.cpp-vulkan"
     local model_file="$model_dir/model.gguf"
-    local hf_repo="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
-    local hf_file="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
+    local hf_repo="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
+    local hf_file="gemma-4-12b-it-Q8_0.gguf"
 
     info "Downloading $hf_file from HuggingFace..."
     podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
@@ -79,25 +79,30 @@ phase5_verify_llama_vulkan() {
             -H 'Content-Type: application/json' \
             -d '{
                 \"model\": \"local\",
-                \"messages\": [{\"role\": \"user\", \"content\": \"Reply with one word: OK\"}],
-                \"max_tokens\": 16,
+                \"messages\": [
+                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
+                    {\"role\": \"user\", \"content\": \"2+2\"}
+                ],
+                \"max_tokens\": 64,
                 \"temperature\": 0
             }'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"content"'; then
+    if echo "$api_response" | grep -q '"choices"'; then
         local answer
         answer=$(echo "$api_response" \
-            | grep -o '"content": *"[^"]*"' \
-            | head -1 \
-            | sed 's/"content": *"//;s/"//') || answer=""
-        info "  Query:  \"Reply with one word: OK\""
+            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
+        info "  Query:  \"2+2\""
         info "  Answer: \"$answer\""
-        pass "llama.cpp-vulkan API responded"
+        if echo "$answer" | grep -q '4'; then
+            pass "llama.cpp-vulkan API responded correctly (answer contains 4)"
+        else
+            abort "llama.cpp-vulkan API returned wrong answer: \"$answer\" (expected 4)"
+        fi
     else
         info "Raw API response: $api_response"
         podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "llama.cpp-vulkan API did not return expected response (missing 'content')"
+        abort "llama.cpp-vulkan API did not return expected response"
     fi
 
     info "Stopping llama.cpp-vulkan server..."

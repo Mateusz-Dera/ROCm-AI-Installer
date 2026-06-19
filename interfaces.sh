@@ -122,52 +122,6 @@ install_koboldcpp() {
     basic_run "$REPO" "$COMMAND"
 }
 
-# TabbyAPI
-install_tabbyapi() {
-    REPO="https://github.com/theroyallab/tabbyAPI"
-    COMMIT="d2d87bb9e0eca60fce92e9f2d163289f9580f8a3"
-    EXLLAMA_REPO="https://github.com/turboderp-org/exllamav2"
-    EXLLAMA_COMMIT="7dc12af3a81f34ac3f27cd7602ed539b638933ca"
-    COMMAND="python main.py"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    basic_requirements "$REPO"
-
-    # Install tabbyAPI core deps from pyproject.toml (without exllamav2 extras)
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e . --override requirements.txt"
-
-    # Clone and build exllamav2 from source for ROCm
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone $EXLLAMA_REPO && cd exllamav2 && git checkout $EXLLAMA_COMMIT"
-    # Patch: warpSize is a runtime variable in HIP, unusable as __shared__ array size.
-    # For gfx10xx/gfx11xx (RDNA) wave32 mode, warpSize == 32 == CUDA constant.
-    podman exec -it rocm bash -c "
-      BASE=/AI/$FOLDER/exllamav2/exllamav2/exllamav2_ext
-      for f in \$BASE/cuda/layer_norm.cu \$BASE/cuda/rms_norm.cu; do
-        sed -i 's|#define NUM_WARPS (1024 / warpSize)|#define NUM_WARPS 32|' \"\$f\"
-        sed -i 's|#define WARP_SIZE (warpSize)|#define WARP_SIZE 32|' \"\$f\"
-      done
-    "
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install ./exllamav2 --no-build-isolation --override requirements.txt"
-
-    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/models/example-model"
-
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/config.yml << 'EOF'
-network:
-  host: 0.0.0.0
-  port: 5000
-
-model:
-  model_dir: models
-  model_name: example-model
-  max_seq_len: -1
-EOF"
-
-    basic_run "$REPO" "$COMMAND"
-}
-
 # ----- llama.cpp -----
 
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
