@@ -5,40 +5,41 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 13: RUN AND VERIFY – OmniVoice
-#   Step 1: Voice Design  (no reference) → save output as ref
-#   Step 2: Voice Clone   (use step-1 output as reference)
+# PHASE 13: RUN AND VERIFY – ACE-Step-1.5 (text-to-music)
 # ============================================================
-phase13_verify_omnivoice() {
+phase13_verify_ace_step_1_5() {
     info "============================================="
-    info "PHASE 13: RUN AND VERIFY (OmniVoice)"
+    info "PHASE 13: RUN AND VERIFY (ACE-Step-1.5)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/OmniVoice"
+    local app_dir="/AI/ACE-Step-1.5"
     local app_port=7860
-    local app_log="/tmp/omnivoice_server.log"
-    local ref_wav="/tmp/omnivoice_ref.wav"
-    local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
+    local app_log="/tmp/acestep15_server.log"
 
     # --- Kill old instances and clear log ---
-    # pkill -f 'omnivoice-demo' kills bash itself (cmdline contains the pattern),
-    # so run in isolation; port clear and log reset go in a separate exec.
-    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start OmniVoice ---
-    info "Starting OmniVoice on port ${app_port}..."
+    # --- Start ACE-Step-1.5 ---
+    info "Starting ACE-Step-1.5 on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         omnivoice-demo --ip 0.0.0.0 --port ${app_port} \
+         ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST \
+         python -m acestep.acestep_v15_pipeline \
+             --server-name 0.0.0.0 \
+             --port ${app_port} \
+             --config_path acestep-v15-turbo \
+             --lm_model_path acestep-5Hz-lm-4B \
+             --init_service true \
+             --backend pt \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API to become ready (model download + load) ---
-    info "Waiting for OmniVoice Gradio API to become ready (up to 600s)..."
+    # --- Wait for Gradio API (up to 600s – models download on first run) ---
+    info "Waiting for ACE-Step-1.5 Gradio API to become ready (up to 600s)..."
     local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
         if podman exec -t rocm bash -c \
@@ -46,219 +47,98 @@ phase13_verify_omnivoice() {
                 | grep -q '\"named_endpoints\"'" 2>/dev/null; then
             ready=true; break
         fi
-        sleep 5; waited=$((waited + 5))
+        sleep 10; waited=$((waited + 10))
         info "  ...waiting ($waited/${max_wait}s)"
     done
     if ! $ready; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice did not become ready within ${max_wait}s"
+        abort "ACE-Step-1.5 did not become ready within ${max_wait}s"
     fi
-    pass "OmniVoice Gradio API ready on port ${app_port}"
+    pass "ACE-Step-1.5 Gradio API ready on port ${app_port}"
 
-    # Give the model a few extra seconds to finish initializing after
-    # the HTTP API becomes responsive (model loading continues in background)
-    sleep 5
-
-    # ================================================================
-    # STEP 1 – Voice Design (no reference audio)
-    # Endpoint: /_design_fn
-    # Inputs (15): text, lang, ns, gs, dn, sp, du, pp, po, 6×group
-    # ================================================================
-    info "--- Step 1: Voice Design (no reference) ---"
-    info "Requesting Voice Design: \"${GEN_TEXT}\"..."
-
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
+    # --- Generate a short test song via /generation_wrapper ---
+    # Parameters: 78 total (72 visible + 6 hidden gr.State)
+    #   Hidden: task_type (gr.State, pos 20), is_format_caption_state (pos 48),
+    #           current_batch_index/total_batches/batch_queue/generation_params_state (pos 74-77)
+    # DiT Inference Steps max = 20 for acestep-v15-turbo config
+    # Audio Duration = 30s (minimum)
+    # New params vs previous: use_adg(22), dcw_mode/scaler/high_scaler/wavelet/custom_timesteps(31-35),
+    #   retake_seed(66), flow_edit_morph/source_caption/source_lyrics/n_min/n_max/n_avg(67-72),
+    #   autogen_checkbox(73)
+    info "Requesting music generation (30s clip, DiT steps=20)..."
+    local gen_event_id
+    gen_event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generation_wrapper \
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                32,
-                2.0,
-                true,
-                1.0,
+                \"pop, simple, guitar\",
+                \"[Verse]\\nThis is a test song\\nWith a simple melody\",
+                120, \"C Major\", \"4/4\", \"en\",
+                20, 7.0, true, \"\", null, 30, 1, null, \"\",
+                0, -1, \"\", 0.0, 0.0,
+                \"text2music\",
+                false, false,
+                0.0, 1.0, 3.0, \"ode\", \"euler\", 0.0, 0.0,
+                false, \"double\", 0.05, 0.02, \"haar\", \"\",
+                \"wav\", \"128k\", 48000, 1.0, false, 1.0, 0, 1.0, \"\",
+                false, false, true,
                 null,
-                true,
-                true,
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\",
-                \"Auto\"
+                false, false, false, false, 0.01, 1,
+                \"woodwinds\", [\"woodwinds\"],
+                false, -10.0, 0.0, 0.0, -0.2, 0.5, \"conservative\", 0.0,
+                0.0, \"\",
+                false, null, null, 0.0, 1.0, 1,
+                false,
+                null, null, null, null
             ]}' | tr -d '\r'
     " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '"event_id":"[^"]*"' \
     | grep -o '[^:]*$' \
     | tr -d '"') || true
 
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_design_fn"
+    if [ -z "$gen_event_id" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "ACE-Step-1.5: no event_id returned from /generation_wrapper"
     fi
-    info "Voice Design started (event_id: $event_id) – polling result (up to 300s)..."
+    info "Generation started (event_id: $gen_event_id) – polling result (up to 300s)..."
 
-    local design_result
-    design_result=$(podman exec -t rocm bash -c "
+    # --- Poll result (SSE stream) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
         curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
+            http://localhost:${app_port}/gradio_api/call/generation_wrapper/${gen_event_id} \
         | tr -d '\r'
     " 2>/dev/null) || true
 
-    # Retry once if result is empty (model may still be finishing initialization)
-    if ! echo "$design_result" | grep -q '"path"'; then
-        info "  Result empty, retrying after 10s..."
-        sleep 10
-        event_id=$(podman exec -t rocm bash -c "
-            curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
-                -H 'Content-Type: application/json' \
-                -d '{\"data\": [
-                    \"${GEN_TEXT}\",
-                    \"Auto\",
-                    32,
-                    2.0,
-                    true,
-                    1.0,
-                    null,
-                    true,
-                    true,
-                    \"Auto\",
-                    \"Auto\",
-                    \"Auto\",
-                    \"Auto\",
-                    \"Auto\",
-                    \"Auto\"
-                ]}' | tr -d '\r'
-        " 2>/dev/null \
-        | grep -o '"event_id":"[^"]*"' \
-        | grep -o '[^:]*$' \
-        | tr -d '"') || true
-        design_result=$(podman exec -t rocm bash -c "
-            curl -sf --max-time 300 \
-                http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
-            | tr -d '\r'
-        " 2>/dev/null) || true
-    fi
-
-    if ! echo "$design_result" | grep -q '"path"'; then
-        info "Raw result: $design_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Design did not return audio data"
-    fi
-    pass "OmniVoice Voice Design OK (audio returned)"
-
-    # Extract audio path and copy to persistent location
-    local audio_path
-    audio_path=$(echo "$design_result" \
-        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
-
-    if [ -z "$audio_path" ]; then
-        info "Raw result: $design_result"
-        abort "OmniVoice: could not extract audio path from Voice Design result"
-    fi
-    info "  Voice Design output: ${audio_path}"
-
-    # Verify size
-    local fsize
-    fsize=$(podman exec -t rocm bash -c \
-        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-        | tr -d '\r\n') || fsize=0
-    if [ "${fsize:-0}" -lt 1024 ]; then
-        abort "OmniVoice: Voice Design audio suspiciously small (${fsize} bytes)"
-    fi
-    info "  Size: $(( ${fsize} / 1024 )) KB"
-
-    # Copy to persistent location for use as reference
-    podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" || \
-        abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
-    pass "Voice Design audio saved as reference: ${ref_wav}"
-
-    # ================================================================
-    # STEP 2 – Voice Clone (use step-1 output as reference)
-    # Endpoint: /_clone_fn
-    # Inputs (11): text, lang, ref_audio, ref_text, ns, gs, dn, sp, du, pp, po
-    # ================================================================
-    info "--- Step 2: Voice Clone (using generated audio as reference) ---"
-
-    # Upload reference audio via /gradio_api/upload
-    info "Uploading reference audio to OmniVoice..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${ref_wav}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
-
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-
-    if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
-        abort "OmniVoice: failed to upload reference audio"
-    fi
-    info "Reference audio uploaded: ${uploaded_path}"
-
-    info "Requesting Voice Clone: \"${GEN_TEXT}\"..."
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_clone_fn \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${GEN_TEXT}\",
-                \"Auto\",
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                \"\",
-                32,
-                2.0,
-                true,
-                1.0,
-                null,
-                true,
-                true
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice: no event_id returned from /_clone_fn"
-    fi
-    info "Voice Clone started (event_id: $event_id) – polling result (up to 300s)..."
-
-    local clone_result
-    clone_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/_clone_fn/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$clone_result" | grep -q '"path"'; then
-        pass "OmniVoice Voice Clone OK (audio returned)"
-        local clone_path
-        clone_path=$(echo "$clone_result" \
-            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
-        if [ -n "$clone_path" ]; then
+    if echo "$gen_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
+        pass "ACE-Step-1.5 music generation OK (audio file returned)"
+        local audio_path
+        audio_path=$(echo "$gen_result" \
+            | grep -o '"path":"[^"]*\.wav[^"]*"' | head -1 \
+            | sed 's/"path":"//;s/"//') || audio_path=""
+        if [ -n "$audio_path" ]; then
+            local fsize
             fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \
+                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
                 | tr -d '\r\n') || fsize=0
-            info "  Clone output: ${clone_path} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "OmniVoice: Voice Clone audio suspiciously small (${fsize} bytes)"
+            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 102400 ]; then
+                abort "ACE-Step-1.5: audio file suspiciously small (${fsize} bytes)"
             fi
         fi
-        pass "Voice Clone audio size OK"
     else
-        info "Raw result: $clone_result"
+        local err_line
+        err_line=$(podman exec -t rocm bash -c \
+            "grep -iE 'error|exception|fatal|traceback' '${app_log}' 2>/dev/null \
+             | tail -3" | tr -d '\r') || err_line=""
+        [ -n "$err_line" ] && info "  Last error in log: $err_line"
         podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "OmniVoice Voice Clone did not return audio data"
+        abort "ACE-Step-1.5 generation did not return audio data"
     fi
 
     # --- Stop server ---
-    info "Stopping OmniVoice..."
-    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
+    info "Stopping ACE-Step-1.5..."
+    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
     podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
@@ -266,10 +146,10 @@ phase13_verify_omnivoice() {
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "OmniVoice stopped"
+    pass "ACE-Step-1.5 stopped"
 
     info "Phase 13 DONE"
 }
 
-main() { phase13_verify_omnivoice; }
+main() { phase13_verify_ace_step_1_5; }
 main "$@"

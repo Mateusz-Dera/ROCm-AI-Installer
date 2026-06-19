@@ -5,12 +5,12 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 27: RUN AND VERIFY – TripoSplat (image to 3D Gaussian)
+# PHASE 24: RUN AND VERIFY – TripoSplat (image to 3D Gaussian)
 # 5 inference steps, 32768 gaussians for speed; est. ~5-15 min.
 # ============================================================
-phase27_verify_triposplat() {
+phase24_verify_triposplat() {
     info "============================================="
-    info "PHASE 27: RUN AND VERIFY (TripoSplat)"
+    info "PHASE 24: RUN AND VERIFY (TripoSplat)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
@@ -108,8 +108,8 @@ phase27_verify_triposplat() {
     done
     pass "TripoSplat stopped"
 
-    info "Phase 27 DONE"
+    info "Phase 24 DONE"
 }
 
-main() { phase27_verify_triposplat; }
+main() { phase24_verify_triposplat; }
 main "$@"

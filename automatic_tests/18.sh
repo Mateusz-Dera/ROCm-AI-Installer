@@ -5,22 +5,20 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 18: ComfyUI workflow – Qwen-Image-Edit-2511-GGUF (image edit)
-# Input image: cat.png → change fur color to black, eyes to yellow
+# PHASE 18: ComfyUI workflow – Z-Anime (text-to-image)
 # ============================================================
-phase18_comfyui_qwen_image_edit() {
+phase18_comfyui_z_anime() {
     info "============================================="
-    info "PHASE 18: ComfyUI – Qwen-Image-Edit-2511-GGUF"
+    info "PHASE 18: ComfyUI – Z-Anime"
     info "============================================="
 
     local app_port=8188
     local app_dir="/AI/ComfyUI"
     local app_log="/tmp/comfyui_server.log"
-    local workflow_src="${SCRIPT_DIR}/workflows/Qwen-Image-Edit-2511-GGUF-Single-Image.json"
-    local workflow_dst="/tmp/comfyui_workflow_17.json"
+    local workflow_src="${SCRIPT_DIR}/workflows/Z-Anime.json"
+    local workflow_dst="/tmp/comfyui_workflow_26.json"
     local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
     local helper_dst="/tmp/comfyui_run_workflow.py"
-    local cat_img_src="${SCRIPT_DIR}/workflows/images/cat.png"
 
     basic_container || abort "Container 'rocm' is not running."
 
@@ -55,13 +53,6 @@ phase18_comfyui_qwen_image_edit() {
     fi
     pass "ComfyUI ready"
 
-    # --- Copy input image into ComfyUI input directory ---
-    info "Copying cat.png into ComfyUI input directory..."
-    podman exec -t rocm bash -c "mkdir -p '${app_dir}/input'" 2>/dev/null || true
-    podman cp "${cat_img_src}" "rocm:${app_dir}/input/cat.png" || \
-        abort "Failed to copy cat.png into container"
-    pass "cat.png copied to ${app_dir}/input/"
-
     # --- Copy workflow JSON and helper into container ---
     podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
         abort "Failed to copy workflow JSON into container"
@@ -69,24 +60,24 @@ phase18_comfyui_qwen_image_edit() {
         abort "Failed to copy comfyui_run_workflow.py into container"
 
     # --- Run workflow ---
-    info "Running Qwen-Image-Edit-2511-GGUF workflow (image edit: cat.png)..."
+    info "Running Z-Anime workflow (text-to-image, 4 steps)..."
     local test_output
     test_output=$(podman exec -t rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_17_stderr.txt" \
+         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_26_stderr.txt" \
         | tr -d '\r') || true
 
     if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
-        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_17_stderr.txt" 2>/dev/null || true
+        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_26_stderr.txt" 2>/dev/null || true
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "Qwen-Image-Edit-2511-GGUF workflow FAILED"
+        abort "Z-Anime workflow FAILED"
     fi
 
     local out_line out_path out_sz
     out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
     out_path=$(echo "$out_line" | cut -d: -f2)
     out_sz=$(echo "$out_line"   | cut -d: -f3)
-    pass "Qwen-Image-Edit-2511-GGUF output OK (${out_path}, ${out_sz} bytes)"
+    pass "Z-Anime output OK (${out_path}, ${out_sz} bytes)"
     if [ "${out_sz:-0}" -lt 10240 ]; then
         abort "Output image suspiciously small (${out_sz} bytes)"
     fi
@@ -107,5 +98,5 @@ phase18_comfyui_qwen_image_edit() {
     info "Phase 18 DONE"
 }
 
-main() { phase18_comfyui_qwen_image_edit; }
+main() { phase18_comfyui_z_anime; }
 main "$@"
