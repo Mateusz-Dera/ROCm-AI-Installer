@@ -555,77 +555,6 @@ PYEOF"
     comfy_wait
 }
 
-# ACE-Step
-install_ace_step() {
-    REPO="https://github.com/ace-step/ACE-Step"
-    COMMIT="1bee4c9f5b43e30995f8d4d33b3919197ce1bd68"
-    COMMAND="MIOPEN_FIND_MODE=3 PYTORCH_TUNABLEOP_ENABLED=1 uv run acestep --checkpoint_path ./checkpoints --server_name 0.0.0.0 --bf16 True"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-
-    # Modify requirements.txt from repo (used by pip install -e .)
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/spacy==3\.8\.4/spacy/g' requirements.txt && \
-        sed -i 's/datasets==3\.4\.1/datasets/g' requirements.txt && \
-        sed -i 's/matplotlib==3\.10\.1/matplotlib/g' requirements.txt && \
-        sed -i 's/transformers==4\.50\.0/transformers/g' requirements.txt"
-
-    basic_requirements "$REPO"
-
-    # Install package in editable mode
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
-
-    # Fix Gradio 6.x compatibility (show_download_button removed)
-    # Fix port binding (use None default so Gradio auto-finds free port)
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/, show_download_button=True//g' acestep/ui/components.py && \
-        sed -i '/show_download_button=True,/d' acestep/ui/components.py && \
-        sed -i 's/\"--port\", type=int, default=7865/\"--port\", type=int, default=None/' acestep/gui.py"
-
-    # Apply ROCm patches for pipeline
-    podman cp "$SCRIPT_DIR/custom_files/ace-step/patch_rocm.py" "rocm:/AI/$FOLDER/patch_rocm.py"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && python patch_rocm.py"
-
-    # torchaudio 2.10+ uses torchcodec (CUDA-only) – patch to soundfile fallback
-    podman exec -t rocm bash -c "python3 - << 'PYEOF'
-import pathlib
-path = pathlib.Path('/AI/$FOLDER/.venv/lib/python3.13/site-packages/torchaudio/_torchcodec.py')
-src = path.read_text()
-OLD = '''    # Import torchcodec here to provide clear error if not available
-    try:
-        from torchcodec.decoders import AudioDecoder
-    except ImportError as e:
-        raise ImportError(
-            \"TorchCodec is required for load_with_torchcodec. \" \"Please install torchcodec to use this function.\"
-        ) from e'''
-NEW = '''    # Import torchcodec; fall back to soundfile if unavailable (torchcodec is CUDA-only)
-    try:
-        from torchcodec.decoders import AudioDecoder
-        _USE_SF = False
-    except (ImportError, RuntimeError):
-        _USE_SF = True
-    if _USE_SF:
-        import soundfile as sf, numpy as np, torch
-        data, sr = sf.read(str(uri), dtype=\"float32\", always_2d=True)
-        w = torch.from_numpy(data.T)
-        if frame_offset > 0: w = w[:, frame_offset:]
-        if num_frames != -1: w = w[:, :num_frames]
-        if not channels_first: w = w.T
-        return w, sr'''
-if OLD in src:
-    path.write_text(src.replace(OLD, NEW, 1))
-    print('torchaudio soundfile patch applied')
-else:
-    print('torchaudio patch: OLD string not found, may already be patched')
-PYEOF
-"
-
-    basic_run "$REPO" "$COMMAND"
-}
-
 # ACE-Step-1.5
 install_ace_step_1_5() {
     REPO="https://github.com/ace-step/ACE-Step-1.5"
@@ -903,46 +832,6 @@ install_partcrafter(){
     # Clone and install pytorch_cluster_rocm
     podman exec -it rocm bash -c "cd /AI/$FOLDER && git clone https://github.com/Mateusz-Dera/pytorch_cluster_rocm && cd pytorch_cluster_rocm && git checkout 6be490d08df52755684b7ccfe10d55463070f13d"
     podman exec -it rocm bash -c "cd /AI/$FOLDER/pytorch_cluster_rocm && rm -rf requirements.txt && touch requirements.txt && source ../.venv/bin/activate && uv pip install ."
-
-    basic_run "$REPO" "$COMMAND"
-}
-
-# TRELLIS-AMD
-install_trellis(){
-    REPO="https://github.com/CalebisGross/TRELLIS-AMD"
-    COMMIT="2ccf54e8ff7aee0c519d37717bee6d95cf75357e"
-    COMMAND="ATTN_BACKEND=sdpa XFORMERS_DISABLED=1 SPARSE_BACKEND=torchsparse uv run app.py"
-    FOLDER=$(basename "$REPO")
-    PYTHON_VERSION="3.11"
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO" "$PYTHON_VERSION"
-    basic_requirements "$REPO"
-
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && sed -i 's/demo.launch(server_name=\"0.0.0.0\", share=True)/demo.launch(server_name=\"0.0.0.0\", share=False)/' app.py"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/nvdiffrast-hip && uv pip install . --no-build-isolation"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/diff-gaussian-rasterization && chmod +x build_hip.sh && ./build_hip.sh"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/ && source .venv/bin/activate && cd extensions/torchsparse && rm -rf build *.egg-info 2>/dev/null || true && FORCE_CUDA=1 uv pip install . --no-build-isolation"
-
-    # Patch gradio_client for compatibility
-    echo "Patching gradio_client for compatibility..."
-    podman exec -it rocm bash -c "
-cd /AI/$FOLDER
-source .venv/bin/activate
-PYTHON_VER=\$(python3 -c 'import sys; print(f\"{sys.version_info.major}.{sys.version_info.minor}\")')
-UTILS_FILE=\".venv/lib/python\${PYTHON_VER}/site-packages/gradio_client/utils.py\"
-if [ -f \"\$UTILS_FILE\" ]; then
-    # Patch get_type function to handle boolean schemas
-    sed -i 's/def get_type(schema: dict):/def get_type(schema: dict):\\n    # Handle non-dict schemas (e.g., boolean from additionalProperties: true)\\n    if not isinstance(schema, dict):\\n        return \"Any\"/' \"\$UTILS_FILE\"
-    # Patch _json_schema_to_python_type function
-    sed -i 's/def _json_schema_to_python_type(schema: Any, defs) -> str:/def _json_schema_to_python_type(schema: Any, defs) -> str:\\n    # Handle non-dict schemas (e.g., boolean from additionalProperties: true)\\n    if not isinstance(schema, dict):\\n        return \"Any\"/' \"\$UTILS_FILE\"
-    echo 'Successfully patched gradio_client for compatibility'
-else
-    echo 'Warning: gradio_client utils.py not found at' \"\$UTILS_FILE\"
-fi
-"
 
     basic_run "$REPO" "$COMMAND"
 }

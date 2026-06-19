@@ -448,9 +448,8 @@ music_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
-            1 "Install ACE-Step" \
-            2 "Install ACE-Step-1.5" \
+        choice=$(whiptail --title "Music generation" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            1 "Install ACE-Step-1.5" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -461,9 +460,6 @@ music_generation() {
 
         case "$choice" in
             "1")
-                install_ace_step
-                ;;
-            "2")
                 install_ace_step_1_5
                 ;;
             "")
@@ -564,12 +560,11 @@ d3_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             1 "Install PartCrafter" \
-            2 "InstallTRELLIS-AMD" \
-            3 "Install TRELLIS.2_rocm" \
-            4 "Install Kimodo" \
-            5 "Install TripoSplat" \
+            2 "Install TRELLIS.2_rocm" \
+            3 "Install Kimodo" \
+            4 "Install TripoSplat" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -577,15 +572,12 @@ d3_generation() {
                 install_partcrafter
                 ;;
             "2")
-                install_trellis
-                ;;
-            "3")
                 install_trellis_2_rocm
                 ;;
-            "4")
+            "3")
                 install_kimodo
                 ;;
-            "5")
+            "4")
                 install_triposplat
                 ;;
             "")

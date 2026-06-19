@@ -55,7 +55,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 ###  Music generation:
 |Name|Links|Additional information|
 |:---|:---|:---|
-|ACE-Step|https://github.com/ace-step/ACE-Step||
 |ACE-Step-1.5|https://github.com/ace-step/ACE-Step-1.5||
 
 ###  Voice generation:
@@ -69,7 +68,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Name|Links|Additional information|
 |:---|:---|:---|
 |PartCrafter|https://github.com/wgsxm/PartCrafter|Added custom simple UI.<br> Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
-|TRELLIS-AMD|https://github.com/CalebisGross/TRELLIS-AMD|GLB Export Takes 5-10 Minutes.<br> Mesh preview may show grey, but the actual export works correctly.|
 |TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.|
 |Kimodo|https://github.com/nv-tlabs/kimodo|1. Set <b>HuggingFace Token</b> in Variables.<br> 2. Request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (required for text encoder).|
 |TripoSplat|https://github.com/VAST-AI-Research/TripoSplat||

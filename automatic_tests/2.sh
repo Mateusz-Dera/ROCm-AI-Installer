@@ -73,7 +73,6 @@ phase2_install() {
     pass "ComfyUI installed successfully (addons: 1 2 3 4 5)"
 
     # ---- Music generation ----
-    run_install "ACE-Step"     install_ace_step     "/AI/ACE-Step"
     run_install "ACE-Step-1.5" install_ace_step_1_5 "/AI/ACE-Step-1.5"
 
     # ---- Voice generation ----
@@ -83,7 +82,6 @@ phase2_install() {
 
     # ---- 3D generation ----
     run_install "PartCrafter"   install_partcrafter    "/AI/PartCrafter"
-    run_install "TRELLIS-AMD"   install_trellis        "/AI/TRELLIS-AMD"
     run_install "TRELLIS.2_rocm" install_trellis_2_rocm "/AI/TRELLIS.2_rocm"
     run_install "Kimodo"        install_kimodo         "/AI/kimodo"
     run_install "TripoSplat"   install_triposplat     "/AI/TripoSplat"
