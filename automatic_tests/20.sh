@@ -5,108 +5,125 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 20: ComfyUI workflow – Wan-2.2-5B-image-to-video
-# Input image: bottle.png
+# PHASE 20: RUN AND VERIFY – TRELLIS.2_rocm (3D + GLB export)
+# resolution=512, steps=4 per phase; est. ~20 min generation
+# + ~5 min GLB extraction
 # ============================================================
-phase20_comfyui_wan_i2v() {
+phase20_verify_trellis2_rocm() {
     info "============================================="
-    info "PHASE 20: ComfyUI – Wan-2.2-5B-image-to-video"
+    info "PHASE 20: RUN AND VERIFY (TRELLIS.2_rocm)"
     info "============================================="
-
-    local app_port=8188
-    local app_dir="/AI/ComfyUI"
-    local app_log="/tmp/comfyui_server.log"
-    local workflow_src="${SCRIPT_DIR}/workflows/Wan-2.2-5B-image-to-video.json"
-    local workflow_dst="/tmp/comfyui_workflow_19.json"
-    local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
-    local helper_dst="/tmp/comfyui_run_workflow.py"
-    local bottle_img_src="${SCRIPT_DIR}/workflows/images/bottle.png"
 
     basic_container || abort "Container 'rocm' is not running."
 
-    # --- Kill old ComfyUI instances ---
-    podman exec -t rocm bash -c "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; true" 2>/dev/null || true
-    sleep 3
-    podman exec -t rocm bash -c \
-        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+    # --- Require HF_TOKEN ---
+    local hf_tok
+    hf_tok=$(podman exec -t rocm bash -c 'printf "%s" "${HF_TOKEN:-}"' | tr -d '\r')
+    if [ -z "$hf_tok" ]; then
+        abort "HF_TOKEN is not set in the container — required for TRELLIS.2_rocm model download"
+    fi
+    info "HF_TOKEN is set"
 
-    # --- Start ComfyUI ---
-    info "Starting ComfyUI on port ${app_port}..."
+    local app_dir="/AI/TRELLIS.2_rocm"
+    local app_port=7860
+    local app_log="/tmp/trellis2_rocm_server.log"
+    local helper_src="$TESTS_DIR/trellis2_rocm_api_helper.py"
+    local helper_dst="/tmp/trellis2_rocm_api_helper.py"
+
+    # --- Kill any leftover processes ---
+    podman exec -t rocm bash -c \
+        "pkill -f 'python.*app\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+
+    # --- Start TRELLIS.2_rocm ---
+    info "Starting TRELLIS.2_rocm on port ${app_port} (model loading may take several minutes)..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
-         uv run main.py --listen 0.0.0.0 --enable-manager \
-         --preview-method auto --dont-upcast-attention --bf16-vae \
-         --use-pytorch-cross-attention --reserve-vram 2.0 \
-         >> '${app_log}' 2>&1"
+         ATTN_BACKEND=flash_attn HSA_XNACK=1 ROCM_SAFE_SPCONV=1 \
+         PYTORCH_HIP_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128 \
+         PYTORCH_ALLOC_CONF=expandable_segments:True \
+         GRADIO_SERVER_NAME=0.0.0.0 \
+         python -u app.py >> '${app_log}' 2>&1"
+    sleep 5
 
-    info "Waiting for ComfyUI to become ready (up to 300s)..."
-    local rc
+    # --- Wait for HTTP ---
     wait_for_http \
-        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
-        "main\.py" "${app_log}" 300 "Starting server"
-    rc=$?
-    if [ $rc -eq 1 ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ComfyUI process died"
-    elif [ $rc -eq 2 ]; then
+        "curl -sf --max-time 3 http://localhost:${app_port}/ > /dev/null" \
+        "python.*app\.py" \
+        "${app_log}" \
+        600 \
+        "Running on local URL"
+
+    local wait_rc=$?
+    if [ $wait_rc -eq 1 ]; then
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "ComfyUI did not become ready within 300s"
-    fi
-    pass "ComfyUI ready"
-
-    # --- Copy input image into ComfyUI input directory ---
-    info "Copying bottle.png into ComfyUI input directory..."
-    podman exec -t rocm bash -c "mkdir -p '${app_dir}/input'" 2>/dev/null || true
-    podman cp "${bottle_img_src}" "rocm:${app_dir}/input/bottle.png" || \
-        abort "Failed to copy bottle.png into container"
-    pass "bottle.png copied to ${app_dir}/input/"
-
-    # --- Copy workflow JSON and helper into container ---
-    podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
-        abort "Failed to copy workflow JSON into container"
-    podman cp "${helper_src}" "rocm:${helper_dst}" || \
-        abort "Failed to copy comfyui_run_workflow.py into container"
-
-    # --- Run workflow ---
-    # NOTE: Wan 5B image-to-video with 97 frames / 20 steps can take 1-3 hours.
-    info "Running Wan-2.2-5B-image-to-video workflow (up to 3h)..."
-    local test_output
-    test_output=$(podman exec -t rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_19_stderr.txt" \
-        | tr -d '\r') || true
-
-    if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
-        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_19_stderr.txt" 2>/dev/null || true
+        abort "TRELLIS.2_rocm process died during startup"
+    elif [ $wait_rc -eq 2 ]; then
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "Wan-2.2-5B-image-to-video workflow FAILED"
+        abort "TRELLIS.2_rocm did not become ready within 600s"
+    fi
+    pass "TRELLIS.2_rocm HTTP server ready on port ${app_port}"
+
+    # --- Copy API helper into container ---
+    podman cp "$helper_src" "rocm:${helper_dst}"
+
+    # --- Run generation + GLB export (timeout: 6000s = ~100 min) ---
+    info "Running 3D generation + GLB export (resolution=512, 4 steps/phase)..."
+    info "Expected: ~20 min generation + ~5 min GLB extraction"
+
+    local api_out
+    api_out=$(podman exec -t rocm bash -c \
+        "source '${app_dir}/.venv/bin/activate' && \
+         python3 '${helper_dst}' 2>/dev/null" \
+        | tr -d '\r') || {
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "trellis2_rocm_api_helper.py failed"
+    }
+
+    # --- Check GENERATE_OK ---
+    if ! printf '%s' "$api_out" | grep -q "^GENERATE_OK"; then
+        info "API output: $api_out"
+        abort "3D generation did not complete (GENERATE_OK not found)"
+    fi
+    pass "3D generation completed"
+
+    # --- Check GLB_OK and file size ---
+    local glb_line
+    glb_line=$(printf '%s' "$api_out" | grep "^GLB_OK:" | head -1)
+    if [ -z "$glb_line" ]; then
+        info "API output: $api_out"
+        abort "GLB extraction did not complete (GLB_OK not found)"
     fi
 
-    local out_line out_path out_sz
-    out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
-    out_path=$(echo "$out_line" | cut -d: -f2)
-    out_sz=$(echo "$out_line"   | cut -d: -f3)
-    pass "Wan-2.2-5B-image-to-video output OK (${out_path}, ${out_sz} bytes)"
-    if [ "${out_sz:-0}" -lt 10240 ]; then
-        abort "Output video suspiciously small (${out_sz} bytes)"
+    local glb_size
+    glb_size=$(printf '%s' "$glb_line" | cut -d: -f3)
+    if [ -z "$glb_size" ] || [ "$glb_size" -le 0 ] 2>/dev/null; then
+        abort "GLB file is empty or size unknown: $glb_line"
     fi
-    pass "Output size OK (${out_sz} bytes >= 10 KB)"
+    pass "GLB exported successfully (${glb_size} bytes)"
 
-    # --- Stop ComfyUI ---
-    info "Stopping ComfyUI..."
+    # --- Verify GLB exists in container ---
+    local glb_path
+    glb_path=$(printf '%s' "$glb_line" | cut -d: -f2)
+    podman exec -t rocm bash -c "[ -s '${glb_path}' ] || [ -s '/tmp/trellis2_rocm_test.glb' ]" \
+        || abort "GLB file not found in container: ${glb_path}"
+    pass "GLB file verified in container"
+
+    # --- Stop TRELLIS.2_rocm ---
+    info "Stopping TRELLIS.2_rocm..."
     podman exec -t rocm bash -c \
-        "pkill -f 'main\.py' 2>/dev/null; \
+        "pkill -f 'python.*app\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+        sleep 2; kw=$((kw + 2))
+        [ $kw -ge 20 ] && break
     done
-    pass "ComfyUI stopped"
+    pass "TRELLIS.2_rocm stopped"
 
     info "Phase 20 DONE"
 }
 
-main() { phase20_comfyui_wan_i2v; }
+main() { phase20_verify_trellis2_rocm; }
 main "$@"

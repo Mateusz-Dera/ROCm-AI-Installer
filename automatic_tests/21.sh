@@ -5,163 +5,111 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 21: RUN AND VERIFY – PartCrafter (image-to-3D parts)
+# PHASE 21: RUN AND VERIFY – TripoSplat (image to 3D Gaussian)
+# 5 inference steps, 32768 gaussians for speed; est. ~5-15 min.
 # ============================================================
-phase21_verify_partcrafter() {
+phase21_verify_triposplat() {
     info "============================================="
-    info "PHASE 21: RUN AND VERIFY (PartCrafter)"
+    info "PHASE 21: RUN AND VERIFY (TripoSplat)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/PartCrafter"
+    local app_dir="/AI/TripoSplat"
     local app_port=7860
-    local app_log="/tmp/partcrafter_server.log"
-    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
-    local output_glb="/tmp/partcrafter_object.glb"
+    local app_log="/tmp/triposplat_server.log"
+    local helper_src="$TESTS_DIR/triposplat_api_helper.py"
+    local helper_dst="/tmp/triposplat_api_helper.py"
 
-    # --- Kill old instances and clear log ---
-    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
-    sleep 3
+    # --- Kill any leftover processes ---
     podman exec -t rocm bash -c \
-        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+        "pkill -f 'python.*run_gradio\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; \
+         rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start PartCrafter ---
-    info "Starting PartCrafter on port ${app_port}..."
+    # --- Start TripoSplat ---
+    info "Starting TripoSplat on port ${app_port} (model loading may take several minutes)..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
+         HSA_XNACK=0 \
+         PYTORCH_HIP_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128 \
+         python -u run_gradio.py >> '${app_log}' 2>&1"
+    sleep 5
 
-    # --- Wait for Gradio API (model downloads + loads at startup) ---
-    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter did not become ready within ${max_wait}s"
-    fi
-    pass "PartCrafter Gradio API ready on port ${app_port}"
+    # --- Wait for HTTP ---
+    wait_for_http \
+        "curl -sf --max-time 3 http://localhost:${app_port}/ > /dev/null" \
+        "python.*run_gradio\.py" \
+        "${app_log}" \
+        600 \
+        "Running on local URL"
 
-    # --- Resolve actual endpoint name from /gradio_api/info ---
-    local endpoint_name
-    endpoint_name=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
-    | head -1 | tr -d '"') || endpoint_name=""
-    if [ -z "$endpoint_name" ]; then
-        endpoint_name="/generate_parts"
-        info "Could not detect endpoint from info – using default: ${endpoint_name}"
-    else
-        info "Detected endpoint: ${endpoint_name}"
-    fi
-
-    # --- Upload example image ---
-    info "Uploading example image..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${example_img}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
-
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-
-    if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
-        abort "PartCrafter: failed to upload example image"
-    fi
-    info "Image uploaded: ${uploaded_path}"
-
-    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
-    info "Requesting 3D generation (2 parts, 10 inference steps)..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                2,
-                42,
-                512,
-                10,
-                7.0,
-                false,
-                false,
-                false
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter: no event_id returned from ${endpoint_name}"
-    fi
-    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
-
-    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 1800 \
-            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$gen_result" | grep -q '"path"'; then
-        pass "PartCrafter 3D generation OK (files returned)"
-
-        # Extract object.glb path (first output = merged model)
-        local glb_path
-        glb_path=$(echo "$gen_result" \
-            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
-            | sed 's/"path": *"//;s/"//') || glb_path=""
-
-        if [ -n "$glb_path" ]; then
-            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "object.glb is suspiciously small (${fsize} bytes)"
-            fi
-        else
-            info "  Warning: could not extract GLB path from result"
-            info "  Raw result: $gen_result"
-        fi
-    else
-        info "Raw result: $gen_result"
+    local wait_rc=$?
+    if [ $wait_rc -eq 1 ]; then
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter generation did not return file data"
+        abort "TripoSplat process died during startup"
+    elif [ $wait_rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "TripoSplat did not become ready within 600s"
     fi
+    pass "TripoSplat HTTP server ready on port ${app_port}"
 
-    # --- Stop server ---
-    info "Stopping PartCrafter..."
-    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    # --- Copy API helper into container ---
+    podman cp "$helper_src" "rocm:${helper_dst}"
+
+    # --- Run generation (timeout: 1800s = 30 min) ---
+    info "Running image-to-3D generation (seed=42, steps=5, num_gaussians=32768)..."
+    info "Expected: ~5-15 min (model load already done + generation)"
+
+    local api_out
+    api_out=$(podman exec -t rocm bash -c \
+        "source '${app_dir}/.venv/bin/activate' && \
+         python3 '${helper_dst}' 2>/dev/null" \
+        | tr -d '\r') || {
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "triposplat_api_helper.py failed"
+    }
+
+    # --- Check PLY_OK ---
+    if ! printf '%s' "$api_out" | grep -q "^PLY_OK"; then
+        info "API output: $api_out"
+        abort "3D generation did not complete (PLY_OK not found)"
+    fi
+    pass "3D generation completed"
+
+    # --- Check PLY file and size ---
+    local ply_line
+    ply_line=$(printf '%s' "$api_out" | grep "^PLY_OK:" | head -1)
+
+    local ply_size
+    ply_size=$(printf '%s' "$ply_line" | cut -d: -f3)
+    if [ -z "$ply_size" ] || [ "$ply_size" -le 0 ] 2>/dev/null; then
+        abort "PLY file is empty or size unknown: $ply_line"
+    fi
+    pass "PLY exported successfully (${ply_size} bytes)"
+
+    # --- Verify PLY exists in container ---
+    local ply_path
+    ply_path=$(printf '%s' "$ply_line" | cut -d: -f2)
+    podman exec -t rocm bash -c "[ -s '${ply_path}' ] || [ -s '/tmp/triposplat_test.ply' ]" \
+        || abort "PLY file not found in container: ${ply_path}"
+    pass "PLY file verified in container"
+
+    # --- Stop TripoSplat ---
+    info "Stopping TripoSplat..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'python.*run_gradio\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+        sleep 2; kw=$((kw + 2))
+        [ $kw -ge 20 ] && break
     done
-    pass "PartCrafter stopped"
+    pass "TripoSplat stopped"
 
     info "Phase 21 DONE"
 }
 
-main() { phase21_verify_partcrafter; }
+main() { phase21_verify_triposplat; }
 main "$@"

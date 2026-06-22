@@ -5,147 +5,112 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 7: RUN AND VERIFY – Atomic llama.cpp (ROCm + MTP)
+# PHASE 7: WhisperSpeech web UI – startup and generation test
 # ============================================================
-phase7_verify_atomic_llama_cpp() {
+phase7_whisperspeech() {
     info "============================================="
-    info "PHASE 7: RUN AND VERIFY (Atomic llama.cpp)"
+    info "PHASE 7: WHISPERSPEECH WEB UI"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/atomic-llama-cpp-turboquant"
-    local model_file="$app_dir/model.gguf"
-    local mtp_file="$app_dir/model_mtp.gguf"
-    local server_port=8080
-    local server_log="/tmp/atomic_llama_turboquant_server.log"
+    local ws_dir="/AI/whisperspeech-webui"
+    local ws_port=7860
+    local ws_log="/tmp/whisper_server.log"
 
-    local target_repo="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
-    local target_file="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
-    local mtp_repo="https://huggingface.co/AtomicChat/gemma-4-26B-A4B-it-assistant-GGUF"
-    local mtp_hf_file="gemma-4-26B-A4B-it-assistant.Q4_K_M.gguf"
+    # Kill old instances and clear log
+    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '$ws_log'" || true
 
-    # --- Download target model ---
-    info "Downloading target model $target_file from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
-    podman exec -t rocm bash -c "
-        mkdir -p '${app_dir}' && \
-        wget -q '${target_repo}/resolve/main/${target_file}' -O '${model_file}' \
-        || curl --fail -L '${target_repo}/resolve/main/${target_file}' -o '${model_file}'
-    " || abort "Failed to download $target_file"
-
-    local fsize
-    fsize=$(podman exec -t rocm bash -c "stat -c%s '${model_file}' 2>/dev/null || echo 0" \
-            | tr -d '\r\n') || fsize=0
-    fsize="${fsize:-0}"
-    if [[ "$fsize" =~ ^[0-9]+$ ]] && [ "$fsize" -gt 1048576 ]; then
-        pass "model.gguf downloaded ($(( fsize / 1024 / 1024 )) MB)"
-    else
-        abort "model.gguf missing or empty after download (size=${fsize})"
-    fi
-
-    # --- Download MTP head model ---
-    info "Downloading MTP head $mtp_hf_file from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${mtp_file}'" 2>/dev/null || true
-    podman exec -t rocm bash -c "
-        wget -q '${mtp_repo}/resolve/main/${mtp_hf_file}' -O '${mtp_file}' \
-        || curl --fail -L '${mtp_repo}/resolve/main/${mtp_hf_file}' -o '${mtp_file}'
-    " || abort "Failed to download $mtp_hf_file"
-
-    local mtp_fsize
-    mtp_fsize=$(podman exec -t rocm bash -c "stat -c%s '${mtp_file}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || mtp_fsize=0
-    mtp_fsize="${mtp_fsize:-0}"
-    if [[ "$mtp_fsize" =~ ^[0-9]+$ ]] && [ "$mtp_fsize" -gt 1048576 ]; then
-        pass "model_mtp.gguf downloaded ($(( mtp_fsize / 1024 / 1024 )) MB)"
-    else
-        abort "model_mtp.gguf missing or empty after download (size=${mtp_fsize})"
-    fi
-
-    podman exec -t rocm bash -c \
-        "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > '${server_log}'" || true
-
-    # --- Start server with MTP ---
-    info "Starting Atomic llama.cpp server (MTP, block-size=5) on port ${server_port}..."
+    # --- Start server in background ---
+    info "Starting WhisperSpeech web UI (port $ws_port)..."
     podman exec -d rocm bash -c \
-        "cd '${app_dir}' && ./build/bin/llama-server \
-            -m model.gguf \
-            --mtp-head model_mtp.gguf \
-            --spec-type mtp \
-            --draft-block-size 5 \
-            --host 0.0.0.0 \
-            --port ${server_port} \
-            -c 16384 \
-            --cache-type-k turbo3 \
-            --cache-type-v turbo3 \
-            -ngl 99 -ngld 99 \
-            -fa on \
-        >> '${server_log}' 2>&1"
+        "cd '$ws_dir' && source .venv/bin/activate \
+         && uv run --extra rocm webui.py --listen --api \
+         >> '$ws_log' 2>&1"
 
-    info "Waiting for Atomic llama.cpp server to become ready..."
-    local max_wait=600 wait_rc=0
-    wait_for_http \
-        "curl -sf http://localhost:${server_port}/health | grep -q 'ok'" \
-        "llama-server" \
-        "${server_log}" \
-        "$max_wait" \
-        "llama server listening" || wait_rc=$?
-
-    if [ $wait_rc -eq 0 ]; then
-        pass "Atomic llama.cpp server ready (/health OK)"
-    else
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        if [ $wait_rc -eq 1 ]; then
-            abort "Atomic llama.cpp server process died unexpectedly"
-        else
-            abort "Atomic llama.cpp server did not become ready within ${max_wait}s"
+    # --- Wait for readiness (up to 180 s – model loads at startup) ---
+    info "Waiting for WhisperSpeech web UI to become ready..."
+    local waited=0 max_wait=180 ready=false
+    while [ $waited -lt $max_wait ]; do
+        if podman exec -t rocm bash -c \
+               "curl -sf http://localhost:${ws_port}/ > /dev/null" 2>/dev/null; then
+            ready=true
+            break
         fi
-    fi
+        sleep 5
+        waited=$((waited + 5))
+        info "  ...waiting ($waited/${max_wait}s)"
+    done
 
-    # --- Verify MTP is active ---
-    info "Sending test query to Atomic llama.cpp API (checking MTP)..."
-    local api_response
-    api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${server_port}/v1/chat/completions \
+    if ! $ready; then
+        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
+        abort "WhisperSpeech web UI did not start within ${max_wait}s"
+    fi
+    pass "WhisperSpeech web UI is running on port $ws_port"
+
+    # --- Wait for Gradio API to become ready (/gradio_api/info) ---
+    info "Waiting for Gradio API to become ready..."
+    # api_max=600: first run requires model download (~several minutes)
+    local api_info="" api_waited=0 api_max=600
+    while [ $api_waited -lt $api_max ]; do
+        api_info=$(podman exec -t rocm bash -c \
+            "curl -sf http://localhost:${ws_port}/gradio_api/info" 2>/dev/null \
+            | tr -d '\r') || true
+        if echo "$api_info" | grep -q '"named_endpoints"'; then break; fi
+        sleep 5; api_waited=$((api_waited + 5))
+        info "  ...API not ready yet ($api_waited/${api_max}s)"
+    done
+
+    if ! echo "$api_info" | grep -q '"named_endpoints"'; then
+        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
+        abort "WhisperSpeech Gradio API did not become ready within ${api_max}s"
+    fi
+    pass "Gradio API ready"
+
+    # Extract first named endpoint name, strip leading /
+    local tts_fn
+    tts_fn=$(echo "$api_info" \
+        | grep -o '"named_endpoints":{"[^"]*"' \
+        | grep -o '"[^"]*"$' | tr -d '"' | sed 's|^/||')
+    info "TTS endpoint: /gradio_api/call/${tts_fn}"
+
+    # --- TTS generation test (Gradio 6.x: POST /gradio_api/call/{fn}) ---
+    info "Testing TTS generation (text: 'Test audio generation')..."
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${ws_port}/gradio_api/call/${tts_fn} \
             -H 'Content-Type: application/json' \
-            -d '{
-                \"model\": \"local\",
-                \"messages\": [
-                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
-                    {\"role\": \"user\", \"content\": \"2+2\"}
-                ],
-                \"max_tokens\": 64,
-                \"temperature\": 0
-            }'
+            -d '{\"data\": [
+                \"collabora/whisperspeech:s2a-q4-tiny-en+pl.model\",
+                \"Test audio generation\",
+                13.5, null, \"wav\", false
+            ]}' | tr -d '\r'
+    " 2>/dev/null | grep -o '"event_id":"[^"]*"' | grep -o '[^:]*$' | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
+        abort "WhisperSpeech TTS: no event_id returned from /gradio_api/call/${tts_fn}"
+    fi
+    info "TTS event_id: $event_id – polling result..."
+
+    local tts_result
+    tts_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 120 \
+            http://localhost:${ws_port}/gradio_api/call/${tts_fn}/${event_id} \
+        | tr -d '\r'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"choices"'; then
-        local answer
-        answer=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
-        info "  Query:  \"2+2\""
-        info "  Answer: \"$answer\""
-        if echo "$answer" | grep -q '4'; then
-            pass "Atomic llama.cpp API responded correctly (answer contains 4)"
-        else
-            abort "Atomic llama.cpp API returned wrong answer: \"$answer\" (expected 4)"
-        fi
+    if echo "$tts_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
+        pass "WhisperSpeech TTS generation OK (audio file returned)"
     else
-        info "Raw API response: $api_response"
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "Atomic llama.cpp API did not return expected response"
+        info "Raw TTS result: $tts_result"
+        podman exec -t rocm bash -c "cat '$ws_log'" 2>/dev/null || true
+        abort "WhisperSpeech TTS API did not return audio data"
     fi
-
-    info "Stopping Atomic llama.cpp server..."
-    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null || true" || true
-    local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'llama-server' > /dev/null" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
-    done
-    pass "Atomic llama.cpp server stopped"
 
     info "Phase 7 DONE"
 }
 
-main() { phase7_verify_atomic_llama_cpp; }
+main() { phase7_whisperspeech; }
+
 main "$@"

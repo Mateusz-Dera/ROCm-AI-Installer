@@ -5,25 +5,25 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 5: RUN AND VERIFY – llama.cpp-vulkan
+# PHASE 5: RUN AND VERIFY – KoboldCPP
 # ============================================================
-phase5_verify_llama_vulkan() {
+phase5_verify_koboldcpp() {
     info "============================================="
-    info "PHASE 5: RUN AND VERIFY (llama.cpp-vulkan)"
+    info "PHASE 5: RUN AND VERIFY (KoboldCPP)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local model_dir="/AI/llama.cpp-vulkan"
-    local model_file="$model_dir/model.gguf"
-    local hf_repo="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
-    local hf_file="gemma-4-12b-it-Q8_0.gguf"
+    local model_file="/AI/koboldcpp-rocm/model.gguf"
+    local hf_repo="https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF"
+    local hf_file="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
+    local kobold_port=5001
+    local kobold_log="/tmp/kobold_server.log"
 
     info "Downloading $hf_file from HuggingFace..."
     podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
-
     podman exec -t rocm bash -c "
-        mkdir -p '${model_dir}' && \
+        mkdir -p /AI/koboldcpp-rocm && \
         wget -q '${hf_repo}/resolve/main/${hf_file}' -O '${model_file}' \
         || curl --fail -L '${hf_repo}/resolve/main/${hf_file}' -o '${model_file}'
     " || abort "Failed to download $hf_file"
@@ -38,44 +38,45 @@ phase5_verify_llama_vulkan() {
         abort "model.gguf missing or empty after download (size=${fsize})"
     fi
 
-    local server_port=8080
-    local server_log="/tmp/llama_vulkan_server.log"
-    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > '${server_log}'" || true
+    podman exec -t rocm bash -c "pkill -f 'koboldcpp' 2>/dev/null; sleep 1; : > '${kobold_log}'" || true
 
-    info "Starting llama.cpp-vulkan server on port ${server_port}..."
+    info "Starting KoboldCPP on port ${kobold_port}..."
     podman exec -d rocm bash -c \
-        "cd '${model_dir}' && ./build/bin/llama-server \
-            -m model.gguf \
-            --host 0.0.0.0 \
-            --port ${server_port} \
-            -c 8192 \
-            -ngl 99 \
-        >> '${server_log}' 2>&1"
+        "cd /AI/koboldcpp-rocm && source .venv/bin/activate && \
+         uv run koboldcpp.py \
+             --model '${model_file}' \
+             --gpulayers 99 \
+             --usecublas \
+             --contextsize 8192 \
+             --port ${kobold_port} \
+             --host 0.0.0.0 \
+             --skiplauncher \
+         >> '${kobold_log}' 2>&1"
 
-    info "Waiting for llama.cpp-vulkan server to become ready..."
-    local max_wait=300 wait_rc=0
-    wait_for_http \
-        "curl -sf http://localhost:${server_port}/health | grep -q 'ok'" \
-        "llama-server" \
-        "${server_log}" \
-        "$max_wait" \
-        "llama server listening" || wait_rc=$?
-
-    if [ $wait_rc -eq 0 ]; then
-        pass "llama.cpp-vulkan server ready (/health OK)"
-    else
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        if [ $wait_rc -eq 1 ]; then
-            abort "llama.cpp-vulkan server process died unexpectedly"
-        else
-            abort "llama.cpp-vulkan server did not become ready within ${max_wait}s"
+    info "Waiting for KoboldCPP to become ready..."
+    local waited=0 max_wait=300 ready=false
+    while [ $waited -lt $max_wait ]; do
+        if podman exec -t rocm bash -c \
+               "curl -sf http://localhost:${kobold_port}/api/extra/version | grep -q '\"result\"'" 2>/dev/null; then
+            ready=true
+            break
         fi
+        sleep 5
+        waited=$((waited + 5))
+        info "  ...waiting ($waited/${max_wait}s)"
+    done
+
+    if $ready; then
+        pass "KoboldCPP server ready (/api/extra/version OK)"
+    else
+        podman exec -t rocm bash -c "cat '${kobold_log}'" 2>/dev/null || true
+        abort "KoboldCPP did not become ready within ${max_wait}s"
     fi
 
-    info "Sending test query to llama.cpp-vulkan API..."
+    info "Sending test query to KoboldCPP API..."
     local api_response
     api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${server_port}/v1/chat/completions \
+        curl -sf http://localhost:${kobold_port}/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{
                 \"model\": \"local\",
@@ -95,26 +96,26 @@ phase5_verify_llama_vulkan() {
         info "  Query:  \"2+2\""
         info "  Answer: \"$answer\""
         if echo "$answer" | grep -q '4'; then
-            pass "llama.cpp-vulkan API responded correctly (answer contains 4)"
+            pass "KoboldCPP API responded correctly (answer contains 4)"
         else
-            abort "llama.cpp-vulkan API returned wrong answer: \"$answer\" (expected 4)"
+            abort "KoboldCPP API returned wrong answer: \"$answer\" (expected 4)"
         fi
     else
         info "Raw API response: $api_response"
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "llama.cpp-vulkan API did not return expected response"
+        podman exec -t rocm bash -c "cat '${kobold_log}'" 2>/dev/null || true
+        abort "KoboldCPP API did not return expected response"
     fi
 
-    info "Stopping llama.cpp-vulkan server..."
-    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null || true" || true
+    info "Stopping KoboldCPP..."
+    podman exec -t rocm bash -c "pkill -f 'koboldcpp' 2>/dev/null || true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'llama-server' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f 'koboldcpp' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "llama.cpp-vulkan server stopped"
+    pass "KoboldCPP server stopped"
 
     info "Phase 5 DONE"
 }
 
-main() { phase5_verify_llama_vulkan; }
+main() { phase5_verify_koboldcpp; }
 main "$@"

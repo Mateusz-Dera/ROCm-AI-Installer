@@ -5,117 +5,113 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 8: RUN AND VERIFY – KoboldCPP
+# PHASE 8: RUN AND VERIFY – Soprano (text-to-speech)
 # ============================================================
-phase8_verify_koboldcpp() {
+phase8_verify_soprano() {
     info "============================================="
-    info "PHASE 8: RUN AND VERIFY (KoboldCPP)"
+    info "PHASE 8: RUN AND VERIFY (Soprano)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local model_file="/AI/koboldcpp-rocm/model.gguf"
-    local hf_repo="https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF"
-    local hf_file="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
-    local kobold_port=5001
-    local kobold_log="/tmp/kobold_server.log"
+    local app_dir="/AI/soprano-rocm"
+    local app_log="/tmp/soprano_server.log"
+    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
-    info "Downloading $hf_file from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
-    podman exec -t rocm bash -c "
-        mkdir -p /AI/koboldcpp-rocm && \
-        wget -q '${hf_repo}/resolve/main/${hf_file}' -O '${model_file}' \
-        || curl --fail -L '${hf_repo}/resolve/main/${hf_file}' -o '${model_file}'
-    " || abort "Failed to download $hf_file"
+    # --- Kill old instances, free port, clear log ---
+    # pkill -f 'soprano' kills bash itself (its cmdline contains 'soprano'),
+    # so run in isolation. VLLM EngineCore renames its cmdline to
+    # "VLLM::EngineCore" — use pgrep (matches comm, not bash) to kill safely.
+    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
+    sleep 3
+    podman exec -t rocm bash -c \
+        "fuser -k 7860/tcp 2>/dev/null; fuser -k 7861/tcp 2>/dev/null; \
+         sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    local fsize
-    fsize=$(podman exec -t rocm bash -c "stat -c%s '${model_file}' 2>/dev/null || echo 0" \
-            | tr -d '\r\n') || fsize=0
-    fsize="${fsize:-0}"
-    if [[ "$fsize" =~ ^[0-9]+$ ]] && [ "$fsize" -gt 1048576 ]; then
-        pass "model.gguf downloaded ($(( fsize / 1024 / 1024 )) MB)"
-    else
-        abort "model.gguf missing or empty after download (size=${fsize})"
-    fi
-
-    podman exec -t rocm bash -c "pkill -f 'koboldcpp' 2>/dev/null; sleep 1; : > '${kobold_log}'" || true
-
-    info "Starting KoboldCPP on port ${kobold_port}..."
+    # --- Start Soprano ---
+    info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
-        "cd /AI/koboldcpp-rocm && source .venv/bin/activate && \
-         uv run koboldcpp.py \
-             --model '${model_file}' \
-             --gpulayers 99 \
-             --usecublas \
-             --contextsize 8192 \
-             --port ${kobold_port} \
-             --host 0.0.0.0 \
-             --skiplauncher \
-         >> '${kobold_log}' 2>&1"
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
+         >> '${app_log}' 2>&1"
 
-    info "Waiting for KoboldCPP to become ready..."
-    local waited=0 max_wait=300 ready=false
+    # Wait for Soprano to load the model and start Gradio (model loads BEFORE
+    # Gradio starts, so "Starting Gradio interface" implies model is ready).
+    # Initial sleep avoids reading stale log content from a previous run.
+    info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
+    sleep 5
+    local app_port="" waited=5 max_wait=300
     while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${kobold_port}/api/extra/version | grep -q '\"result\"'" 2>/dev/null; then
-            ready=true
-            break
-        fi
-        sleep 5
-        waited=$((waited + 5))
+        app_port=$(podman exec -t rocm bash -c \
+            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
+            | tr -d '\r\n') || app_port=""
+        [ -n "$app_port" ] && break
+        sleep 5; waited=$((waited + 5))
         info "  ...waiting ($waited/${max_wait}s)"
     done
-
-    if $ready; then
-        pass "KoboldCPP server ready (/api/extra/version OK)"
-    else
-        podman exec -t rocm bash -c "cat '${kobold_log}'" 2>/dev/null || true
-        abort "KoboldCPP did not become ready within ${max_wait}s"
+    if [ -z "$app_port" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: could not detect port from log within ${max_wait}s"
     fi
+    pass "Soprano ready on port ${app_port} (model loaded)"
 
-    info "Sending test query to KoboldCPP API..."
-    local api_response
-    api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${kobold_port}/v1/chat/completions \
+    # --- Generate speech (streaming=false → single audio file returned) ---
+    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
             -H 'Content-Type: application/json' \
-            -d '{
-                \"model\": \"local\",
-                \"messages\": [
-                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
-                    {\"role\": \"user\", \"content\": \"2+2\"}
-                ],
-                \"max_tokens\": 64,
-                \"temperature\": 0
-            }'
+            -d '{\"data\": [
+                \"${REF_TEXT}\",
+                0.0,
+                0.95,
+                1.2,
+                1,
+                false
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '"event_id":"[^"]*"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "Soprano: no event_id returned from /generate_speech"
+    fi
+    info "Generation started (event_id: $event_id) – polling result..."
+
+    # --- Poll result (SSE stream) ---
+    local gen_result
+    gen_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 120 \
+            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
+        | tr -d '\r'
     " 2>/dev/null) || true
 
-    if echo "$api_response" | grep -q '"choices"'; then
-        local answer
-        answer=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
-        info "  Query:  \"2+2\""
-        info "  Answer: \"$answer\""
-        if echo "$answer" | grep -q '4'; then
-            pass "KoboldCPP API responded correctly (answer contains 4)"
-        else
-            abort "KoboldCPP API returned wrong answer: \"$answer\" (expected 4)"
-        fi
+    if echo "$gen_result" | grep -q '"path"'; then
+        pass "Soprano speech generation OK (audio returned)"
     else
-        info "Raw API response: $api_response"
-        podman exec -t rocm bash -c "cat '${kobold_log}'" 2>/dev/null || true
-        abort "KoboldCPP API did not return expected response"
+        info "Raw result: $gen_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "Soprano generation did not return audio data"
     fi
 
-    info "Stopping KoboldCPP..."
-    podman exec -t rocm bash -c "pkill -f 'koboldcpp' 2>/dev/null || true" || true
+    # --- Stop server ---
+    info "Stopping Soprano..."
+    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
+    sleep 2
+    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'koboldcpp' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c \
+            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "KoboldCPP server stopped"
+    pass "Soprano stopped"
 
     info "Phase 8 DONE"
 }
 
-main() { phase8_verify_koboldcpp; }
+main() { phase8_verify_soprano; }
 main "$@"

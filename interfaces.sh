@@ -122,80 +122,55 @@ install_koboldcpp() {
     basic_run "$REPO" "$COMMAND"
 }
 
-# ----- llama.cpp -----
+# ----- llama-cpp-turboquant -----
 
-LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
-LLAMA_COMMIT="32120c10e33baae8061e9961e6c3f1248302a331"
+LLAMA_TQ_REPO="https://github.com/TheTom/llama-cpp-turboquant"
+LLAMA_TQ_COMMIT="4595fff0bbd15ee01663699b788eea70e7e1cd69"
+LLAMA_TQ_BRANCH="feature/turboquant-kv-cache"
 
-# llama.cpp
-install_llama_cpp() {
-    REPO="$LLAMA_REPO"
-    COMMIT="$LLAMA_COMMIT"
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 30"
-    FOLDER=$(basename "$REPO")
+install_llama_cpp_turboquant() {
+    REPO="$LLAMA_TQ_REPO"
+    COMMIT="$LLAMA_TQ_COMMIT"
+    FOLDER="llama-cpp-turboquant"
+    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 5 --host 0.0.0.0 --port 8080 --ctx-size 32768 --cache-type-k q8_0 --cache-type-v turbo4 -ngl 99 -ngld 99 -fa on"
+
+    local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
+    local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
+    local MTP_FILE="mtp-gemma-4-12b-it.gguf"
 
     basic_container
-    basic_git "$REPO" "$COMMIT"
+    podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
+    podman exec -it rocm bash -c "cd /AI && git clone -b $LLAMA_TQ_BRANCH $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
-    basic_run "$REPO" "$COMMAND" "&&"
+
+    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
+    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
+
+    basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
 }
 
-# llama.cpp Vulkan
-install_llama_cpp_vulkan() {
-    REPO="$LLAMA_REPO"
-    COMMIT="$LLAMA_COMMIT"
-    FOLDER="llama.cpp-vulkan"
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 --ctx-size 32768 --gpu-layers 30"
+install_llama_cpp_turboquant_vulkan() {
+    REPO="$LLAMA_TQ_REPO"
+    COMMIT="$LLAMA_TQ_COMMIT"
+    FOLDER="llama-cpp-turboquant-vulkan"
+    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 5 --host 0.0.0.0 --port 8080 --ctx-size 32768 --cache-type-k q8_0 --cache-type-v turbo4 -ngl 99 -ngld 99 -fa on"
+
+    local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
+    local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
+    local MTP_FILE="mtp-gemma-4-12b-it.gguf"
 
     basic_container
     podman exec -it rocm bash -c "apt-get install -y libvulkan-dev vulkan-tools glslc"
     podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    podman exec -it rocm bash -c "cd /AI && git clone -b $LLAMA_TQ_BRANCH $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
     PODMAN='cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+
+    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
+    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
+
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
-}
-
-install_atomic_llama_cpp_turboquant() {
-    REPO="https://github.com/AtomicBot-ai/atomic-llama-cpp-turboquant"
-    COMMIT="cc59fcb6a8765a9711cb3a2c349a788a40cca6ce"
-    FOLDER=$(basename "$REPO")
-    COMMAND="./build/bin/llama-server -m model.gguf --mtp-head model_mtp.gguf --spec-type mtp --draft-block-size 5 --host 0.0.0.0 --port 8080 -c 262144 --cache-type-k turbo3 --cache-type-v turbo3 -ngl 99 -ngld 99 -fa on"
-
-    local TARGET_REPO="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF"
-    local TARGET_COMMIT="cb1f989321df6baa8c647aea074fbad465962bb1"
-    local TARGET_FILE="google_gemma-4-26B-A4B-it-Q4_K_M.gguf"
-    local MTP_REPO="https://huggingface.co/AtomicChat/gemma-4-26B-A4B-it-assistant-GGUF"
-    local MTP_COMMIT="171ecca181ec00ed6ffacb573195aa7c644bbdc6"
-    local MTP_FILE="gemma-4-26B-A4B-it-assistant.Q4_K_M.gguf"
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
-
-    podman exec -it rocm bash -c "
-        wget -q '${TARGET_REPO}/resolve/${TARGET_COMMIT}/${TARGET_FILE}' -O '/AI/$FOLDER/model.gguf'
-    "
-    podman exec -it rocm bash -c "
-        wget -q '${MTP_REPO}/resolve/${MTP_COMMIT}/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'
-    "
-
-    basic_run "$REPO" "$COMMAND" "&&"
-}
-
-install_turboquant_rocm_llamacpp() {
-    REPO="https://github.com/jagsan-cyber/turboquant-rocm-llamacpp"
-    COMMIT="22cce31b6e58f3e945fbc7f2f5eb06a509e64fcc"
-    FOLDER=$(basename "$REPO")
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 -c 262144 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
-    basic_run "$REPO" "$COMMAND" "&&"
 }
 
 # SillyTavern
@@ -392,7 +367,7 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="b732aa192f83f926b4ce7e54e6a6224d8e312ce4"
+    COMMIT="b0f9e326af0bf88ea901d0481f581a791a58ccbb"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"

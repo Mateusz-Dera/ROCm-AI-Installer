@@ -5,113 +5,78 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 11: RUN AND VERIFY – Soprano (text-to-speech)
+# PHASE 11: RUN AND VERIFY – ComfyUI (startup + API ready)
 # ============================================================
-phase11_verify_soprano() {
+phase11_verify_comfyui() {
     info "============================================="
-    info "PHASE 11: RUN AND VERIFY (Soprano)"
+    info "PHASE 11: RUN AND VERIFY (ComfyUI startup)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/soprano-rocm"
-    local app_log="/tmp/soprano_server.log"
-    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
+    local app_dir="/AI/ComfyUI"
+    local app_port=8188
+    local app_log="/tmp/comfyui_server.log"
 
-    # --- Kill old instances, free port, clear log ---
-    # pkill -f 'soprano' kills bash itself (its cmdline contains 'soprano'),
-    # so run in isolation. VLLM EngineCore renames its cmdline to
-    # "VLLM::EngineCore" — use pgrep (matches comm, not bash) to kill safely.
-    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
-    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
+    # --- Kill old instances and clear log ---
+    podman exec -t rocm bash -c "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
-        "fuser -k 7860/tcp 2>/dev/null; fuser -k 7861/tcp 2>/dev/null; \
-         sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start Soprano ---
-    info "Starting Soprano TTS..."
+    # --- Start ComfyUI ---
+    info "Starting ComfyUI on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
+         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
+         uv run main.py --listen 0.0.0.0 --enable-manager \
+         --preview-method auto --dont-upcast-attention --bf16-vae \
+         --use-pytorch-cross-attention --reserve-vram 2.0 \
          >> '${app_log}' 2>&1"
 
-    # Wait for Soprano to load the model and start Gradio (model loads BEFORE
-    # Gradio starts, so "Starting Gradio interface" implies model is ready).
-    # Initial sleep avoids reading stale log content from a previous run.
-    info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
-    sleep 5
-    local app_port="" waited=5 max_wait=300
-    while [ $waited -lt $max_wait ]; do
-        app_port=$(podman exec -t rocm bash -c \
-            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
-            | tr -d '\r\n') || app_port=""
-        [ -n "$app_port" ] && break
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if [ -z "$app_port" ]; then
+    # --- Wait for /system_stats (ComfyUI ready) ---
+    info "Waiting for ComfyUI to become ready (up to 300s)..."
+    local waited rc
+    wait_for_http \
+        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
+        "main\.py" \
+        "${app_log}" \
+        300 \
+        "Starting server"
+    rc=$?
+    if [ $rc -eq 1 ]; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "Soprano: could not detect port from log within ${max_wait}s"
+        abort "ComfyUI process died before becoming ready"
+    elif [ $rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "ComfyUI did not become ready within 300s"
     fi
-    pass "Soprano ready on port ${app_port} (model loaded)"
+    pass "ComfyUI API ready on port ${app_port}"
 
-    # --- Generate speech (streaming=false → single audio file returned) ---
-    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${REF_TEXT}\",
-                0.0,
-                0.95,
-                1.2,
-                1,
-                false
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
-
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "Soprano: no event_id returned from /generate_speech"
+    # --- Quick sanity check: /object_info returns known node types ---
+    local node_count
+    node_count=$(podman exec -t rocm bash -c \
+        "curl -sf http://localhost:${app_port}/object_info | python3 -c 'import sys,json; d=json.load(sys.stdin); print(len(d))'" \
+        | tr -d '\r\n') || node_count=0
+    if [ "${node_count:-0}" -lt 50 ]; then
+        abort "ComfyUI /object_info returned only ${node_count} node types (expected >=50)"
     fi
-    info "Generation started (event_id: $event_id) – polling result..."
-
-    # --- Poll result (SSE stream) ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 120 \
-            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
-
-    if echo "$gen_result" | grep -q '"path"'; then
-        pass "Soprano speech generation OK (audio returned)"
-    else
-        info "Raw result: $gen_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "Soprano generation did not return audio data"
-    fi
+    pass "ComfyUI /object_info OK (${node_count} node types)"
 
     # --- Stop server ---
-    info "Stopping Soprano..."
-    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
-    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    info "Stopping ComfyUI..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'main\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "Soprano stopped"
+    pass "ComfyUI stopped"
 
     info "Phase 11 DONE"
 }
 
-main() { phase11_verify_soprano; }
+main() { phase11_verify_comfyui; }
 main "$@"

@@ -4,120 +4,264 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+_ST_CFG_BACKUP="/AI/SillyTavern/config.yaml.test_bak"
+
+_restore_st_config() {
+    if podman exec rocm bash -c "[ -f '$_ST_CFG_BACKUP' ]" 2>/dev/null; then
+        podman exec rocm bash -c \
+            "cp '$_ST_CFG_BACKUP' /AI/SillyTavern/config.yaml && rm -f '$_ST_CFG_BACKUP'" \
+            2>/dev/null || true
+        info "config.yaml restored from test backup"
+    fi
+}
+trap _restore_st_config EXIT
+
 # ============================================================
-# PHASE 6: RUN AND VERIFY – turboquant-rocm-llamacpp
+# PHASE 6: SillyTavern + WhisperSpeech integration
 # ============================================================
-phase6_verify_turboquant_rocm_llamacpp() {
+phase6_sillytavern_integration() {
     info "============================================="
-    info "PHASE 6: RUN AND VERIFY (turboquant-rocm-llamacpp)"
+    info "PHASE 6: SILLYTAVERN + WHISPERSPEECH INTEGRATION"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/turboquant-rocm-llamacpp"
-    local model_file="$app_dir/model.gguf"
-    local hf_repo="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
-    local hf_file="gemma-4-12b-it-Q8_0.gguf"
-    local server_port=8080
-    local server_log="/tmp/turboquant_server.log"
+    local st_dir="/AI/SillyTavern"
+    local st_port=8000
+    # WhisperSpeech exposes two servers:
+    #   7860 – Gradio web UI
+    #   5050 – REST API used by the SillyTavern plugin (POST /generate → audio)
+    local ws_api_port=5050
+    local ws_gui_port=7860
+    local st_log="/tmp/st_server.log"
+    local ws_log="/tmp/whisper_server.log"
+    local ws_api_url="http://127.0.0.1:${ws_api_port}"
 
-    info "Downloading $hf_file from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${model_file}'" 2>/dev/null || true
-    podman exec -t rocm bash -c "
-        mkdir -p '${app_dir}' && \
-        wget -q '${hf_repo}/resolve/main/${hf_file}' -O '${model_file}' \
-        || curl --fail -L '${hf_repo}/resolve/main/${hf_file}' -o '${model_file}'
-    " || abort "Failed to download $hf_file"
-
-    local fsize
-    fsize=$(podman exec -t rocm bash -c "stat -c%s '${model_file}' 2>/dev/null || echo 0" \
-            | tr -d '\r\n') || fsize=0
-    fsize="${fsize:-0}"
-    if [[ "$fsize" =~ ^[0-9]+$ ]] && [ "$fsize" -gt 1048576 ]; then
-        pass "model.gguf downloaded ($(( fsize / 1024 / 1024 )) MB)"
+    # --- Verify WhisperSpeech plugin is installed in SillyTavern ---
+    local ws_ext_dir="${st_dir}/public/scripts/extensions/third-party/whisperspeech-webui"
+    if container_dir_exists "$ws_ext_dir"; then
+        pass "WhisperSpeech extension installed at $ws_ext_dir"
     else
-        abort "model.gguf missing or empty after download (size=${fsize})"
+        abort "WhisperSpeech extension NOT installed – ${ws_ext_dir} missing"
     fi
 
+    # --- Ensure WhisperSpeech is running (REST API on port 5050) ---
+    # The plugin connects to the REST API, not the Gradio GUI.
+    if ! podman exec -t rocm bash -c \
+           "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
+        info "WhisperSpeech REST API not running – starting it now..."
+        podman exec -t rocm bash -c \
+            "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '${ws_log}'" || true
+        podman exec -d rocm bash -c \
+            "cd /AI/whisperspeech-webui && source .venv/bin/activate \
+             && uv run --extra rocm webui.py --listen --api \
+             >> '${ws_log}' 2>&1"
+        info "Waiting for WhisperSpeech REST API to become ready (up to 600s)..."
+        local ws_waited=0 ws_ready=false
+        while [ $ws_waited -lt 600 ]; do
+            if podman exec -t rocm bash -c \
+                   "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
+                ws_ready=true; break
+            fi
+            sleep 5; ws_waited=$((ws_waited + 5))
+            info "  ...waiting for WhisperSpeech REST API ($ws_waited/600s)"
+        done
+        if ! $ws_ready; then
+            podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
+            abort "WhisperSpeech REST API did not become ready within 600s"
+        fi
+        pass "WhisperSpeech REST API ready on port ${ws_api_port}"
+    else
+        info "WhisperSpeech REST API already running on port ${ws_api_port}"
+    fi
+
+    # --- Kill any leftover SillyTavern processes (including start.sh) ---
     podman exec -t rocm bash -c \
-        "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > '${server_log}'" || true
+        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; true" || true
+    sleep 3
+    podman exec -t rocm bash -c \
+        "fuser -k ${st_port}/tcp 2>/dev/null; true" || true
+    sleep 1
+    podman exec -t rocm bash -c ": > '$st_log'" || true
 
-    info "Starting turboquant-rocm-llamacpp server on port ${server_port}..."
+    # --- Ensure config.yaml exists (SillyTavern creates it on first run) ---
+    if ! container_file_exists "$st_dir/config.yaml"; then
+        info "config.yaml missing – starting SillyTavern briefly to initialize it..."
+        local init_log="/tmp/st_init.log"
+        podman exec -d rocm bash -c ": > '$init_log'; cd '$st_dir' && bash start.sh >> '$init_log' 2>&1"
+        local cw=0
+        while ! container_file_exists "$st_dir/config.yaml" && [ $cw -lt 300 ]; do
+            sleep 5; cw=$((cw + 5))
+            info "  ...waiting for config.yaml ($cw/300s)"
+        done
+        podman exec -t rocm bash -c \
+            "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+             fuser -k ${st_port}/tcp 2>/dev/null; true" || true
+        sleep 3
+        podman exec -t rocm bash -c ": > '$st_log'" || true
+        if ! container_file_exists "$st_dir/config.yaml"; then
+            abort "SillyTavern did not generate config.yaml within 300s"
+        fi
+        pass "SillyTavern config.yaml initialized"
+    fi
+
+    # --- Patch config.yaml if basicAuth is not enabled with user/password credentials ---
+    if ! podman exec rocm bash -c \
+           "grep -q 'basicAuthMode: true' '$st_dir/config.yaml' && \
+            grep -q 'username: \"user\"' '$st_dir/config.yaml' && \
+            grep -q 'password: \"password\"' '$st_dir/config.yaml'" 2>/dev/null; then
+        info "Patching config.yaml (basicAuth) for test – original will be restored on exit..."
+        podman exec rocm bash -c "cp '$st_dir/config.yaml' '$_ST_CFG_BACKUP'" \
+            || abort "Failed to backup config.yaml"
+        podman exec rocm bash -c "
+            sed -i 's/basicAuthMode: false/basicAuthMode: true/' '$st_dir/config.yaml'
+            sed -i 's/^  username: .*/  username: \"user\"/' '$st_dir/config.yaml'
+            sed -i 's/^  password: .*/  password: \"password\"/' '$st_dir/config.yaml'
+        " || abort "Failed to patch config.yaml"
+        pass "config.yaml patched for test (will be restored on exit)"
+    fi
+
+    # --- Read basicAuth credentials from config.yaml ---
+    local st_user st_pass
+    st_user=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'username:' \
+         | sed 's/.*username: *\"//;s/\"//'") || st_user=""
+    st_pass=$(podman exec rocm bash -c \
+        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'password:' \
+         | sed 's/.*password: *\"//;s/\"//'") || st_pass=""
+    st_user=$(printf '%s' "$st_user" | tr -d '\r'); st_user="${st_user:-user}"
+    st_pass=$(printf '%s' "$st_pass" | tr -d '\r'); st_pass="${st_pass:-password}"
+    info "SillyTavern basicAuth: user='$st_user'"
+
+    # --- Start SillyTavern (WhisperSpeech keeps running) ---
+    info "Starting SillyTavern (WhisperSpeech keeps running)..."
     podman exec -d rocm bash -c \
-        "cd '${app_dir}' && ./build/bin/llama-server \
-            -m model.gguf \
-            --host 0.0.0.0 \
-            --port ${server_port} \
-            -c 8192 \
-            --flash-attn on \
-            --cache-type-k q4_0 \
-            --cache-type-v q4_0 \
-            -ngl 99 \
-        >> '${server_log}' 2>&1"
+        "cd '$st_dir' && bash start.sh >> '$st_log' 2>&1"
 
-    info "Waiting for turboquant-rocm-llamacpp server to become ready..."
-    local max_wait=300 wait_rc=0
+    # --- Wait for SillyTavern to become ready ---
+    # SillyTavern startup can take up to ~10 min on first run (content file sync +
+    # webpack compilation). "Go to:" is printed right after webpack finishes,
+    # immediately before the server starts accepting HTTP connections.
+    # The log is cleared above (: > '$st_log') so the log-based signal is safe.
+    # The process monitor uses 'start.sh' (present from launch until ST exits).
+    info "Waiting for SillyTavern to become ready (up to 900s)..."
+    local max_wait=900
+    local wait_rc=0
     wait_for_http \
-        "curl -sf http://localhost:${server_port}/health | grep -q 'ok'" \
-        "llama-server" \
-        "${server_log}" \
+        "curl -sf -u '${st_user}:${st_pass}' --max-time 5 http://localhost:${st_port}/ -o /dev/null" \
+        "start\.sh" \
+        "$st_log" \
         "$max_wait" \
-        "llama server listening" || wait_rc=$?
+        "Go to:" || wait_rc=$?
 
-    if [ $wait_rc -eq 0 ]; then
-        pass "turboquant-rocm-llamacpp server ready (/health OK)"
-    else
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
+    if [ $wait_rc -ne 0 ]; then
+        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
         if [ $wait_rc -eq 1 ]; then
-            abort "turboquant-rocm-llamacpp server process died unexpectedly"
+            abort "SillyTavern process died unexpectedly"
         else
-            abort "turboquant-rocm-llamacpp server did not become ready within ${max_wait}s"
+            abort "SillyTavern did not start within ${max_wait}s"
         fi
     fi
+    pass "SillyTavern is running on port $st_port"
 
-    info "Sending test query to turboquant-rocm-llamacpp API..."
-    local api_response
-    api_response=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${server_port}/v1/chat/completions \
-            -H 'Content-Type: application/json' \
-            -d '{
-                \"model\": \"local\",
-                \"messages\": [
-                    {\"role\": \"system\", \"content\": \"You are a calculator. Output only the numeric result, nothing else.\"},
-                    {\"role\": \"user\", \"content\": \"2+2\"}
-                ],
-                \"max_tokens\": 64,
-                \"temperature\": 0
-            }'
-    " 2>/dev/null) || true
-
-    if echo "$api_response" | grep -q '"choices"'; then
-        local answer
-        answer=$(echo "$api_response" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); m=d['choices'][0]['message']; print(m.get('content','') or m.get('reasoning_content',''))" 2>/dev/null) || answer=""
-        info "  Query:  \"2+2\""
-        info "  Answer: \"$answer\""
-        if echo "$answer" | grep -q '4'; then
-            pass "turboquant-rocm-llamacpp API responded correctly (answer contains 4)"
-        else
-            abort "turboquant-rocm-llamacpp API returned wrong answer: \"$answer\" (expected 4)"
+    # --- Verify main page ---
+    info "Verifying SillyTavern main page..."
+    # No -t to avoid TTY \r injection into 700KB HTML; retry up to 3x for race
+    local st_html_ok=false
+    for _i in 1 2 3; do
+        info "  HTML check attempt $_i..."
+        if podman exec rocm bash -c \
+            "curl -sf -u '${st_user}:${st_pass}' http://localhost:${st_port}/ 2>/dev/null \
+             | grep -qiE 'SillyTavern|<!DOCTYPE html'" 2>/dev/null; then
+            st_html_ok=true; break
         fi
+        sleep 2
+    done
+    if $st_html_ok; then
+        pass "SillyTavern main page loads correctly (HTML content verified)"
     else
-        info "Raw API response: $api_response"
-        podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-        abort "turboquant-rocm-llamacpp API did not return expected response"
+        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
+        abort "SillyTavern page did not return expected HTML content"
     fi
 
-    info "Stopping turboquant-rocm-llamacpp server..."
-    podman exec -t rocm bash -c "pkill -f 'llama-server' 2>/dev/null || true" || true
+    # --- Configure WhisperSpeech plugin URL in SillyTavern settings ---
+    # The plugin connects to the REST API (port 5050), not the Gradio GUI (port 7860).
+    info "Configuring WhisperSpeech extension URL in SillyTavern settings..."
+    local settings_file="$st_dir/data/default-user/settings.json"
+
+    # Wait for SillyTavern to write default settings (up to 30 s)
+    local sw=0
+    while ! container_file_exists "$settings_file" && [ $sw -lt 30 ]; do
+        sleep 3; sw=$((sw + 3))
+    done
+
+    if container_file_exists "$settings_file"; then
+        # Update plugin URL via python3 (available in container)
+        podman exec -t rocm bash -c "
+python3 - <<'PYEOF'
+import json, sys
+path = '$settings_file'
+try:
+    with open(path, 'r') as f:
+        s = json.load(f)
+except Exception:
+    s = {}
+ext = s.setdefault('extension_settings', {})
+ws  = ext.setdefault('whisperspeech_webui', {})
+ws['server_url'] = '$ws_api_url'
+with open(path, 'w') as f:
+    json.dump(s, f, indent=2)
+print('Settings updated: whisperspeech_webui.server_url =', ws['server_url'])
+PYEOF
+        " || abort "Failed to update SillyTavern extension settings"
+        pass "WhisperSpeech extension URL set to: $ws_api_url"
+    else
+        abort "SillyTavern settings.json not found – cannot configure extension"
+    fi
+
+    # --- Test TTS generation via the REST API (replicates the plugin's Test button) ---
+    # The plugin sends POST /generate with JSON and expects a binary audio response.
+    info "Testing TTS generation via WhisperSpeech REST API (POST /generate)..."
+    local tts_size
+    tts_size=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${ws_api_port}/generate \
+            -H 'Content-Type: application/json' \
+            -d '{\"text\": \"Hello, this is a test message!\", \"speed\": 13.5, \"format\": \"wav\", \"model\": \"tiny\"}' \
+            -o /tmp/whisperspeech_test.wav \
+            -w '%{size_download}' \
+            --max-time 120
+    " 2>/dev/null | tr -d '\r') || tts_size=0
+    tts_size="${tts_size:-0}"
+
+    if [[ "$tts_size" =~ ^[0-9]+$ ]] && [ "$tts_size" -gt 1000 ]; then
+        pass "TTS generation OK – received ${tts_size} bytes of audio (WAV)"
+    else
+        podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
+        abort "TTS generation FAILED – /generate returned ${tts_size} bytes (expected > 1000)"
+    fi
+
+    # --- Shut down SillyTavern and WhisperSpeech ---
+    info "Stopping SillyTavern..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+         fuser -k ${st_port}/tcp 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'llama-server' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f 'node.*server' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "turboquant-rocm-llamacpp server stopped"
+    pass "SillyTavern stopped"
+
+    info "Stopping WhisperSpeech web UI..."
+    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null || true" || true
+    kw=0
+    while podman exec -t rocm bash -c "pgrep -f 'webui.py' > /dev/null" 2>/dev/null; do
+        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
+    done
+    pass "WhisperSpeech web UI stopped"
 
     info "Phase 6 DONE"
 }
 
-main() { phase6_verify_turboquant_rocm_llamacpp; }
+main() { phase6_sillytavern_integration; }
+
 main "$@"

@@ -5,151 +5,107 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 # ============================================================
-# PHASE 13: RUN AND VERIFY – ACE-Step-1.5 (text-to-music)
+# PHASE 13: ComfyUI workflow – Qwen-Image-Edit-2511-GGUF (image edit)
+# Input image: cat.png → change fur color to black, eyes to yellow
 # ============================================================
-phase13_verify_ace_step_1_5() {
+phase13_comfyui_qwen_image_edit() {
     info "============================================="
-    info "PHASE 13: RUN AND VERIFY (ACE-Step-1.5)"
+    info "PHASE 13: ComfyUI – Qwen-Image-Edit-2511-GGUF"
     info "============================================="
+
+    local app_port=8188
+    local app_dir="/AI/ComfyUI"
+    local app_log="/tmp/comfyui_server.log"
+    local workflow_src="${SCRIPT_DIR}/workflows/Qwen-Image-Edit-2511-GGUF-Single-Image.json"
+    local workflow_dst="/tmp/comfyui_workflow_17.json"
+    local helper_src="${TESTS_DIR}/comfyui_run_workflow.py"
+    local helper_dst="/tmp/comfyui_run_workflow.py"
+    local cat_img_src="${SCRIPT_DIR}/workflows/images/cat.png"
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local app_dir="/AI/ACE-Step-1.5"
-    local app_port=7860
-    local app_log="/tmp/acestep15_server.log"
-
-    # --- Kill old instances and clear log ---
-    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
+    # --- Kill old ComfyUI instances ---
+    podman exec -t rocm bash -c "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start ACE-Step-1.5 ---
-    info "Starting ACE-Step-1.5 on port ${app_port}..."
+    # --- Start ComfyUI ---
+    info "Starting ComfyUI on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST \
-         python -m acestep.acestep_v15_pipeline \
-             --server-name 0.0.0.0 \
-             --port ${app_port} \
-             --config_path acestep-v15-turbo \
-             --lm_model_path acestep-5Hz-lm-4B \
-             --init_service true \
-             --backend pt \
+         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 \
+         uv run main.py --listen 0.0.0.0 --enable-manager \
+         --preview-method auto --dont-upcast-attention --bf16-vae \
+         --use-pytorch-cross-attention --reserve-vram 2.0 \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API (up to 600s – models download on first run) ---
-    info "Waiting for ACE-Step-1.5 Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 10; waited=$((waited + 10))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
+    info "Waiting for ComfyUI to become ready (up to 300s)..."
+    local rc
+    wait_for_http \
+        "curl -sf http://localhost:${app_port}/system_stats | grep -q 'python_version'" \
+        "main\.py" "${app_log}" 300 "Starting server"
+    rc=$?
+    if [ $rc -eq 1 ]; then
         podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5 did not become ready within ${max_wait}s"
+        abort "ComfyUI process died"
+    elif [ $rc -eq 2 ]; then
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "ComfyUI did not become ready within 300s"
     fi
-    pass "ACE-Step-1.5 Gradio API ready on port ${app_port}"
+    pass "ComfyUI ready"
 
-    # --- Generate a short test song via /generation_wrapper ---
-    # Parameters: 78 total (72 visible + 6 hidden gr.State)
-    #   Hidden: task_type (gr.State, pos 20), is_format_caption_state (pos 48),
-    #           current_batch_index/total_batches/batch_queue/generation_params_state (pos 74-77)
-    # DiT Inference Steps max = 20 for acestep-v15-turbo config
-    # Audio Duration = 30s (minimum)
-    # New params vs previous: use_adg(22), dcw_mode/scaler/high_scaler/wavelet/custom_timesteps(31-35),
-    #   retake_seed(66), flow_edit_morph/source_caption/source_lyrics/n_min/n_max/n_avg(67-72),
-    #   autogen_checkbox(73)
-    info "Requesting music generation (30s clip, DiT steps=20)..."
-    local gen_event_id
-    gen_event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generation_wrapper \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"pop, simple, guitar\",
-                \"[Verse]\\nThis is a test song\\nWith a simple melody\",
-                120, \"C Major\", \"4/4\", \"en\",
-                20, 7.0, true, \"\", null, 30, 1, null, \"\",
-                0, -1, \"\", 0.0, 0.0,
-                \"text2music\",
-                false, false,
-                0.0, 1.0, 3.0, \"ode\", \"euler\", 0.0, 0.0,
-                false, \"double\", 0.05, 0.02, \"haar\", \"\",
-                \"wav\", \"128k\", 48000, 1.0, false, 1.0, 0, 1.0, \"\",
-                false, false, true,
-                null,
-                false, false, false, false, 0.01, 1,
-                \"woodwinds\", [\"woodwinds\"],
-                false, -10.0, 0.0, 0.0, -0.2, 0.5, \"conservative\", 0.0,
-                0.0, \"\",
-                false, null, null, 0.0, 1.0, 1,
-                false,
-                null, null, null, null
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
+    # --- Copy input image into ComfyUI input directory ---
+    info "Copying cat.png into ComfyUI input directory..."
+    podman exec -t rocm bash -c "mkdir -p '${app_dir}/input'" 2>/dev/null || true
+    podman cp "${cat_img_src}" "rocm:${app_dir}/input/cat.png" || \
+        abort "Failed to copy cat.png into container"
+    pass "cat.png copied to ${app_dir}/input/"
 
-    if [ -z "$gen_event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5: no event_id returned from /generation_wrapper"
-    fi
-    info "Generation started (event_id: $gen_event_id) – polling result (up to 300s)..."
+    # --- Copy workflow JSON and helper into container ---
+    podman cp "${workflow_src}" "rocm:${workflow_dst}" || \
+        abort "Failed to copy workflow JSON into container"
+    podman cp "${helper_src}" "rocm:${helper_dst}" || \
+        abort "Failed to copy comfyui_run_workflow.py into container"
 
-    # --- Poll result (SSE stream) ---
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 300 \
-            http://localhost:${app_port}/gradio_api/call/generation_wrapper/${gen_event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
+    # --- Run workflow ---
+    info "Running Qwen-Image-Edit-2511-GGUF workflow (image edit: cat.png)..."
+    local test_output
+    test_output=$(podman exec -t rocm bash -c \
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         python3 '${helper_dst}' '${workflow_dst}' 2>/tmp/comfyui_helper_17_stderr.txt" \
+        | tr -d '\r') || true
 
-    if echo "$gen_result" | grep -qE '\.wav|\.mp3|\.ogg|"path"'; then
-        pass "ACE-Step-1.5 music generation OK (audio file returned)"
-        local audio_path
-        audio_path=$(echo "$gen_result" \
-            | grep -o '"path":"[^"]*\.wav[^"]*"' | head -1 \
-            | sed 's/"path":"//;s/"//') || audio_path=""
-        if [ -n "$audio_path" ]; then
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
-            if [ "${fsize:-0}" -lt 102400 ]; then
-                abort "ACE-Step-1.5: audio file suspiciously small (${fsize} bytes)"
-            fi
-        fi
-    else
-        local err_line
-        err_line=$(podman exec -t rocm bash -c \
-            "grep -iE 'error|exception|fatal|traceback' '${app_log}' 2>/dev/null \
-             | tail -3" | tr -d '\r') || err_line=""
-        [ -n "$err_line" ] && info "  Last error in log: $err_line"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "ACE-Step-1.5 generation did not return audio data"
+    if ! echo "$test_output" | grep -q "^OUTPUT_OK:"; then
+        podman exec -t rocm bash -c "cat /tmp/comfyui_helper_17_stderr.txt" 2>/dev/null || true
+        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
+        abort "Qwen-Image-Edit-2511-GGUF workflow FAILED"
     fi
 
-    # --- Stop server ---
-    info "Stopping ACE-Step-1.5..."
-    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    local out_line out_path out_sz
+    out_line=$(echo "$test_output" | grep "^OUTPUT_OK:" | head -1)
+    out_path=$(echo "$out_line" | cut -d: -f2)
+    out_sz=$(echo "$out_line"   | cut -d: -f3)
+    pass "Qwen-Image-Edit-2511-GGUF output OK (${out_path}, ${out_sz} bytes)"
+    if [ "${out_sz:-0}" -lt 10240 ]; then
+        abort "Output image suspiciously small (${out_sz} bytes)"
+    fi
+    pass "Output size OK (${out_sz} bytes >= 10 KB)"
+
+    # --- Stop ComfyUI ---
+    info "Stopping ComfyUI..."
+    podman exec -t rocm bash -c \
+        "pkill -f 'main\.py' 2>/dev/null; \
+         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
             "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "ACE-Step-1.5 stopped"
+    pass "ComfyUI stopped"
 
     info "Phase 13 DONE"
 }
 
-main() { phase13_verify_ace_step_1_5; }
+main() { phase13_comfyui_qwen_image_edit; }
 main "$@"

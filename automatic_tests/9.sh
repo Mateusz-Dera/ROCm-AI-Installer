@@ -4,264 +4,272 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-_ST_CFG_BACKUP="/AI/SillyTavern/config.yaml.test_bak"
-
-_restore_st_config() {
-    if podman exec rocm bash -c "[ -f '$_ST_CFG_BACKUP' ]" 2>/dev/null; then
-        podman exec rocm bash -c \
-            "cp '$_ST_CFG_BACKUP' /AI/SillyTavern/config.yaml && rm -f '$_ST_CFG_BACKUP'" \
-            2>/dev/null || true
-        info "config.yaml restored from test backup"
-    fi
-}
-trap _restore_st_config EXIT
-
 # ============================================================
-# PHASE 9: SillyTavern + WhisperSpeech integration
+# PHASE 9: RUN AND VERIFY – OmniVoice
+#   Step 1: Voice Design  (no reference) → save output as ref
+#   Step 2: Voice Clone   (use step-1 output as reference)
 # ============================================================
-phase9_sillytavern_integration() {
+phase9_verify_omnivoice() {
     info "============================================="
-    info "PHASE 9: SILLYTAVERN + WHISPERSPEECH INTEGRATION"
+    info "PHASE 9: RUN AND VERIFY (OmniVoice)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
 
-    local st_dir="/AI/SillyTavern"
-    local st_port=8000
-    # WhisperSpeech exposes two servers:
-    #   7860 – Gradio web UI
-    #   5050 – REST API used by the SillyTavern plugin (POST /generate → audio)
-    local ws_api_port=5050
-    local ws_gui_port=7860
-    local st_log="/tmp/st_server.log"
-    local ws_log="/tmp/whisper_server.log"
-    local ws_api_url="http://127.0.0.1:${ws_api_port}"
+    local app_dir="/AI/OmniVoice"
+    local app_port=7860
+    local app_log="/tmp/omnivoice_server.log"
+    local ref_wav="/tmp/omnivoice_ref.wav"
+    local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
 
-    # --- Verify WhisperSpeech plugin is installed in SillyTavern ---
-    local ws_ext_dir="${st_dir}/public/scripts/extensions/third-party/whisperspeech-webui"
-    if container_dir_exists "$ws_ext_dir"; then
-        pass "WhisperSpeech extension installed at $ws_ext_dir"
-    else
-        abort "WhisperSpeech extension NOT installed – ${ws_ext_dir} missing"
-    fi
-
-    # --- Ensure WhisperSpeech is running (REST API on port 5050) ---
-    # The plugin connects to the REST API, not the Gradio GUI.
-    if ! podman exec -t rocm bash -c \
-           "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
-        info "WhisperSpeech REST API not running – starting it now..."
-        podman exec -t rocm bash -c \
-            "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '${ws_log}'" || true
-        podman exec -d rocm bash -c \
-            "cd /AI/whisperspeech-webui && source .venv/bin/activate \
-             && uv run --extra rocm webui.py --listen --api \
-             >> '${ws_log}' 2>&1"
-        info "Waiting for WhisperSpeech REST API to become ready (up to 600s)..."
-        local ws_waited=0 ws_ready=false
-        while [ $ws_waited -lt 600 ]; do
-            if podman exec -t rocm bash -c \
-                   "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
-                ws_ready=true; break
-            fi
-            sleep 5; ws_waited=$((ws_waited + 5))
-            info "  ...waiting for WhisperSpeech REST API ($ws_waited/600s)"
-        done
-        if ! $ws_ready; then
-            podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
-            abort "WhisperSpeech REST API did not become ready within 600s"
-        fi
-        pass "WhisperSpeech REST API ready on port ${ws_api_port}"
-    else
-        info "WhisperSpeech REST API already running on port ${ws_api_port}"
-    fi
-
-    # --- Kill any leftover SillyTavern processes (including start.sh) ---
-    podman exec -t rocm bash -c \
-        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; true" || true
+    # --- Kill old instances and clear log ---
+    # pkill -f 'omnivoice-demo' kills bash itself (cmdline contains the pattern),
+    # so run in isolation; port clear and log reset go in a separate exec.
+    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
-        "fuser -k ${st_port}/tcp 2>/dev/null; true" || true
-    sleep 1
-    podman exec -t rocm bash -c ": > '$st_log'" || true
+        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Ensure config.yaml exists (SillyTavern creates it on first run) ---
-    if ! container_file_exists "$st_dir/config.yaml"; then
-        info "config.yaml missing – starting SillyTavern briefly to initialize it..."
-        local init_log="/tmp/st_init.log"
-        podman exec -d rocm bash -c ": > '$init_log'; cd '$st_dir' && bash start.sh >> '$init_log' 2>&1"
-        local cw=0
-        while ! container_file_exists "$st_dir/config.yaml" && [ $cw -lt 300 ]; do
-            sleep 5; cw=$((cw + 5))
-            info "  ...waiting for config.yaml ($cw/300s)"
-        done
-        podman exec -t rocm bash -c \
-            "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
-             fuser -k ${st_port}/tcp 2>/dev/null; true" || true
-        sleep 3
-        podman exec -t rocm bash -c ": > '$st_log'" || true
-        if ! container_file_exists "$st_dir/config.yaml"; then
-            abort "SillyTavern did not generate config.yaml within 300s"
-        fi
-        pass "SillyTavern config.yaml initialized"
-    fi
-
-    # --- Patch config.yaml if basicAuth is not enabled with user/password credentials ---
-    if ! podman exec rocm bash -c \
-           "grep -q 'basicAuthMode: true' '$st_dir/config.yaml' && \
-            grep -q 'username: \"user\"' '$st_dir/config.yaml' && \
-            grep -q 'password: \"password\"' '$st_dir/config.yaml'" 2>/dev/null; then
-        info "Patching config.yaml (basicAuth) for test – original will be restored on exit..."
-        podman exec rocm bash -c "cp '$st_dir/config.yaml' '$_ST_CFG_BACKUP'" \
-            || abort "Failed to backup config.yaml"
-        podman exec rocm bash -c "
-            sed -i 's/basicAuthMode: false/basicAuthMode: true/' '$st_dir/config.yaml'
-            sed -i 's/^  username: .*/  username: \"user\"/' '$st_dir/config.yaml'
-            sed -i 's/^  password: .*/  password: \"password\"/' '$st_dir/config.yaml'
-        " || abort "Failed to patch config.yaml"
-        pass "config.yaml patched for test (will be restored on exit)"
-    fi
-
-    # --- Read basicAuth credentials from config.yaml ---
-    local st_user st_pass
-    st_user=$(podman exec rocm bash -c \
-        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'username:' \
-         | sed 's/.*username: *\"//;s/\"//'") || st_user=""
-    st_pass=$(podman exec rocm bash -c \
-        "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'password:' \
-         | sed 's/.*password: *\"//;s/\"//'") || st_pass=""
-    st_user=$(printf '%s' "$st_user" | tr -d '\r'); st_user="${st_user:-user}"
-    st_pass=$(printf '%s' "$st_pass" | tr -d '\r'); st_pass="${st_pass:-password}"
-    info "SillyTavern basicAuth: user='$st_user'"
-
-    # --- Start SillyTavern (WhisperSpeech keeps running) ---
-    info "Starting SillyTavern (WhisperSpeech keeps running)..."
+    # --- Start OmniVoice ---
+    info "Starting OmniVoice on port ${app_port}..."
     podman exec -d rocm bash -c \
-        "cd '$st_dir' && bash start.sh >> '$st_log' 2>&1"
+        "cd '${app_dir}' && source .venv/bin/activate && \
+         omnivoice-demo --ip 0.0.0.0 --port ${app_port} \
+         >> '${app_log}' 2>&1"
 
-    # --- Wait for SillyTavern to become ready ---
-    # SillyTavern startup can take up to ~10 min on first run (content file sync +
-    # webpack compilation). "Go to:" is printed right after webpack finishes,
-    # immediately before the server starts accepting HTTP connections.
-    # The log is cleared above (: > '$st_log') so the log-based signal is safe.
-    # The process monitor uses 'start.sh' (present from launch until ST exits).
-    info "Waiting for SillyTavern to become ready (up to 900s)..."
-    local max_wait=900
-    local wait_rc=0
-    wait_for_http \
-        "curl -sf -u '${st_user}:${st_pass}' --max-time 5 http://localhost:${st_port}/ -o /dev/null" \
-        "start\.sh" \
-        "$st_log" \
-        "$max_wait" \
-        "Go to:" || wait_rc=$?
-
-    if [ $wait_rc -ne 0 ]; then
-        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
-        if [ $wait_rc -eq 1 ]; then
-            abort "SillyTavern process died unexpectedly"
-        else
-            abort "SillyTavern did not start within ${max_wait}s"
+    # --- Wait for Gradio API to become ready (model download + load) ---
+    info "Waiting for OmniVoice Gradio API to become ready (up to 600s)..."
+    local waited=0 max_wait=600 ready=false
+    while [ $waited -lt $max_wait ]; do
+        if podman exec -t rocm bash -c \
+               "curl -sf http://localhost:${app_port}/gradio_api/info \
+                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
+            ready=true; break
         fi
-    fi
-    pass "SillyTavern is running on port $st_port"
-
-    # --- Verify main page ---
-    info "Verifying SillyTavern main page..."
-    # No -t to avoid TTY \r injection into 700KB HTML; retry up to 3x for race
-    local st_html_ok=false
-    for _i in 1 2 3; do
-        info "  HTML check attempt $_i..."
-        if podman exec rocm bash -c \
-            "curl -sf -u '${st_user}:${st_pass}' http://localhost:${st_port}/ 2>/dev/null \
-             | grep -qiE 'SillyTavern|<!DOCTYPE html'" 2>/dev/null; then
-            st_html_ok=true; break
-        fi
-        sleep 2
+        sleep 5; waited=$((waited + 5))
+        info "  ...waiting ($waited/${max_wait}s)"
     done
-    if $st_html_ok; then
-        pass "SillyTavern main page loads correctly (HTML content verified)"
-    else
-        podman exec -t rocm bash -c "cat '$st_log'" 2>/dev/null || true
-        abort "SillyTavern page did not return expected HTML content"
+    if ! $ready; then
+        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice did not become ready within ${max_wait}s"
     fi
+    pass "OmniVoice Gradio API ready on port ${app_port}"
 
-    # --- Configure WhisperSpeech plugin URL in SillyTavern settings ---
-    # The plugin connects to the REST API (port 5050), not the Gradio GUI (port 7860).
-    info "Configuring WhisperSpeech extension URL in SillyTavern settings..."
-    local settings_file="$st_dir/data/default-user/settings.json"
+    # Give the model a few extra seconds to finish initializing after
+    # the HTTP API becomes responsive (model loading continues in background)
+    sleep 5
 
-    # Wait for SillyTavern to write default settings (up to 30 s)
-    local sw=0
-    while ! container_file_exists "$settings_file" && [ $sw -lt 30 ]; do
-        sleep 3; sw=$((sw + 3))
-    done
+    # ================================================================
+    # STEP 1 – Voice Design (no reference audio)
+    # Endpoint: /_design_fn
+    # Inputs (15): text, lang, ns, gs, dn, sp, du, pp, po, 6×group
+    # ================================================================
+    info "--- Step 1: Voice Design (no reference) ---"
+    info "Requesting Voice Design: \"${GEN_TEXT}\"..."
 
-    if container_file_exists "$settings_file"; then
-        # Update plugin URL via python3 (available in container)
-        podman exec -t rocm bash -c "
-python3 - <<'PYEOF'
-import json, sys
-path = '$settings_file'
-try:
-    with open(path, 'r') as f:
-        s = json.load(f)
-except Exception:
-    s = {}
-ext = s.setdefault('extension_settings', {})
-ws  = ext.setdefault('whisperspeech_webui', {})
-ws['server_url'] = '$ws_api_url'
-with open(path, 'w') as f:
-    json.dump(s, f, indent=2)
-print('Settings updated: whisperspeech_webui.server_url =', ws['server_url'])
-PYEOF
-        " || abort "Failed to update SillyTavern extension settings"
-        pass "WhisperSpeech extension URL set to: $ws_api_url"
-    else
-        abort "SillyTavern settings.json not found – cannot configure extension"
-    fi
-
-    # --- Test TTS generation via the REST API (replicates the plugin's Test button) ---
-    # The plugin sends POST /generate with JSON and expects a binary audio response.
-    info "Testing TTS generation via WhisperSpeech REST API (POST /generate)..."
-    local tts_size
-    tts_size=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${ws_api_port}/generate \
+    local event_id
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
             -H 'Content-Type: application/json' \
-            -d '{\"text\": \"Hello, this is a test message!\", \"speed\": 13.5, \"format\": \"wav\", \"model\": \"tiny\"}' \
-            -o /tmp/whisperspeech_test.wav \
-            -w '%{size_download}' \
-            --max-time 120
-    " 2>/dev/null | tr -d '\r') || tts_size=0
-    tts_size="${tts_size:-0}"
+            -d '{\"data\": [
+                \"${GEN_TEXT}\",
+                \"Auto\",
+                32,
+                2.0,
+                true,
+                1.0,
+                null,
+                true,
+                true,
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\",
+                \"Auto\"
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
 
-    if [[ "$tts_size" =~ ^[0-9]+$ ]] && [ "$tts_size" -gt 1000 ]; then
-        pass "TTS generation OK – received ${tts_size} bytes of audio (WAV)"
-    else
-        podman exec -t rocm bash -c "cat '${ws_log}'" 2>/dev/null || true
-        abort "TTS generation FAILED – /generate returned ${tts_size} bytes (expected > 1000)"
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice: no event_id returned from /_design_fn"
+    fi
+    info "Voice Design started (event_id: $event_id) – polling result (up to 300s)..."
+
+    local design_result
+    design_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 300 \
+            http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    # Retry once if result is empty (model may still be finishing initialization)
+    if ! echo "$design_result" | grep -q '"path"'; then
+        info "  Result empty, retrying after 10s..."
+        sleep 10
+        event_id=$(podman exec -t rocm bash -c "
+            curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_design_fn \
+                -H 'Content-Type: application/json' \
+                -d '{\"data\": [
+                    \"${GEN_TEXT}\",
+                    \"Auto\",
+                    32,
+                    2.0,
+                    true,
+                    1.0,
+                    null,
+                    true,
+                    true,
+                    \"Auto\",
+                    \"Auto\",
+                    \"Auto\",
+                    \"Auto\",
+                    \"Auto\",
+                    \"Auto\"
+                ]}' | tr -d '\r'
+        " 2>/dev/null \
+        | grep -o '"event_id":"[^"]*"' \
+        | grep -o '[^:]*$' \
+        | tr -d '"') || true
+        design_result=$(podman exec -t rocm bash -c "
+            curl -sf --max-time 300 \
+                http://localhost:${app_port}/gradio_api/call/_design_fn/${event_id} \
+            | tr -d '\r'
+        " 2>/dev/null) || true
     fi
 
-    # --- Shut down SillyTavern and WhisperSpeech ---
-    info "Stopping SillyTavern..."
-    podman exec -t rocm bash -c \
-        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
-         fuser -k ${st_port}/tcp 2>/dev/null; true" || true
-    local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'node.*server' > /dev/null" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
-    done
-    pass "SillyTavern stopped"
+    if ! echo "$design_result" | grep -q '"path"'; then
+        info "Raw result: $design_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice Voice Design did not return audio data"
+    fi
+    pass "OmniVoice Voice Design OK (audio returned)"
 
-    info "Stopping WhisperSpeech web UI..."
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null || true" || true
-    kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'webui.py' > /dev/null" 2>/dev/null; do
+    # Extract audio path and copy to persistent location
+    local audio_path
+    audio_path=$(echo "$design_result" \
+        | grep -oP '"path":\s*"\K[^"]+' | head -1) || audio_path=""
+
+    if [ -z "$audio_path" ]; then
+        info "Raw result: $design_result"
+        abort "OmniVoice: could not extract audio path from Voice Design result"
+    fi
+    info "  Voice Design output: ${audio_path}"
+
+    # Verify size
+    local fsize
+    fsize=$(podman exec -t rocm bash -c \
+        "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
+        | tr -d '\r\n') || fsize=0
+    if [ "${fsize:-0}" -lt 1024 ]; then
+        abort "OmniVoice: Voice Design audio suspiciously small (${fsize} bytes)"
+    fi
+    info "  Size: $(( ${fsize} / 1024 )) KB"
+
+    # Copy to persistent location for use as reference
+    podman exec -t rocm bash -c "cp '${audio_path}' '${ref_wav}'" || \
+        abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
+    pass "Voice Design audio saved as reference: ${ref_wav}"
+
+    # ================================================================
+    # STEP 2 – Voice Clone (use step-1 output as reference)
+    # Endpoint: /_clone_fn
+    # Inputs (11): text, lang, ref_audio, ref_text, ns, gs, dn, sp, du, pp, po
+    # ================================================================
+    info "--- Step 2: Voice Clone (using generated audio as reference) ---"
+
+    # Upload reference audio via /gradio_api/upload
+    info "Uploading reference audio to OmniVoice..."
+    local upload_response
+    upload_response=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
+            -F 'files=@${ref_wav}' | tr -d '\r'
+    " 2>/dev/null) || upload_response=""
+
+    local uploaded_path
+    uploaded_path=$(echo "$upload_response" \
+        | grep -o '"[^"]*"' | head -1 \
+        | tr -d '"') || uploaded_path=""
+
+    if [ -z "$uploaded_path" ]; then
+        info "Upload response: $upload_response"
+        abort "OmniVoice: failed to upload reference audio"
+    fi
+    info "Reference audio uploaded: ${uploaded_path}"
+
+    info "Requesting Voice Clone: \"${GEN_TEXT}\"..."
+    event_id=$(podman exec -t rocm bash -c "
+        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/_clone_fn \
+            -H 'Content-Type: application/json' \
+            -d '{\"data\": [
+                \"${GEN_TEXT}\",
+                \"Auto\",
+                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
+                \"\",
+                32,
+                2.0,
+                true,
+                1.0,
+                null,
+                true,
+                true
+            ]}' | tr -d '\r'
+    " 2>/dev/null \
+    | grep -o '\"event_id\":\"[^\"]*\"' \
+    | grep -o '[^:]*$' \
+    | tr -d '"') || true
+
+    if [ -z "$event_id" ]; then
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice: no event_id returned from /_clone_fn"
+    fi
+    info "Voice Clone started (event_id: $event_id) – polling result (up to 300s)..."
+
+    local clone_result
+    clone_result=$(podman exec -t rocm bash -c "
+        curl -sf --max-time 300 \
+            http://localhost:${app_port}/gradio_api/call/_clone_fn/${event_id} \
+        | tr -d '\r'
+    " 2>/dev/null) || true
+
+    if echo "$clone_result" | grep -q '"path"'; then
+        pass "OmniVoice Voice Clone OK (audio returned)"
+        local clone_path
+        clone_path=$(echo "$clone_result" \
+            | grep -oP '"path":\s*"\K[^"]+' | head -1) || clone_path=""
+        if [ -n "$clone_path" ]; then
+            fsize=$(podman exec -t rocm bash -c \
+                "stat -c%s '${clone_path}' 2>/dev/null || echo 0" \
+                | tr -d '\r\n') || fsize=0
+            info "  Clone output: ${clone_path} ($(( ${fsize:-0} / 1024 )) KB)"
+            if [ "${fsize:-0}" -lt 1024 ]; then
+                abort "OmniVoice: Voice Clone audio suspiciously small (${fsize} bytes)"
+            fi
+        fi
+        pass "Voice Clone audio size OK"
+    else
+        info "Raw result: $clone_result"
+        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
+        abort "OmniVoice Voice Clone did not return audio data"
+    fi
+
+    # --- Stop server ---
+    info "Stopping OmniVoice..."
+    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
+    sleep 2
+    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    local kw=0
+    while podman exec -t rocm bash -c \
+            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
-    pass "WhisperSpeech web UI stopped"
+    pass "OmniVoice stopped"
 
     info "Phase 9 DONE"
 }
 
-main() { phase9_sillytavern_integration; }
-
+main() { phase9_verify_omnivoice; }
 main "$@"

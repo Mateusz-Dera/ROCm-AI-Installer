@@ -349,16 +349,14 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 6 --cancel-button "Back" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
             1 "Install KoboldCPP" \
             2 "SillyTavern" \
-            3 "Install llama.cpp" \
-            4 "Install llama.cpp Vulkan" \
-            5 "Atomic llama.cpp" \
-            6 "turboquant-rocm-llamacpp" \
+            3 "Install llama-cpp-turboquant" \
+            4 "Install llama-cpp-turboquant Vulkan" \
             2>&1 > /dev/tty)
         status=$?
-        
+
 
         if [ $status -ne 0 ]; then
             return 0
@@ -372,16 +370,10 @@ text_generation() {
                 sillytavern
                 ;;
             "3")
-                install_llama_cpp
+                install_llama_cpp_turboquant
                 ;;
             "4")
-                install_llama_cpp_vulkan
-                ;;
-            "5")
-                install_atomic_llama_cpp_turboquant
-                ;;
-            "6")
-                install_turboquant_rocm_llamacpp
+                install_llama_cpp_turboquant_vulkan
                 ;;
             "")
                 echo "Previous menu..."
