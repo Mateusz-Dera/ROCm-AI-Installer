@@ -29,8 +29,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |:---|:---|:---|
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
-|llama.cpp|https://github.com/ggml-org/llama.cpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. Multi-Token Prediction (MTP)<br> 2. By default, it downloads gemma-4-12b-it Q8_0 model and MTP head<br> 3. A Vulkan version is also available.|
-|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. TurboQuant 4-bit KV-cache compression (q4_0)<br> 2. By default, it downloads gemma-4-12b-it Q8_0 model<br> 3. ROCm only.|
+|llama.cpp|https://github.com/ggml-org/llama.cpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. Multi-Token Prediction (MTP)<br> 2. By default, it downloads <b>gemma-4-12b-it Q8_0 model</b> and MTP head<br> 3. A Vulkan version is also available.|
+|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. TurboQuant 4-bit KV-cache compression (q4_0)<br> 2. By default, it downloads <b>gemma-4-12b-it Q8_0 model</b><br> 3. ROCm only.|
 
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
