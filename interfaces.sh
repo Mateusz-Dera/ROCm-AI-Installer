@@ -122,39 +122,37 @@ install_koboldcpp() {
     basic_run "$REPO" "$COMMAND"
 }
 
-# ----- llama-cpp-turboquant -----
+# ----- llama.cpp -----
 
-LLAMA_TQ_REPO="https://github.com/TheTom/llama-cpp-turboquant"
-LLAMA_TQ_COMMIT="4595fff0bbd15ee01663699b788eea70e7e1cd69"
-LLAMA_TQ_BRANCH="feature/turboquant-kv-cache"
+LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
+LLAMA_COMMIT="721354fbdfb7743e2be2183d918a3cdb9276c70f"
 
-install_llama_cpp_turboquant() {
-    REPO="$LLAMA_TQ_REPO"
-    COMMIT="$LLAMA_TQ_COMMIT"
-    FOLDER="llama-cpp-turboquant"
-    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 5 --host 0.0.0.0 --port 8080 --ctx-size 32768 --cache-type-k q8_0 --cache-type-v turbo4 -ngl 99 -ngld 99 -fa on"
+install_llama_cpp() {
+    REPO="$LLAMA_REPO"
+    COMMIT="$LLAMA_COMMIT"
+    FOLDER=$(basename "$REPO")
+    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 4 --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
 
     local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
     local MTP_FILE="mtp-gemma-4-12b-it.gguf"
 
     basic_container
-    podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -it rocm bash -c "cd /AI && git clone -b $LLAMA_TQ_BRANCH $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    basic_git "$REPO" "$COMMIT"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
 
     podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
     podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
 
-    basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
+    basic_run "$REPO" "$COMMAND" "&&"
 }
 
-install_llama_cpp_turboquant_vulkan() {
-    REPO="$LLAMA_TQ_REPO"
-    COMMIT="$LLAMA_TQ_COMMIT"
-    FOLDER="llama-cpp-turboquant-vulkan"
-    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 5 --host 0.0.0.0 --port 8080 --ctx-size 32768 --cache-type-k q8_0 --cache-type-v turbo4 -ngl 99 -ngld 99 -fa on"
+install_llama_cpp_vulkan() {
+    REPO="$LLAMA_REPO"
+    COMMIT="$LLAMA_COMMIT"
+    FOLDER="llama.cpp-vulkan"
+    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 4 --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
 
     local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
@@ -163,7 +161,7 @@ install_llama_cpp_turboquant_vulkan() {
     basic_container
     podman exec -it rocm bash -c "apt-get install -y libvulkan-dev vulkan-tools glslc"
     podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
-    podman exec -it rocm bash -c "cd /AI && git clone -b $LLAMA_TQ_BRANCH $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
     PODMAN='cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
 
@@ -171,6 +169,30 @@ install_llama_cpp_turboquant_vulkan() {
     podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
 
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
+}
+
+# ----- turboquant-rocm-llamacpp -----
+
+LLAMA_TQ_REPO="https://github.com/jagsan-cyber/turboquant-rocm-llamacpp"
+LLAMA_TQ_COMMIT="22cce31b6e58f3e945fbc7f2f5eb06a509e64fcc"
+
+install_turboquant_rocm_llamacpp() {
+    REPO="$LLAMA_TQ_REPO"
+    COMMIT="$LLAMA_TQ_COMMIT"
+    FOLDER=$(basename "$REPO")
+    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 -c 131072 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
+
+    local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
+    local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
+
+    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
+
+    basic_run "$REPO" "$COMMAND" "&&"
 }
 
 # SillyTavern

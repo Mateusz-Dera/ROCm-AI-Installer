@@ -1,17 +1,15 @@
 #!/bin/bash
-# Runs all numbered phase scripts (1.sh, 2.sh, …) in order.
-# Add a new N.sh to the directory to extend the test suite automatically.
+# Runs all test scripts (*.sh except run.sh and common.sh) in alphabetical order.
 #
-# Usage: run.sh [--test N [N ...]]
-#   --test N [N ...]   Run only the specified phase numbers (e.g. --test 2 5 6)
-#   (no args)          Run all phases in order
+# Usage: run.sh [--test name [name ...]]
+#   --test name [name ...]   Run only the specified tests (e.g. --test koboldcpp comfyui)
+#   (no args)                Run all tests in order
 
 set -euo pipefail
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$(cd "$TESTS_DIR/.." && pwd)"
 LOG_FILE="$SCRIPT_DIR/test.log"
-TEST_STATE_FILE="/tmp/rocm_ai_test_state.sh"
 
 # ── Parse arguments ───────────────────────────────────────────
 SELECTED_TESTS=()
@@ -19,25 +17,23 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --test)
             shift
-            while [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]]; do
+            while [[ $# -gt 0 && ! "$1" =~ ^-- ]]; do
                 SELECTED_TESTS+=("$1")
                 shift
             done
             if [ ${#SELECTED_TESTS[@]} -eq 0 ]; then
-                echo "Usage: $0 [--test N [N ...]]" >&2
+                echo "Usage: $0 [--test name [name ...]]" >&2
                 exit 1
             fi
             ;;
         *)
             echo "Unknown argument: $1" >&2
-            echo "Usage: $0 [--test N [N ...]]" >&2
+            echo "Usage: $0 [--test name [name ...]]" >&2
             exit 1
             ;;
     esac
 done
 
-# Reset state from any previous run
-rm -f "$TEST_STATE_FILE"
 : > "$LOG_FILE"
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
@@ -49,9 +45,11 @@ log "Started: $(date '+%Y-%m-%d_%H-%M-%S')"
 log "Log: $LOG_FILE"
 log "============================================="
 
-
-# ── Collect and run phase files ───────────────────────────────
-mapfile -t ALL_FILES < <(ls -v "$TESTS_DIR"/[0-9]*.sh 2>/dev/null)
+# ── Collect test files ────────────────────────────────────────
+mapfile -t ALL_FILES < <(
+    find "$TESTS_DIR" -maxdepth 1 -name '*.sh' -not -name 'run.sh' -not -name 'common.sh' \
+        | sort
+)
 
 if [ ${#ALL_FILES[@]} -eq 0 ]; then
     log "No test files found in $TESTS_DIR"
@@ -60,20 +58,19 @@ fi
 
 # Filter to selected tests if --test was given
 if [ ${#SELECTED_TESTS[@]} -gt 0 ]; then
-    log "Running selected phases: ${SELECTED_TESTS[*]}"
+    log "Running selected tests: ${SELECTED_TESTS[*]}"
     TEST_FILES=()
-    for num in "${SELECTED_TESTS[@]}"; do
-        match=$(printf '%s\n' "${ALL_FILES[@]}" | grep -E "/${num}\.sh$" || true)
-        if [ -z "$match" ]; then
-            log "WARN: No phase file found for number ${num} – skipping"
-        else
+    for name in "${SELECTED_TESTS[@]}"; do
+        match="$TESTS_DIR/${name}.sh"
+        if [ -f "$match" ]; then
             TEST_FILES+=("$match")
+        else
+            log "WARN: No test file found for '${name}' – skipping"
         fi
     done
-    # Sort selected files in numeric order
-    mapfile -t TEST_FILES < <(printf '%s\n' "${TEST_FILES[@]}" | sort -V)
+    mapfile -t TEST_FILES < <(printf '%s\n' "${TEST_FILES[@]}" | sort)
     if [ ${#TEST_FILES[@]} -eq 0 ]; then
-        log "None of the requested phase numbers exist"
+        log "None of the requested tests exist"
         exit 1
     fi
 else
@@ -106,7 +103,7 @@ for test_file in "${TEST_FILES[@]}"; do
         log "----------------------------------------"
         fail_count=$((fail_count + 1))
         failed_files+=("$(basename "$test_file")")
-        break   # stop on first failure (mirrors original abort-on-error behaviour)
+        break
     fi
 done
 

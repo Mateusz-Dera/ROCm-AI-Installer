@@ -4,35 +4,34 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# PHASE 18: RUN AND VERIFY – PartCrafter (image-to-3D parts)
-# ============================================================
-phase18_verify_partcrafter() {
+test_partcrafter() {
     info "============================================="
-    info "PHASE 18: RUN AND VERIFY (PartCrafter)"
+    info "TEST: PartCrafter (install + verify)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
+    # --- Install ---
+    run_install "PartCrafter" install_partcrafter "/AI/PartCrafter"
+
+    # --- Test ---
     local app_dir="/AI/PartCrafter"
     local app_port=7860
     local app_log="/tmp/partcrafter_server.log"
     local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
     local output_glb="/tmp/partcrafter_object.glb"
 
-    # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start PartCrafter ---
     info "Starting PartCrafter on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
          uv run partcrafter_webui.py >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API (model downloads + loads at startup) ---
     info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
     local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
@@ -50,7 +49,6 @@ phase18_verify_partcrafter() {
     fi
     pass "PartCrafter Gradio API ready on port ${app_port}"
 
-    # --- Resolve actual endpoint name from /gradio_api/info ---
     local endpoint_name
     endpoint_name=$(podman exec -t rocm bash -c "
         curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
@@ -59,12 +57,11 @@ phase18_verify_partcrafter() {
     | head -1 | tr -d '"') || endpoint_name=""
     if [ -z "$endpoint_name" ]; then
         endpoint_name="/generate_parts"
-        info "Could not detect endpoint from info – using default: ${endpoint_name}"
+        info "Could not detect endpoint – using default: ${endpoint_name}"
     else
         info "Detected endpoint: ${endpoint_name}"
     fi
 
-    # --- Upload example image ---
     info "Uploading example image..."
     local upload_response
     upload_response=$(podman exec -t rocm bash -c "
@@ -76,14 +73,11 @@ phase18_verify_partcrafter() {
     uploaded_path=$(echo "$upload_response" \
         | grep -o '"[^"]*"' | head -1 \
         | tr -d '"') || uploaded_path=""
-
     if [ -z "$uploaded_path" ]; then
-        info "Upload response: $upload_response"
         abort "PartCrafter: failed to upload example image"
     fi
     info "Image uploaded: ${uploaded_path}"
 
-    # --- Request 3D generation (2 parts, 10 steps, no render → faster test) ---
     info "Requesting 3D generation (2 parts, 10 inference steps)..."
     local event_id
     event_id=$(podman exec -t rocm bash -c "
@@ -91,14 +85,7 @@ phase18_verify_partcrafter() {
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
                 {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                2,
-                42,
-                512,
-                10,
-                7.0,
-                false,
-                false,
-                false
+                2, 42, 512, 10, 7.0, false, false, false
             ]}' | tr -d '\r'
     " 2>/dev/null \
     | grep -o '\"event_id\":\"[^\"]*\"' \
@@ -111,7 +98,6 @@ phase18_verify_partcrafter() {
     fi
     info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
 
-    # --- Poll SSE stream – 3D generation is slow (up to 1800s) ---
     local gen_result
     gen_result=$(podman exec -t rocm bash -c "
         curl -sf --max-time 1800 \
@@ -121,26 +107,19 @@ phase18_verify_partcrafter() {
 
     if echo "$gen_result" | grep -q '"path"'; then
         pass "PartCrafter 3D generation OK (files returned)"
-
-        # Extract object.glb path (first output = merged model)
         local glb_path
         glb_path=$(echo "$gen_result" \
             | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
             | sed 's/"path": *"//;s/"//') || glb_path=""
-
         if [ -n "$glb_path" ]; then
             podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
             local fsize
             fsize=$(podman exec -t rocm bash -c \
                 "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
                 | tr -d '\r\n') || fsize=0
-            info "  object.glb saved: ${output_glb} ($(( ${fsize:-0} / 1024 )) KB)"
             if [ "${fsize:-0}" -lt 1024 ]; then
                 abort "object.glb is suspiciously small (${fsize} bytes)"
             fi
-        else
-            info "  Warning: could not extract GLB path from result"
-            info "  Raw result: $gen_result"
         fi
     else
         info "Raw result: $gen_result"
@@ -148,7 +127,6 @@ phase18_verify_partcrafter() {
         abort "PartCrafter generation did not return file data"
     fi
 
-    # --- Stop server ---
     info "Stopping PartCrafter..."
     podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
@@ -160,8 +138,8 @@ phase18_verify_partcrafter() {
     done
     pass "PartCrafter stopped"
 
-    info "Phase 18 DONE"
+    info "Test partcrafter DONE"
 }
 
-main() { phase18_verify_partcrafter; }
+main() { test_partcrafter; }
 main "$@"

@@ -34,6 +34,17 @@ abort() { fail "$*"; fail "=== TEST ABORTED ==="; exit 1; }
 # Helpers
 # ------------------------------------------------------------
 
+# Remove stale .incomplete files from HuggingFace cache (stuck downloads block startup)
+clean_hf_incomplete() {
+    local count
+    count=$(podman exec rocm bash -c \
+        "find /root/.cache/huggingface/hub -name '*.incomplete' -delete -print 2>/dev/null | wc -l" \
+        | tr -d '\r\n') || count=0
+    if [ "${count:-0}" -gt 0 ]; then
+        info "Cleaned ${count} incomplete HuggingFace download(s)"
+    fi
+}
+
 # Check whether a directory exists inside the container
 container_dir_exists() {
     podman exec -t rocm bash -c "[ -d '$1' ]" 2>/dev/null
@@ -92,12 +103,22 @@ wait_for_http() {
     return 2
 }
 
-# ------------------------------------------------------------
-# Inter-phase state (persisted via temp file)
-# ------------------------------------------------------------
-TEST_STATE_FILE="/tmp/rocm_ai_test_state.sh"
-SILLYTAVERN_WAS_INSTALLED=false
-# Load state from previous phase if it exists
-if [ -f "$TEST_STATE_FILE" ]; then
-    source "$TEST_STATE_FILE"
-fi
+# Install an app via its interfaces.sh function, verify directory + run.sh
+run_install() {
+    local name="$1"
+    local install_fn="$2"
+    local check_dir="$3"
+    local need_runsh="${4:-true}"
+
+    info "--- Installing: $name ---"
+    if ! "$install_fn"; then
+        abort "$name: install function returned non-zero"
+    fi
+    if ! container_dir_exists "$check_dir"; then
+        abort "$name: directory $check_dir not found after install"
+    fi
+    if $need_runsh && ! container_file_exists "$check_dir/run.sh"; then
+        abort "$name: run.sh not found in $check_dir after install"
+    fi
+    pass "$name installed successfully"
+}

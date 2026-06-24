@@ -4,24 +4,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# PHASE 8: RUN AND VERIFY – Soprano (text-to-speech)
-# ============================================================
-phase8_verify_soprano() {
+test_soprano() {
     info "============================================="
-    info "PHASE 8: RUN AND VERIFY (Soprano)"
+    info "TEST: Soprano (install + verify)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
+    # --- Install ---
+    run_install "Soprano" install_soprano "/AI/soprano-rocm"
+
+    # --- Test ---
     local app_dir="/AI/soprano-rocm"
     local app_log="/tmp/soprano_server.log"
     local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
-    # --- Kill old instances, free port, clear log ---
-    # pkill -f 'soprano' kills bash itself (its cmdline contains 'soprano'),
-    # so run in isolation. VLLM EngineCore renames its cmdline to
-    # "VLLM::EngineCore" — use pgrep (matches comm, not bash) to kill safely.
     podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
     podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
     sleep 3
@@ -29,16 +27,12 @@ phase8_verify_soprano() {
         "fuser -k 7860/tcp 2>/dev/null; fuser -k 7861/tcp 2>/dev/null; \
          sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start Soprano ---
     info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
          TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
          >> '${app_log}' 2>&1"
 
-    # Wait for Soprano to load the model and start Gradio (model loads BEFORE
-    # Gradio starts, so "Starting Gradio interface" implies model is ready).
-    # Initial sleep avoids reading stale log content from a previous run.
     info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
     sleep 5
     local app_port="" waited=5 max_wait=300
@@ -56,7 +50,6 @@ phase8_verify_soprano() {
     fi
     pass "Soprano ready on port ${app_port} (model loaded)"
 
-    # --- Generate speech (streaming=false → single audio file returned) ---
     info "Requesting speech synthesis: \"${REF_TEXT}\"..."
     local event_id
     event_id=$(podman exec -t rocm bash -c "
@@ -64,11 +57,7 @@ phase8_verify_soprano() {
             -H 'Content-Type: application/json' \
             -d '{\"data\": [
                 \"${REF_TEXT}\",
-                0.0,
-                0.95,
-                1.2,
-                1,
-                false
+                0.0, 0.95, 1.2, 1, false
             ]}' | tr -d '\r'
     " 2>/dev/null \
     | grep -o '"event_id":"[^"]*"' \
@@ -81,7 +70,6 @@ phase8_verify_soprano() {
     fi
     info "Generation started (event_id: $event_id) – polling result..."
 
-    # --- Poll result (SSE stream) ---
     local gen_result
     gen_result=$(podman exec -t rocm bash -c "
         curl -sf --max-time 120 \
@@ -97,7 +85,6 @@ phase8_verify_soprano() {
         abort "Soprano generation did not return audio data"
     fi
 
-    # --- Stop server ---
     info "Stopping Soprano..."
     podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
     podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
@@ -110,8 +97,8 @@ phase8_verify_soprano() {
     done
     pass "Soprano stopped"
 
-    info "Phase 8 DONE"
+    info "Test soprano DONE"
 }
 
-main() { phase8_verify_soprano; }
+main() { test_soprano; }
 main "$@"

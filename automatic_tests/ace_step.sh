@@ -4,27 +4,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# PHASE 10: RUN AND VERIFY – ACE-Step-1.5 (text-to-music)
-# ============================================================
-phase10_verify_ace_step_1_5() {
+test_ace_step() {
     info "============================================="
-    info "PHASE 10: RUN AND VERIFY (ACE-Step-1.5)"
+    info "TEST: ACE-Step-1.5 (install + verify)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
+    # --- Install ---
+    run_install "ACE-Step-1.5" install_ace_step_1_5 "/AI/ACE-Step-1.5"
+
+    # --- Test ---
     local app_dir="/AI/ACE-Step-1.5"
     local app_port=7860
     local app_log="/tmp/acestep15_server.log"
 
-    # --- Kill old instances and clear log ---
     podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
 
-    # --- Start ACE-Step-1.5 ---
     info "Starting ACE-Step-1.5 on port ${app_port}..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
@@ -38,7 +38,6 @@ phase10_verify_ace_step_1_5() {
              --backend pt \
          >> '${app_log}' 2>&1"
 
-    # --- Wait for Gradio API (up to 600s – models download on first run) ---
     info "Waiting for ACE-Step-1.5 Gradio API to become ready (up to 600s)..."
     local waited=0 max_wait=600 ready=false
     while [ $waited -lt $max_wait ]; do
@@ -56,15 +55,6 @@ phase10_verify_ace_step_1_5() {
     fi
     pass "ACE-Step-1.5 Gradio API ready on port ${app_port}"
 
-    # --- Generate a short test song via /generation_wrapper ---
-    # Parameters: 78 total (72 visible + 6 hidden gr.State)
-    #   Hidden: task_type (gr.State, pos 20), is_format_caption_state (pos 48),
-    #           current_batch_index/total_batches/batch_queue/generation_params_state (pos 74-77)
-    # DiT Inference Steps max = 20 for acestep-v15-turbo config
-    # Audio Duration = 30s (minimum)
-    # New params vs previous: use_adg(22), dcw_mode/scaler/high_scaler/wavelet/custom_timesteps(31-35),
-    #   retake_seed(66), flow_edit_morph/source_caption/source_lyrics/n_min/n_max/n_avg(67-72),
-    #   autogen_checkbox(73)
     info "Requesting music generation (30s clip, DiT steps=20)..."
     local gen_event_id
     gen_event_id=$(podman exec -t rocm bash -c "
@@ -102,7 +92,6 @@ phase10_verify_ace_step_1_5() {
     fi
     info "Generation started (event_id: $gen_event_id) – polling result (up to 300s)..."
 
-    # --- Poll result (SSE stream) ---
     local gen_result
     gen_result=$(podman exec -t rocm bash -c "
         curl -sf --max-time 300 \
@@ -121,22 +110,15 @@ phase10_verify_ace_step_1_5() {
             fsize=$(podman exec -t rocm bash -c \
                 "stat -c%s '${audio_path}' 2>/dev/null || echo 0" \
                 | tr -d '\r\n') || fsize=0
-            info "  Audio file: ${audio_path} ($(( ${fsize:-0} / 1024 )) KB)"
             if [ "${fsize:-0}" -lt 102400 ]; then
                 abort "ACE-Step-1.5: audio file suspiciously small (${fsize} bytes)"
             fi
         fi
     else
-        local err_line
-        err_line=$(podman exec -t rocm bash -c \
-            "grep -iE 'error|exception|fatal|traceback' '${app_log}' 2>/dev/null \
-             | tail -3" | tr -d '\r') || err_line=""
-        [ -n "$err_line" ] && info "  Last error in log: $err_line"
         podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
         abort "ACE-Step-1.5 generation did not return audio data"
     fi
 
-    # --- Stop server ---
     info "Stopping ACE-Step-1.5..."
     podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
@@ -148,8 +130,8 @@ phase10_verify_ace_step_1_5() {
     done
     pass "ACE-Step-1.5 stopped"
 
-    info "Phase 10 DONE"
+    info "Test ace_step DONE"
 }
 
-main() { phase10_verify_ace_step_1_5; }
+main() { test_ace_step; }
 main "$@"

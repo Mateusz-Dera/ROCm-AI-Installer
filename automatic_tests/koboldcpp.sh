@@ -4,16 +4,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# PHASE 5: RUN AND VERIFY – KoboldCPP
-# ============================================================
-phase5_verify_koboldcpp() {
+test_koboldcpp() {
     info "============================================="
-    info "PHASE 5: RUN AND VERIFY (KoboldCPP)"
+    info "TEST: KoboldCPP (install + verify)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
+    # --- Install ---
+    run_install "KoboldCPP" install_koboldcpp "/AI/koboldcpp-rocm"
+
+    # --- Test ---
     local model_file="/AI/koboldcpp-rocm/model.gguf"
     local hf_repo="https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF"
     local hf_file="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
@@ -114,8 +116,8 @@ phase5_verify_koboldcpp() {
     done
     pass "KoboldCPP server stopped"
 
-    info "Phase 5 DONE"
+    info "Test koboldcpp DONE"
 }
 
-main() { phase5_verify_koboldcpp; }
+main() { test_koboldcpp; }
 main "$@"

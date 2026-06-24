@@ -4,29 +4,32 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# PHASE 4: RUN AND VERIFY – llama-cpp-turboquant (ROCm + Vulkan)
-# ============================================================
-phase4_verify_llama_cpp_turboquant() {
+test_llama_cpp() {
     info "============================================="
-    info "PHASE 4: RUN AND VERIFY (llama-cpp-turboquant ROCm + Vulkan)"
+    info "TEST: llama.cpp ROCm + Vulkan (install + MTP verify)"
     info "============================================="
 
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
-    local rocm_dir="/AI/llama-cpp-turboquant"
-    local vulkan_dir="/AI/llama-cpp-turboquant-vulkan"
+    # --- Install both variants ---
+    run_install "llama.cpp" install_llama_cpp "/AI/llama.cpp"
+    run_install "llama.cpp-vulkan" install_llama_cpp_vulkan "/AI/llama.cpp-vulkan"
+
+    # --- Download model once, share between variants ---
+    local rocm_dir="/AI/llama.cpp"
+    local vulkan_dir="/AI/llama.cpp-vulkan"
     local server_port=8080
 
     local hf_repo="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local hf_model="gemma-4-12b-it-Q8_0.gguf"
     local hf_mtp="mtp-gemma-4-12b-it.gguf"
 
-    # --- Download model once, copy to both dirs ---
     info "Downloading $hf_model from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${rocm_dir}/model.gguf' '${vulkan_dir}/model.gguf'" 2>/dev/null || true
     podman exec -t rocm bash -c "
-        mkdir -p '${rocm_dir}' '${vulkan_dir}' && \
+        rm -f '${rocm_dir}/model.gguf' '${vulkan_dir}/model.gguf'
+    " 2>/dev/null || true
+    podman exec -t rocm bash -c "
         wget -q '${hf_repo}/resolve/main/${hf_model}' -O '${rocm_dir}/model.gguf' \
         || curl --fail -L '${hf_repo}/resolve/main/${hf_model}' -o '${rocm_dir}/model.gguf'
     " || abort "Failed to download $hf_model"
@@ -42,7 +45,9 @@ phase4_verify_llama_cpp_turboquant() {
     fi
 
     info "Downloading MTP head $hf_mtp from HuggingFace..."
-    podman exec -t rocm bash -c "rm -f '${rocm_dir}/model_mtp.gguf' '${vulkan_dir}/model_mtp.gguf'" 2>/dev/null || true
+    podman exec -t rocm bash -c "
+        rm -f '${rocm_dir}/model_mtp.gguf' '${vulkan_dir}/model_mtp.gguf'
+    " 2>/dev/null || true
     podman exec -t rocm bash -c "
         wget -q '${hf_repo}/resolve/main/${hf_mtp}' -O '${rocm_dir}/model_mtp.gguf' \
         || curl --fail -L '${hf_repo}/resolve/main/${hf_mtp}' -o '${rocm_dir}/model_mtp.gguf'
@@ -62,11 +67,11 @@ phase4_verify_llama_cpp_turboquant() {
     podman exec -t rocm bash -c "
         cp '${rocm_dir}/model.gguf' '${vulkan_dir}/model.gguf' && \
         cp '${rocm_dir}/model_mtp.gguf' '${vulkan_dir}/model_mtp.gguf'
-    " || abort "Failed to copy models to Vulkan directory"
-    pass "Models copied to both ROCm and Vulkan directories"
+    " || abort "Failed to copy models"
+    pass "Models copied to Vulkan directory"
 
-    # ---- Helper: test a single variant ----
-    _test_variant() {
+    # ---- Helper: test MTP variant ----
+    _test_mtp_variant() {
         local variant_name="$1"
         local app_dir="$2"
         local server_log="$3"
@@ -74,20 +79,20 @@ phase4_verify_llama_cpp_turboquant() {
         podman exec -t rocm bash -c \
             "pkill -f 'llama-server' 2>/dev/null; sleep 1; : > '${server_log}'" || true
 
-        info "Starting ${variant_name} server (MTP + turbo4) on port ${server_port}..."
+        info "Starting ${variant_name} server (MTP) on port ${server_port}..."
         podman exec -d rocm bash -c \
             "cd '${app_dir}' && ./build/bin/llama-server \
                 -m model.gguf \
                 --spec-draft-model model_mtp.gguf \
                 --spec-type draft-mtp \
-                --spec-draft-n-max 5 \
+                --spec-draft-n-max 4 \
                 --host 0.0.0.0 \
                 --port ${server_port} \
-                -c 8192 \
-                --cache-type-k q8_0 \
-                --cache-type-v turbo4 \
-                -ngl 99 -ngld 99 \
+                -c 131072 \
+                -ngl auto \
                 -fa on \
+                --cache-type-k q8_0 \
+                --cache-type-v q8_0 \
             >> '${server_log}' 2>&1"
 
         info "Waiting for ${variant_name} server to become ready..."
@@ -110,15 +115,7 @@ phase4_verify_llama_cpp_turboquant() {
             fi
         fi
 
-        # --- Verify turbo4 KV cache (no "invalid argument" error = accepted) ---
-        info "Checking ${variant_name} log for turbo4 KV cache acceptance..."
-        if podman exec -t rocm bash -c "grep -qi 'invalid.*turbo4\|invalid.*cache-type' '${server_log}'" 2>/dev/null; then
-            podman exec -t rocm bash -c "cat '${server_log}'" 2>/dev/null || true
-            abort "${variant_name}: turbo4 KV cache rejected by server"
-        fi
-        pass "${variant_name}: turbo4 KV cache accepted (server started without cache-type errors)"
-
-        # --- Verify MTP is initialized ---
+        # --- Verify MTP ---
         info "Checking ${variant_name} log for MTP (draft-mtp)..."
         if podman exec -t rocm bash -c "grep -q 'draft-mtp' '${server_log}'" 2>/dev/null; then
             pass "${variant_name}: MTP (draft-mtp) confirmed in server log"
@@ -185,15 +182,15 @@ phase4_verify_llama_cpp_turboquant() {
     }
 
     # ---- Test ROCm variant ----
-    info "--- Testing ROCm variant ---"
-    _test_variant "llama-cpp-turboquant (ROCm)" "$rocm_dir" "/tmp/llama_tq_rocm_server.log"
+    info "--- Testing llama.cpp ROCm (MTP) ---"
+    _test_mtp_variant "llama.cpp (ROCm)" "$rocm_dir" "/tmp/llama_rocm_server.log"
 
     # ---- Test Vulkan variant ----
-    info "--- Testing Vulkan variant ---"
-    _test_variant "llama-cpp-turboquant (Vulkan)" "$vulkan_dir" "/tmp/llama_tq_vulkan_server.log"
+    info "--- Testing llama.cpp Vulkan (MTP) ---"
+    _test_mtp_variant "llama.cpp (Vulkan)" "$vulkan_dir" "/tmp/llama_vulkan_server.log"
 
-    info "Phase 4 DONE"
+    info "Test llama_cpp DONE"
 }
 
-main() { phase4_verify_llama_cpp_turboquant; }
+main() { test_llama_cpp; }
 main "$@"

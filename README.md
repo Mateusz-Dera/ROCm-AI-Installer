@@ -29,7 +29,8 @@ Installation scripts for an AI applications using ROCm on Linux.
 |:---|:---|:---|
 |KoboldCPP|https://github.com/YellowRoseCx/koboldcpp-rocm||
 |SillyTavern|https://github.com/SillyTavern/SillyTavern||
-|llama-cpp-turboquant|https://github.com/TheTom/llama-cpp-turboquant<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. TurboQuant 4-bit KV-cache quantization (turbo4)<br> 2. Multi-Token Prediction (MTP)<br> 3. By default, it downloads gemma-4-12b-it Q8_0 model and MTP head<br> 4. A Vulkan version is also available.|
+|llama.cpp|https://github.com/ggml-org/llama.cpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. Multi-Token Prediction (MTP)<br> 2. By default, it downloads gemma-4-12b-it Q8_0 model and MTP head<br> 3. A Vulkan version is also available.|
+|turboquant-rocm-llamacpp|https://github.com/jagsan-cyber/turboquant-rocm-llamacpp<br> https://huggingface.co/unsloth/gemma-4-12b-it-GGUF|1. TurboQuant 4-bit KV-cache compression (q4_0)<br> 2. By default, it downloads gemma-4-12b-it Q8_0 model<br> 3. ROCm only.|
 
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
@@ -66,7 +67,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Name|Links|Additional information|
 |:---|:---|:---|
 |PartCrafter|https://github.com/wgsxm/PartCrafter|1. Added custom simple UI.<br> 2. Uses a modified version of PyTorch Cluster for ROCm https://github.com/Mateusz-Dera/pytorch_cluster_rocm.|
-|TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.|
+|TRELLIS.2_rocm|https://github.com/hqnicolas/TRELLIS.2_rocm|1. Go to https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m<br> 2. If you haven't set the <b>HuggingFace Token</b> in <b>Variables</b>, add it and run <b>Create a container</b> again.<br> 3. Recommended resolution: <b>512</b>.|
 |Kimodo|https://github.com/nv-tlabs/kimodo|1. Set <b>HuggingFace Token</b> in Variables.<br> 2. Request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (required for text encoder).|
 |TripoSplat|https://github.com/VAST-AI-Research/TripoSplat||
 

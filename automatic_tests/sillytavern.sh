@@ -17,20 +17,44 @@ _restore_st_config() {
 trap _restore_st_config EXIT
 
 # ============================================================
-# PHASE 6: SillyTavern + WhisperSpeech integration
+# SillyTavern + WhisperSpeech: install + integration test
 # ============================================================
-phase6_sillytavern_integration() {
+test_sillytavern_integration() {
     info "============================================="
-    info "PHASE 6: SILLYTAVERN + WHISPERSPEECH INTEGRATION"
+    info "SILLYTAVERN + WHISPERSPEECH: INSTALL + INTEGRATION TEST"
     info "============================================="
 
+    # ----------------------------------------------------------
+    # INSTALL
+    # ----------------------------------------------------------
     basic_container || abort "Container 'rocm' is not running."
+    clean_hf_incomplete
 
+    # Install WhisperSpeech (needed for ST extension)
+    run_install "WhisperSpeech web UI" install_whisperspeech_web_ui "/AI/whisperspeech-webui"
+
+    # Install SillyTavern
+    run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
+
+    # Install WhisperSpeech extension
+    info "--- Installing: SillyTavern WhisperSpeech extension ---"
+    if ! install_sillytavern_whisperspeech_web_ui; then
+        abort "SillyTavern WhisperSpeech extension: install function returned non-zero"
+    fi
+    local ws_ext="/AI/SillyTavern/public/scripts/extensions/third-party/whisperspeech-webui"
+    if ! container_dir_exists "$ws_ext"; then
+        abort "SillyTavern WhisperSpeech extension: directory $ws_ext not found"
+    fi
+    pass "SillyTavern WhisperSpeech extension installed successfully"
+
+    # ----------------------------------------------------------
+    # TEST
+    # ----------------------------------------------------------
     local st_dir="/AI/SillyTavern"
     local st_port=8000
     # WhisperSpeech exposes two servers:
     #   7860 – Gradio web UI
-    #   5050 – REST API used by the SillyTavern plugin (POST /generate → audio)
+    #   5050 – REST API used by the SillyTavern plugin (POST /generate -> audio)
     local ws_api_port=5050
     local ws_gui_port=7860
     local st_log="/tmp/st_server.log"
@@ -259,9 +283,9 @@ PYEOF
     done
     pass "WhisperSpeech web UI stopped"
 
-    info "Phase 6 DONE"
+    info "SillyTavern integration test DONE"
 }
 
-main() { phase6_sillytavern_integration; }
+main() { test_sillytavern_integration; }
 
 main "$@"
