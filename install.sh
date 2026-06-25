@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="16"
+VERSION="16.1"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -398,9 +398,10 @@ image_generation() {
         
         choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             1 "ComfyUI" \
+            2 "Install Krea 2 Turbo" \
             2>&1 > /dev/tty)
         status=$?
-        
+
         if [ $status -ne 0 ]; then
             return 0
         fi
@@ -408,6 +409,9 @@ image_generation() {
         case "$choice" in
             "1")
                 comfyui_addons
+                ;;
+            "2")
+                install_krea2
                 ;;
             "")
                 echo "Previous menu..."

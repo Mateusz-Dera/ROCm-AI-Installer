@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-16-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-16.1-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 
 ![ROCm](https://img.shields.io/badge/ROCm-7.2.4-red.svg)
 
@@ -41,6 +41,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Name|Links|Additional information|
 |:---|:---|:---|
 |ComfyUI|https://github.com/comfyanonymous/ComfyUI<br> https://github.com/city96/ComfyUI-GGUF|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
+|Krea 2 Turbo|https://github.com/krea-ai/krea-2<br> https://huggingface.co/krea/Krea-2-Turbo<br> https://huggingface.co/collections/krea/krea-2-loras|1. 4-bit NF4 quantized to fit 24 GB VRAM<br> 2. Turbo model (8 steps)<br> 3. 9 official style LoRAs available<br> 4. Custom LoRA upload supported<br> 5. Krea 2 is licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>.|
 
 #### ComfyUI Addons:
 |Name|Link|Additional information|

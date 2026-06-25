@@ -940,6 +940,29 @@ install_triposplat(){
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && hf download VAST-AI/TripoSplat --local-dir ckpts/"
 }
 
+# Krea 2 Turbo
+install_krea2() {
+    FOLDER="Krea-2-Turbo"
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 python app.py"
+
+    basic_container
+
+    podman exec -t rocm bash -c "if [ -d /AI/$FOLDER ]; then rm -rf /AI/$FOLDER; fi && mkdir -p /AI/$FOLDER/loras"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && uv venv --python 3.13"
+
+    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install torch torchvision"
+
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install 'git+https://github.com/huggingface/diffusers.git' \
+        'transformers>=4.57.0' accelerate sentencepiece bitsandbytes peft gradio"
+
+    podman cp "$SCRIPT_DIR/custom_files/Krea-2-Turbo/app.py" "rocm:/AI/$FOLDER/app.py"
+
+    basic_run "$FOLDER" "$COMMAND"
+}
+
 # Backup and Restore Manager
 run_backup() {
     bash "$SCRIPT_DIR/backup.sh"
