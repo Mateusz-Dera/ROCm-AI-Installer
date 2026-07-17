@@ -2,12 +2,14 @@
 # For more information, visit https://krea.ai/krea-2-licensing.
 
 import os
+import json
 import shutil
 import random
 import numpy as np
 import torch
 import gradio as gr
 from PIL import Image
+from safetensors.torch import load_file as _st_load, save_file as _st_save
 
 try:
     import spaces
@@ -22,6 +24,9 @@ DTYPE = torch.bfloat16
 TURBO_REPO = "krea/Krea-2-Turbo"
 MAX_SEED = 2**31 - 1
 CUSTOM_LORA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loras")
+CUSTOM_METADATA_FILE = os.path.join(CUSTOM_LORA_DIR, "metadata.json")
+IMAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
+os.makedirs(IMAGES_DIR, exist_ok=True)
 
 print("Loading Krea 2 Turbo with 4-bit NF4 quantization...")
 
@@ -88,12 +93,28 @@ BUILTIN_LORAS = {
 os.makedirs(CUSTOM_LORA_DIR, exist_ok=True)
 
 
+def _load_custom_metadata():
+    if os.path.exists(CUSTOM_METADATA_FILE):
+        with open(CUSTOM_METADATA_FILE) as f:
+            return json.load(f)
+    return {}
+
+
+def _save_custom_metadata(meta):
+    with open(CUSTOM_METADATA_FILE, "w") as f:
+        json.dump(meta, f, indent=2)
+
+
 def _load_custom_loras():
+    meta = _load_custom_metadata()
     custom = {}
     for f in sorted(os.listdir(CUSTOM_LORA_DIR)):
-        if f.endswith(".safetensors"):
-            name = f.removesuffix(".safetensors")
-            custom[f"Custom: {name}"] = (os.path.join(CUSTOM_LORA_DIR, f), f, "")
+        if not f.endswith(".safetensors"):
+            continue
+        file_meta = meta.get(f, {})
+        display_name = file_meta.get("name") or f"Custom: {f.removesuffix('.safetensors')}"
+        trigger = file_meta.get("trigger", "")
+        custom[display_name] = (os.path.join(CUSTOM_LORA_DIR, f), f, trigger)
     return custom
 
 
@@ -103,6 +124,90 @@ def _all_lora_choices():
         choices.append(name)
     return choices
 
+
+def _is_custom(lora_name):
+    return lora_name not in ("None",) and lora_name not in BUILTIN_LORAS
+
+
+# ── Native Krea 2 LoRA → diffusers format converter ──────────────────────────
+
+_NATIVE_PREFIX_MAP = [
+    ("diffusion_model.txtfusion.layerwise_blocks.", "transformer.text_fusion.layerwise_blocks."),
+    ("diffusion_model.txtfusion.refiner_blocks.",   "transformer.text_fusion.refiner_blocks."),
+    ("diffusion_model.txtfusion.projector.",        "transformer.text_fusion.projector."),
+    ("diffusion_model.blocks.",                     "transformer.transformer_blocks."),
+    ("diffusion_model.last.linear.",                "transformer.final_layer.linear."),
+    ("diffusion_model.first.",                      "transformer.img_in."),
+]
+
+_NATIVE_SPECIAL_MAP = {
+    "diffusion_model.tmlp.0.":    "transformer.time_embed.linear_1.",
+    "diffusion_model.tmlp.2.":    "transformer.time_embed.linear_2.",
+    "diffusion_model.tproj.1.":   "transformer.time_mod_proj.",
+    "diffusion_model.txtmlp.1.":  "transformer.txt_in.linear_1.",
+    "diffusion_model.txtmlp.3.":  "transformer.txt_in.linear_2.",
+}
+
+_ATTR_MAP = [
+    (".attn.wq.",   ".attn.to_q."),
+    (".attn.wk.",   ".attn.to_k."),
+    (".attn.wv.",   ".attn.to_v."),
+    (".attn.wo.",   ".attn.to_out.0."),
+    (".attn.gate.", ".attn.to_gate."),
+    (".mlp.up.",    ".ff.up."),
+    (".mlp.down.",  ".ff.down."),
+    (".mlp.gate.",  ".ff.gate."),
+]
+
+
+def _convert_native_key(key):
+    """Map one native Krea 2 LoRA key to diffusers format; return None to skip."""
+    if key.endswith(".diff_b"):
+        return None
+
+    k = key
+    matched = False
+    for native, diffusers in _NATIVE_SPECIAL_MAP.items():
+        if k.startswith(native):
+            k = diffusers + k[len(native):]
+            matched = True
+            break
+    if not matched:
+        for native, diffusers in _NATIVE_PREFIX_MAP:
+            if k.startswith(native):
+                k = diffusers + k[len(native):]
+                break
+
+    for old, new in _ATTR_MAP:
+        if old in k:
+            k = k.replace(old, new)
+            break
+
+    if k.endswith(".lora_down.weight"):
+        k = k[:-len(".lora_down.weight")] + ".lora_A.weight"
+    elif k.endswith(".lora_up.weight"):
+        k = k[:-len(".lora_up.weight")] + ".lora_B.weight"
+
+    return k
+
+
+def _convert_krea2_native_to_diffusers(src_path, dst_path):
+    print(f"[LoRA] Converting native Krea 2 format: {os.path.basename(src_path)}")
+    state_dict = _st_load(src_path)
+    out, skipped = {}, []
+    for key, tensor in state_dict.items():
+        new_key = _convert_native_key(key)
+        if new_key is None:
+            skipped.append(key)
+        else:
+            out[new_key] = tensor
+    if skipped:
+        print(f"[LoRA] Skipped {len(skipped)} DoRA/unsupported keys")
+    _st_save(out, dst_path)
+    print(f"[LoRA] Conversion done: {len(out)} keys written to {os.path.basename(dst_path)}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 _current_lora = None
 
@@ -124,14 +229,24 @@ def _apply_lora(lora_name, lora_strength):
     if _current_lora != lora_name:
         if _current_lora is not None:
             pipe.unload_lora_weights()
-        if source.startswith("/") or source.startswith("."):
-            pipe.transformer.load_lora_adapter(
-                os.path.dirname(source), weight_name=os.path.basename(source)
-            )
-        else:
-            pipe.transformer.load_lora_adapter(source, weight_name=weight_name)
+        try:
+            if source.startswith("/") or source.startswith("."):
+                pipe.load_lora_weights(
+                    os.path.dirname(source),
+                    weight_name=os.path.basename(source),
+                    adapter_name="active",
+                )
+            else:
+                pipe.load_lora_weights(source, weight_name=weight_name, adapter_name="active")
+        except RuntimeError as e:
+            if "size mismatch" in str(e):
+                raise gr.Error(
+                    f"LoRA '{lora_name}' is incompatible with Krea 2 Turbo (architecture mismatch). "
+                    "Only LoRAs trained on Krea 2 or Krea 2 Turbo are supported."
+                ) from e
+            raise gr.Error(f"Failed to load LoRA '{lora_name}': {e}") from e
         _current_lora = lora_name
-    pipe.transformer.set_adapters("default", weights=float(lora_strength))
+    pipe.set_adapters(["active"], adapter_weights=[float(lora_strength)])
 
 
 def upload_lora(file):
@@ -140,11 +255,50 @@ def upload_lora(file):
     basename = os.path.basename(file)
     if not basename.endswith(".safetensors"):
         raise gr.Error("Only .safetensors files are supported.")
-    dest = os.path.join(CUSTOM_LORA_DIR, basename)
-    shutil.copy2(file, dest)
-    name = f"Custom: {basename.removesuffix('.safetensors')}"
+
+    state_dict = _st_load(file)
+    is_native = any(k.startswith("diffusion_model.") for k in state_dict.keys())
+    del state_dict
+
+    if is_native:
+        converted_name = basename.removesuffix(".safetensors") + "_diffusers.safetensors"
+        dest = os.path.join(CUSTOM_LORA_DIR, converted_name)
+        try:
+            _convert_krea2_native_to_diffusers(file, dest)
+        except Exception as e:
+            raise gr.Error(f"Conversion failed: {e}") from e
+        basename = converted_name
+    else:
+        dest = os.path.join(CUSTOM_LORA_DIR, basename)
+        shutil.copy2(file, dest)
+
+    display_name = f"Custom: {basename.removesuffix('.safetensors')}"
     choices = _all_lora_choices()
-    return gr.update(choices=choices, value=name), f"Uploaded: {basename}"
+    suffix = " (auto-converted from native format)" if is_native else ""
+    return gr.update(choices=choices, value=display_name), f"Uploaded: {basename}{suffix}"
+
+
+def save_custom_lora(lora_name, new_name, new_trigger):
+    new_name = new_name.strip()
+    new_trigger = new_trigger.strip()
+    if not new_name:
+        raise gr.Error("Name cannot be empty.")
+
+    custom = _load_custom_loras()
+    if lora_name not in custom:
+        raise gr.Error(f"LoRA '{lora_name}' not found.")
+
+    _, weight_name, _ = custom[lora_name]
+    meta = _load_custom_metadata()
+    meta[weight_name] = {"name": new_name, "trigger": new_trigger}
+    _save_custom_metadata(meta)
+
+    global _current_lora
+    if _current_lora == lora_name:
+        _current_lora = new_name
+
+    choices = _all_lora_choices()
+    return gr.update(choices=choices, value=new_name), "Saved."
 
 
 def generate(
@@ -170,6 +324,12 @@ def generate(
 
     _apply_lora(lora_name, lora_strength)
 
+    all_loras = {**BUILTIN_LORAS, **_load_custom_loras()}
+    if lora_name != "None" and lora_name in all_loras:
+        trigger = all_loras[lora_name][2]
+        if trigger and trigger not in prompt:
+            prompt = f"{trigger}, {prompt}"
+
     try:
         image = pipe(
             prompt=prompt,
@@ -191,6 +351,10 @@ def generate(
         image = Image.new("RGB", (int(width), int(height)), (0, 0, 0))
         raise gr.Error("Content blocked by safety filter (NSFW detected).")
 
+    from datetime import datetime
+    filename = os.path.join(IMAGES_DIR, datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png")
+    image.save(filename)
+
     return image, seed
 
 
@@ -200,13 +364,19 @@ def on_resolution_change(label):
 
 
 def on_lora_change(lora_name):
-    if lora_name == "None":
-        return ""
     all_loras = {**BUILTIN_LORAS, **_load_custom_loras()}
     entry = all_loras.get(lora_name)
-    if entry is None:
-        return ""
-    return entry[2]
+    trigger = entry[2] if entry else ""
+    is_custom = _is_custom(lora_name) and lora_name in all_loras
+    name_val = lora_name if is_custom else ""
+    trigger_val = trigger if is_custom else ""
+    return (
+        trigger,
+        gr.update(visible=is_custom),
+        gr.update(value=name_val),
+        gr.update(value=trigger_val),
+        "",
+    )
 
 
 with gr.Blocks(title="Krea 2 Turbo") as demo:
@@ -244,9 +414,18 @@ with gr.Blocks(title="Krea 2 Turbo") as demo:
                     0.0, 2.0, value=1.0, step=0.05, label="LoRA strength"
                 )
                 lora_trigger = gr.Textbox(
-                    label="Trigger phrase (add to your prompt)",
+                    label="Trigger phrase (auto-added to prompt)",
                     interactive=False,
                 )
+
+                with gr.Group(visible=False) as custom_editor:
+                    gr.Markdown("**Edit custom LoRA**")
+                    custom_name_edit = gr.Textbox(label="Name", interactive=True)
+                    custom_trigger_edit = gr.Textbox(label="Trigger phrase", interactive=True)
+                    with gr.Row():
+                        save_btn = gr.Button("Save", size="sm", variant="primary")
+                        save_status = gr.Textbox(label="", interactive=False, scale=3)
+
                 lora_upload = gr.File(
                     label="Upload custom LoRA (.safetensors)",
                     file_types=[".safetensors"],
@@ -276,8 +455,16 @@ with gr.Blocks(title="Krea 2 Turbo") as demo:
             output = gr.Image(label="Result", format="png")
 
     resolution.change(on_resolution_change, resolution, [width, height])
-    lora_name.change(on_lora_change, lora_name, lora_trigger)
+    lora_name.change(
+        on_lora_change, lora_name,
+        [lora_trigger, custom_editor, custom_name_edit, custom_trigger_edit, save_status],
+    )
     lora_upload.change(upload_lora, lora_upload, [lora_name, upload_status])
+    save_btn.click(
+        save_custom_lora,
+        [lora_name, custom_name_edit, custom_trigger_edit],
+        [lora_name, save_status],
+    )
 
     inputs = [
         prompt, negative_prompt, lora_name, lora_strength,
