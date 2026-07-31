@@ -1,0 +1,206 @@
+diff --git a/src/ops/ggml/ggml_layers.c b/src/ops/ggml/ggml_layers.c
+index 439c61c..cbd980a 100644
+--- a/src/ops/ggml/ggml_layers.c
++++ b/src/ops/ggml/ggml_layers.c
+@@ -3,6 +3,7 @@
+ #include <math.h>
+ #include <stddef.h>
+ #include <stdint.h>
++#include <stdlib.h>
+ 
+ static int g_trellis_ggml_use_flash_attn = 0;
+ 
+@@ -14,6 +15,22 @@ int trellis_ggml_flash_attn_enabled(void) {
+     return g_trellis_ggml_use_flash_attn;
+ }
+ 
++/* Query-block size for the explicit (non-flash) attention path. The full
++ * [N_k, N_q, heads, batch] score matrix is materialized N_q queries at a time
++ * so its peak size is N_k*chunk instead of N_k*N_q. Tunable via
++ * TRELLIS_ATTN_QUERY_CHUNK; 0 disables chunking (original single-shot path). */
++static int64_t trellis_ggml_attention_query_chunk(void) {
++    const char * env = getenv("TRELLIS_ATTN_QUERY_CHUNK");
++    if (env != NULL && env[0] != '\0') {
++        char * end = NULL;
++        long long value = strtoll(env, &end, 10);
++        if (end != env && value >= 0) {
++            return (int64_t) value;
++        }
++    }
++    return 2048;
++}
++
+ int trellis_ggml_attention_policy_is_valid(
+     const trellis_ggml_attention_policy * policy) {
+     return policy != NULL &&
+@@ -186,12 +203,37 @@ struct ggml_tensor * trellis_ggml_sdpa_with_policy(
+         return ggml_cont_4d(ctx, h, v->ne[0], q->ne[1], q->ne[2], q->ne[3]);
+     }
+ 
+-    struct ggml_tensor * scores = ggml_mul_mat(ctx, k, q);
+-    scores = ggml_scale(ctx, scores, scale);
+-    scores = ggml_soft_max(ctx, scores);
++    /* Explicit QK^T softmax. The full [N_k, N_q, heads, batch] score matrix can
++     * exceed VRAM for large query counts (e.g. Pixal3D 1024_cascade shape flow
++     * needs ~12.7 GB at once on a 24 GB GPU). Chunk over query blocks: softmax
++     * runs over the key dim (ne[0]), so each query row is independent and the
++     * per-block results are numerically identical to the unchunked path. Peak
++     * score memory drops from N_k*N_q to N_k*chunk. */
+     struct ggml_tensor * v_t = ggml_permute(ctx, v, 1, 0, 2, 3);
+     v_t = ggml_cont_4d(ctx, v_t, v->ne[1], v->ne[0], v->ne[2], v->ne[3]);
+-    return ggml_mul_mat(ctx, v_t, scores);
++
++    const int64_t n_q = q->ne[1];
++    const int64_t q_chunk = trellis_ggml_attention_query_chunk();
++    if (q_chunk <= 0 || q_chunk >= n_q) {
++        struct ggml_tensor * scores = ggml_mul_mat(ctx, k, q);
++        scores = ggml_scale(ctx, scores, scale);
++        scores = ggml_soft_max(ctx, scores);
++        return ggml_mul_mat(ctx, v_t, scores);
++    }
++
++    struct ggml_tensor * out = NULL;
++    for (int64_t qo = 0; qo < n_q; qo += q_chunk) {
++        const int64_t blk = (qo + q_chunk <= n_q) ? q_chunk : (n_q - qo);
++        struct ggml_tensor * q_blk = ggml_view_4d(
++            ctx, q, q->ne[0], blk, q->ne[2], q->ne[3],
++            q->nb[1], q->nb[2], q->nb[3], (size_t) qo * q->nb[1]);
++        struct ggml_tensor * scores = ggml_mul_mat(ctx, k, q_blk);
++        scores = ggml_scale(ctx, scores, scale);
++        scores = ggml_soft_max(ctx, scores);
++        struct ggml_tensor * o = ggml_mul_mat(ctx, v_t, scores);
++        out = (out == NULL) ? o : ggml_concat(ctx, out, o, 1);
++    }
++    return out;
+ }
+ 
+ struct ggml_tensor * trellis_ggml_sdpa(
+diff --git a/src/ops/sparse/cuda/forward.cu b/src/ops/sparse/cuda/forward.cu
+index 695fa37..09af23a 100644
+--- a/src/ops/sparse/cuda/forward.cu
++++ b/src/ops/sparse/cuda/forward.cu
+@@ -5,7 +5,7 @@ extern "C" {
+ #include "../../../architectures/sparse_unet_encoder/s2c_host.h"
+ }
+ 
+-#include <cuda_runtime.h>
++#include "trellis_gpu_compat.h"
+ 
+ #include <limits.h>
+ #include <stdint.h>
+@@ -702,13 +702,14 @@ static trellis_status shape_c2s_block_device(
+         trellis_profile_cuda_log("shape.c2s.next_neighbor_map", t0);
+     }
+ 
++    /* Allocate the C2S temporaries lazily (just before first use) and free them
++     * eagerly (right after last use) instead of holding all seven at once. At
++     * high voxel counts (Pixal3D 1024_cascade: n~340K -> m~1.5M) the full set is
++     * ~5.5 GB; interleaving keeps the live set to ~2.3 GB so the block fits in
++     * 24 GB. Numerically identical - only allocation lifetime changes. Each
++     * buffer is NULLed after free so the shared cleanup below never double-frees
++     * (cudaFree(NULL) is a no-op regardless). */
+     if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) n * (size_t) ci, &norm1);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) n * (size_t) co * 8u, &conv1);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &h_up);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &skip);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &norm2);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &conv2);
+-    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &out);
+     if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+         fail_step = "allocate c2s temporaries";
+     }
+@@ -729,6 +730,10 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_norm1_silu", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, norm1, n, ci);
+     }
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) n * (size_t) co * 8u, &conv1);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = sparse_subm_conv3d_device_forward_f32(
+             cur_conv3d,
+@@ -747,6 +752,13 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_conv1", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, conv1, n, 8 * co);
+     }
++    /* norm1 consumed by conv1 (and its debug dump above); release before m-side. */
++    cudaFree(norm1);
++    norm1 = NULL;
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &h_up);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = sparse_c2s_gather_device(conv1, c2s_map.parent, c2s_map.subidx, h_up, m, co);
+         if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+@@ -757,6 +769,13 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_h_up", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, h_up, m, co);
+     }
++    /* conv1 (the largest n-side buffer, ~1.4 GB) is consumed by the gather. */
++    cudaFree(conv1);
++    conv1 = NULL;
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &skip);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = sparse_c2s_skip_repeat_device(h_dev, c2s_map.parent, c2s_map.subidx, skip, m, ci, co);
+         if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+@@ -767,12 +786,19 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_skip", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, skip, m, co);
+     }
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &norm2);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = row_layer_norm_device(h_up, NULL, NULL, norm2, m, co, 1e-6f);
+         if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+             fail_step = "norm2";
+         }
+     }
++    /* h_up consumed by norm2; release before allocating conv2. */
++    cudaFree(h_up);
++    h_up = NULL;
+     if (status == TRELLIS_STATUS_OK) {
+         status = trellis_cuda_silu_f32(norm2, norm2, (size_t) m * (size_t) co);
+         if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+@@ -783,6 +809,10 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_norm2_silu", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, norm2, m, co);
+     }
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &conv2);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = sparse_subm_conv3d_device_forward_f32(
+             &next_conv3d,
+@@ -801,12 +831,24 @@ static trellis_status shape_c2s_block_device(
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_conv2", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, conv2, m, co);
+     }
++    /* norm2 consumed by conv2 (and its debug dump above). */
++    cudaFree(norm2);
++    norm2 = NULL;
++    if (status == TRELLIS_STATUS_OK) status = cuda_malloc_f32((size_t) m * (size_t) co, &out);
++    if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
++        fail_step = "allocate c2s temporaries";
++    }
+     if (status == TRELLIS_STATUS_OK) {
+         status = trellis_cuda_add_f32(conv2, skip, out, (size_t) m * (size_t) co);
+         if (status != TRELLIS_STATUS_OK && fail_step == NULL) {
+             fail_step = "residual add";
+         }
+     }
++    /* conv2 and skip consumed by the residual add; out carries the result. */
++    cudaFree(conv2);
++    conv2 = NULL;
++    cudaFree(skip);
++    skip = NULL;
+     if (status == TRELLIS_STATUS_OK && shape_debug_enabled(debug)) {
+         snprintf(dump_name, sizeof(dump_name), "l%02d_c2s_out", level);
+         status = shape_debug_dump_device_f32(debug, dump_name, out, m, co);

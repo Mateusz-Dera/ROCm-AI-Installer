@@ -6,15 +6,29 @@ TEST_TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S')"
 source "$SCRIPT_DIR/interfaces.sh"
 source "$SCRIPT_DIR/backup.sh"
 
-# Load configuration (.env)
+# Load host configuration (.env). Kept for the host-side view used by
+# require_hf_token (comparing host token vs container token) and AI_DIR.
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
-    export GFX="${TARGET_GFX:-gfx1100}"
     AI_DIR="${AI_HOST_DIR:-$HOME/AI}"
 else
-    export GFX="gfx1100"
     AI_DIR="$HOME/AI"
 fi
+
+# The test suite reuses the EXISTING container (run.sh only stops/starts it, never
+# rebuilds), so the container's baked-in variables — not host .env — are the source
+# of truth for how it was actually built. Build-critical vars (TARGET_GFX drives
+# PYTORCH_ROCM_ARCH/GPU_ARCHS in interfaces.sh) must match the running container,
+# otherwise a stale .env would compile extensions for the wrong GPU arch.
+# Prefer the container's value; fall back to .env, then the default.
+_container_env() { podman exec rocm printenv "$1" 2>/dev/null | tr -d '\r'; }
+
+_ctr_gfx="$(_container_env TARGET_GFX)"
+if [ -n "$_ctr_gfx" ]; then
+    TARGET_GFX="$_ctr_gfx"
+fi
+export TARGET_GFX="${TARGET_GFX:-gfx1100}"
+export GFX="$TARGET_GFX"
 
 # ------------------------------------------------------------
 # Logging
@@ -42,6 +56,28 @@ clean_hf_incomplete() {
         | tr -d '\r\n') || count=0
     if [ "${count:-0}" -gt 0 ]; then
         info "Cleaned ${count} incomplete HuggingFace download(s)"
+    fi
+}
+
+# require_hf_token APP_NAME
+# Aborts unless HF_TOKEN is set INSIDE the container. The token is injected by
+# podman-compose only at container-creation time, so a token added to .env after
+# the container was created is visible on the host but not in the container.
+# Distinguish that stale-container case (actionable: recreate) from a genuinely
+# unconfigured token, instead of failing with the same opaque message for both.
+require_hf_token() {
+    local app="$1"
+    local ctr_tok
+    ctr_tok=$(podman exec -t rocm bash -c 'printf "%s" "${HF_TOKEN:-}"' | tr -d '\r')
+    if [ -n "$ctr_tok" ]; then
+        info "HF_TOKEN is set in the container"
+        return 0
+    fi
+    # common.sh already sourced .env, so $HF_TOKEN here reflects the host config.
+    if [ -n "${HF_TOKEN:-}" ]; then
+        abort "HF_TOKEN is in ${CONFIG_FILE} but NOT in the container — the container predates the token. Re-run 'Create a container' (podman-compose down && up -d) to inject it, then retry. Required for ${app} model download."
+    else
+        abort "HF_TOKEN is not set — add it via install.sh 'Variables', then run 'Create a container'. Required for ${app} model download."
     fi
 }
 

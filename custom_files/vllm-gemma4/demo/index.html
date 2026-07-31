@@ -1,0 +1,160 @@
+<meta charset="utf-8">
+<title>Gemma 4 — dwie sesje</title>
+<style>
+  :root { --bg:#0d1117; --pane:#11161d; --fg:#c9d1d9; --dim:#7d8590;
+          --a:#7ee787; --b:#79c0ff; --warn:#ffa657; --line:#222b36; }
+  * { box-sizing: border-box; }
+  body { margin:0; height:100vh; display:flex; flex-direction:column;
+         background:var(--bg); color:var(--fg);
+         font:13px/1.5 ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace; }
+  header { padding:6px 12px; border-bottom:1px solid var(--line);
+           display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header b { color:var(--fg); font-weight:600; }
+  header span { color:var(--dim); }
+  #wrap { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:1px;
+          background:var(--line); min-height:0; }
+  .term { background:var(--pane); display:flex; flex-direction:column; min-height:0; }
+  .bar { padding:5px 10px; border-bottom:1px solid var(--line);
+         display:flex; gap:10px; align-items:center; }
+  .bar .name { font-weight:600; }
+  .t1 .name { color:var(--a); } .t2 .name { color:var(--b); }
+  .bar .stat { color:var(--dim); margin-left:auto; font-size:12px; }
+  .out { flex:1; overflow-y:auto; padding:10px; white-space:pre-wrap;
+         word-break:break-word; }
+  .out .u { color:var(--dim); }
+  .out .u::before { content:"> "; }
+  .out .a { display:block; margin:2px 0 12px; }
+  .t1 .out .a { color:var(--a); } .t2 .out .a { color:var(--b); }
+  .out .err { color:var(--warn); }
+  .in { display:flex; border-top:1px solid var(--line); }
+  .in textarea { flex:1; background:transparent; color:var(--fg); border:0;
+                 padding:8px 10px; font:inherit; resize:none; height:60px;
+                 outline:none; }
+  .in button { background:transparent; color:var(--dim); border:0;
+               border-left:1px solid var(--line); padding:0 14px;
+               font:inherit; cursor:pointer; }
+  .in button:hover { color:var(--fg); }
+  .in button:disabled { opacity:.4; cursor:default; }
+  @media (max-width:860px){ #wrap{ grid-template-columns:1fr; } }
+</style>
+
+<header>
+  <b>Gemma 4 31B</b>
+  <span>k4v2 + dzielenie K/V</span>
+  <span>pula 300 410 tok</span>
+  <span>2 sesje równolegle</span>
+  <span id="api">—</span>
+</header>
+
+<div id="wrap">
+  <div class="term t1" data-n="1">
+    <div class="bar"><span class="name">sesja 1</span>
+      <span class="stat">gotowa</span></div>
+    <div class="out"></div>
+    <div class="in">
+      <textarea placeholder="Ctrl+Enter wysyła"></textarea>
+      <button>wyślij</button>
+    </div>
+  </div>
+  <div class="term t2" data-n="2">
+    <div class="bar"><span class="name">sesja 2</span>
+      <span class="stat">gotowa</span></div>
+    <div class="out"></div>
+    <div class="in">
+      <textarea placeholder="Ctrl+Enter wysyła"></textarea>
+      <button>wyślij</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = location.protocol + "//" + location.hostname + ":8000/v1";
+document.getElementById("api").textContent = API;
+
+// Each pane keeps its own message list. The server has no session state, so
+// the whole history is resent every turn - which is also what exercises the
+// long-context path the plugin is there for.
+class Term {
+  constructor(root) {
+    this.root = root;
+    this.out = root.querySelector(".out");
+    this.ta = root.querySelector("textarea");
+    this.btn = root.querySelector("button");
+    this.stat = root.querySelector(".stat");
+    this.msgs = [];
+    this.btn.onclick = () => this.send();
+    this.ta.onkeydown = e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.send(); }
+    };
+  }
+  line(cls, text) {
+    const el = document.createElement("span");
+    el.className = cls;
+    el.textContent = text;
+    this.out.appendChild(el);
+    if (cls !== "a") this.out.appendChild(document.createElement("br"));
+    this.out.scrollTop = this.out.scrollHeight;
+    return el;
+  }
+  async send() {
+    const text = this.ta.value.trim();
+    if (!text || this.busy) return;
+    this.busy = true; this.btn.disabled = true; this.ta.value = "";
+    this.line("u", text);
+    this.msgs.push({ role: "user", content: text });
+
+    const sink = this.line("a", "");
+    const t0 = performance.now();
+    let first = null, n = 0;
+    this.stat.textContent = "przetwarzanie promptu…";
+
+    try {
+      const r = await fetch(API + "/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemma4", stream: true, temperature: 0.7,
+          max_tokens: 2048, messages: this.msgs,
+        }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text()).slice(0, 200));
+
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      let buf = "", acc = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const parts = buf.split("\n");
+        buf = parts.pop();
+        for (const p of parts) {
+          const s = p.trim();
+          if (!s.startsWith("data:")) continue;
+          const d = s.slice(5).trim();
+          if (d === "[DONE]") continue;
+          let j; try { j = JSON.parse(d); } catch { continue; }
+          const piece = j.choices?.[0]?.delta?.content;
+          if (!piece) continue;
+          if (first === null) {
+            first = (performance.now() - t0) / 1000;
+            this.stat.textContent = "generowanie…";
+          }
+          n++; acc += piece; sink.textContent = acc;
+          this.out.scrollTop = this.out.scrollHeight;
+        }
+      }
+      this.msgs.push({ role: "assistant", content: acc });
+      const total = (performance.now() - t0) / 1000;
+      const gen = Math.max(0.001, total - (first ?? 0));
+      this.stat.textContent =
+        `1. token ${(first ?? 0).toFixed(1)} s · ${(n / gen).toFixed(1)} tok/s · ${this.msgs.length} wiadomości`;
+    } catch (e) {
+      this.line("err", "BŁĄD: " + e.message);
+      this.stat.textContent = "błąd";
+    } finally {
+      this.busy = false; this.btn.disabled = false; this.ta.focus();
+    }
+  }
+}
+document.querySelectorAll(".term").forEach(t => new Term(t));
+</script>

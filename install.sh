@@ -24,7 +24,7 @@
 set -e
 
 # Version
-VERSION="16.1"
+VERSION="17"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.env"
@@ -113,6 +113,15 @@ check_whiptail() {
     fi
 }
 
+# Reminder shown after any Variables change: container must be recreated to apply it.
+# Variables are injected into the container only at creation time (podman-compose up),
+# so editing them does not affect an already-running container.
+variable_change_reminder() {
+    whiptail --title "Recreate container required" \
+        --msgbox "This change is saved to .env but is NOT applied to the existing container.\n\nRun 'Create a container' from the main menu to rebuild it with the new settings." \
+        12 70 2>&1 > /dev/tty
+}
+
 # Configure GFX
 configure_gfx() {
     local new_gfx
@@ -124,6 +133,7 @@ configure_gfx() {
         GFX_VERSION="$new_gfx"
         save_config
         whiptail --title "Success" --msgbox "GFX Architecture set to: ${GFX_VERSION}" 8 50 2>&1 > /dev/tty
+        variable_change_reminder
     fi
 }
 
@@ -138,6 +148,7 @@ configure_hsa() {
         HSA_VERSION="$new_hsa"
         save_config
         whiptail --title "Success" --msgbox "HSA Override set to: ${HSA_VERSION}" 8 50 2>&1 > /dev/tty
+        variable_change_reminder
     fi
 }
 
@@ -167,6 +178,7 @@ configure_path() {
 
                 save_config
                 whiptail --title "Success" --msgbox "Directory created: ${AI_DIR}\nPermissions: 775\n\nNote: Ownership will be managed by Podman when container starts." 12 70 2>&1 > /dev/tty
+                variable_change_reminder
             else
                 return 0
             fi
@@ -176,6 +188,7 @@ configure_path() {
 
             save_config
             whiptail --title "Success" --msgbox "Path set to: ${AI_DIR}\n\nNote: Ownership will be managed by Podman when container starts." 10 70 2>&1 > /dev/tty
+            variable_change_reminder
         fi
     fi
 }
@@ -195,6 +208,7 @@ configure_hf_token() {
         else
             whiptail --title "Success" --msgbox "HuggingFace token cleared." 8 50 2>&1 > /dev/tty
         fi
+        variable_change_reminder
     fi
 }
 
@@ -349,12 +363,13 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 15 100 5 --cancel-button "Back" \
-            1 "Install KoboldCPP" \
-            2 "SillyTavern" \
-            3 "Install llama.cpp" \
-            4 "Install llama.cpp Vulkan" \
-            5 "Install turboquant-rocm-llamacpp" \
+        choice=$(whiptail --title "Text generation" --menu "Choose an option:" 16 100 6 --cancel-button "Back" \
+            1 "SillyTavern" \
+            2 "Install llama.cpp" \
+            3 "Install llama.cpp Vulkan" \
+            4 "Install turboquant-rocm-llamacpp" \
+            5 "Install Colibri (GLM-5.2 744B)" \
+            6 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -365,19 +380,22 @@ text_generation() {
 
         case "$choice" in
             "1")
-                install_koboldcpp
-                ;;
-            "2")
                 sillytavern
                 ;;
-            "3")
+            "2")
                 install_llama_cpp
                 ;;
-            "4")
+            "3")
                 install_llama_cpp_vulkan
                 ;;
-            "5")
+            "4")
                 install_turboquant_rocm_llamacpp
+                ;;
+            "5")
+                install_colibri
+                ;;
+            "6")
+                install_vllm_gemma4
                 ;;
             "")
                 echo "Previous menu..."
@@ -398,7 +416,7 @@ image_generation() {
         
         choice=$(whiptail --title "Image generation" --menu "Choose an option:" 15 100 2 --cancel-button "Back" \
             1 "ComfyUI" \
-            2 "Install Krea 2 Turbo" \
+            2 "Install Krea 2 Turbo + Edit" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -515,7 +533,7 @@ voice_generation() {
 
 # Function to display the main menu
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 20 100 8 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 20 100 9 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
@@ -523,6 +541,7 @@ show_menu() {
     5 "Music generation" \
     6 "Voice generation" \
     7 "3D generation" \
+    8 "Fine-tuning" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -548,10 +567,44 @@ show_menu() {
         7)
             d3_generation
             ;;
+        8)
+            fine_tuning
+            ;;
         *)
             exit 0
             ;;
     esac
+}
+
+# Fine-tuning
+
+fine_tuning() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "Fine-tuning" --menu "Choose an option:" 15 100 1 --cancel-button "Back" \
+            1 "Install Unsloth (LoRA/QLoRA fine-tuning + Studio)" \
+            2>&1 > /dev/tty)
+
+        case "$choice" in
+            "1")
+                install_unsloth
+                ;;
+            "")
+                echo "Previous menu..."
+                second=false
+                ;;
+            *)
+                echo "Invalid selection."
+                second=false
+                ;;
+        esac
+        status=$?
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+    done
 }
 
 # 3D generation
@@ -559,12 +612,15 @@ show_menu() {
 d3_generation() {
     second=true
     while $second; do
-        
-        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 15 100 4 --cancel-button "Back" \
+
+        choice=$(whiptail --title "3D generation" --menu "Choose an option:" 17 100 7 --cancel-button "Back" \
             1 "Install PartCrafter" \
-            2 "Install TRELLIS.2_rocm" \
-            3 "Install Kimodo" \
-            4 "Install TripoSplat" \
+            2 "Install trellis2.c (ROCm)" \
+            3 "Install trellis2.c (Vulkan)" \
+            4 "Install Pixal3D Experimental (trellis2.c ROCm)" \
+            5 "Install ARDY (motion generation)" \
+            6 "Install TripoSplat" \
+            7 "Install AutoRemesher (retopology helper, non-AI)" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -572,13 +628,22 @@ d3_generation() {
                 install_partcrafter
                 ;;
             "2")
-                install_trellis_2_rocm
+                install_trellis2_c hip
                 ;;
             "3")
-                install_kimodo
+                install_trellis2_c vulkan
                 ;;
             "4")
+                install_pixal3d_c
+                ;;
+            "5")
+                install_ardy
+                ;;
+            "6")
                 install_triposplat
+                ;;
+            "7")
+                install_autoremesher
                 ;;
             "")
                 echo "Previous menu..."

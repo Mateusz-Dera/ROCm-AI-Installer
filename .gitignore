@@ -3,3 +3,6 @@ TODO.txt
 .*/
 *.log
 automatic_tests/__pycache__
+# Working notes and rejected experiments from the vLLM/TurboQuant work.
+# Kept on disk for reference, deliberately not committed.
+.vllm/

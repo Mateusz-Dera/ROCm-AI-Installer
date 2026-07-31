@@ -2,7 +2,7 @@
 # Runs all test scripts (*.sh except run.sh and common.sh) in alphabetical order.
 #
 # Usage: run.sh [--test name [name ...]]
-#   --test name [name ...]   Run only the specified tests (e.g. --test koboldcpp comfyui)
+#   --test name [name ...]   Run only the specified tests (e.g. --test llama_cpp comfyui)
 #   (no args)                Run all tests in order
 
 set -euo pipefail

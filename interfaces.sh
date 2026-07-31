@@ -107,43 +107,32 @@ basic_pip(){
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install $LINK"
 }
 
-# KoboldCPP
-install_koboldcpp() {
-    REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
-    COMMIT="64d9d01c57cb4d0c58c530bc5fc053196da566fa"
-    COMMAND="DISPLAY=\\\$DISPLAY uv run koboldcpp.py"
-    FOLDER=$(basename "$REPO")
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    basic_requirements "$REPO"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && make LLAMA_HIPBLAS=1 -j\$(nproc)"
-    basic_run "$REPO" "$COMMAND"
-}
-
 # ----- llama.cpp -----
 
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
-LLAMA_COMMIT="721354fbdfb7743e2be2183d918a3cdb9276c70f"
+LLAMA_COMMIT="da296d6e726654949bce10d7cae9a2195d292bfc"
 
 install_llama_cpp() {
     REPO="$LLAMA_REPO"
     COMMIT="$LLAMA_COMMIT"
     FOLDER=$(basename "$REPO")
-    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 4 --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
+    # Router server: serve every GGUF in models/ and switch between them from the
+    # WebUI model selector (or the OpenAI `model` field) without a restart.
+    # --models-max 1 keeps a single model resident (loading another unloads the LRU
+    # one, freeing VRAM). Inference args below apply to whichever model is loaded.
+    COMMAND="./build/bin/llama-server --models-dir user-models --models-max 1 --models-autoload --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
 
     local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
-    local MTP_FILE="mtp-gemma-4-12b-it.gguf"
 
     basic_container
     basic_git "$REPO" "$COMMIT"
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
 
-    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
-    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
+    # Default model goes into models/ so the router lists it; drop more GGUFs there
+    # to pick them from the WebUI.
+    podman exec -it rocm bash -c "mkdir -p '/AI/$FOLDER/user-models' && wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/user-models/${MODEL_FILE}'"
 
     basic_run "$REPO" "$COMMAND" "&&"
 }
@@ -152,11 +141,11 @@ install_llama_cpp_vulkan() {
     REPO="$LLAMA_REPO"
     COMMIT="$LLAMA_COMMIT"
     FOLDER="llama.cpp-vulkan"
-    COMMAND="./build/bin/llama-server -m model.gguf --spec-draft-model model_mtp.gguf --spec-type draft-mtp --spec-draft-n-max 4 --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
+    # Router server (see install_llama_cpp): pick/switch models from the WebUI.
+    COMMAND="./build/bin/llama-server --models-dir user-models --models-max 1 --models-autoload --host 0.0.0.0 --port 8080 -c 131072 -ngl auto -fa on --cache-type-k q8_0 --cache-type-v q8_0"
 
     local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
-    local MTP_FILE="mtp-gemma-4-12b-it.gguf"
 
     basic_container
     podman exec -it rocm bash -c "apt-get install -y libvulkan-dev vulkan-tools glslc"
@@ -165,8 +154,7 @@ install_llama_cpp_vulkan() {
     PODMAN='cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
 
-    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
-    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MTP_FILE}' -O '/AI/$FOLDER/model_mtp.gguf'"
+    podman exec -it rocm bash -c "mkdir -p '/AI/$FOLDER/user-models' && wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/user-models/${MODEL_FILE}'"
 
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
 }
@@ -180,7 +168,9 @@ install_turboquant_rocm_llamacpp() {
     REPO="$LLAMA_TQ_REPO"
     COMMIT="$LLAMA_TQ_COMMIT"
     FOLDER=$(basename "$REPO")
-    COMMAND="./build/bin/llama-server -m model.gguf --host 0.0.0.0 --port 8080 -c 131072 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
+    # Router server (see install_llama_cpp): pick/switch models from the WebUI. Keeps
+    # TurboQuant's q4_0 KV-cache compression as the global cache type.
+    COMMAND="./build/bin/llama-server --models-dir user-models --models-max 1 --models-autoload --host 0.0.0.0 --port 8080 -c 131072 --flash-attn on --cache-type-k q4_0 --cache-type-v q4_0 -ngl 99"
 
     local HF_REPO="https://huggingface.co/unsloth/gemma-4-12b-it-GGUF"
     local MODEL_FILE="gemma-4-12b-it-Q8_0.gguf"
@@ -190,9 +180,263 @@ install_turboquant_rocm_llamacpp() {
     PODMAN='HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DLLAMA_CURL=OFF -DGGML_HIP=ON -DAMDGPU_TARGETS=$GFX -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release -- -j$(($(nproc) - 1))'
     podman exec -it rocm bash -c "cd /AI/$FOLDER && $PODMAN"
 
-    podman exec -it rocm bash -c "wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/model.gguf'"
+    podman exec -it rocm bash -c "mkdir -p '/AI/$FOLDER/user-models' && wget -q '${HF_REPO}/resolve/main/${MODEL_FILE}' -O '/AI/$FOLDER/user-models/${MODEL_FILE}'"
 
     basic_run "$REPO" "$COMMAND" "&&"
+}
+
+# ----- vLLM Gemma 4 -----
+
+# Gemma 4 31B on a 24 GB card with a compressed KV cache: 150k tokens in one
+# session, or two concurrent sessions of 150k each, with full needle recall at
+# five depths. Plain fp8 KV fits 111k on the same card.
+#
+# The saving comes from compressing only the ten full-attention layers. Gemma 4
+# cycles five sliding layers per full one, and a sliding layer's KV is capped by
+# its 1024-token window, so it does not grow with context and there is nothing
+# to win there - compressing it only breaks the window. The full layers are the
+# ones whose cache grows, and they are also unusually cheap to compress here:
+# they have no v_proj at all (verified on the checkpoint - 60 layers carry
+# k_proj, 50 carry v_proj, and the ten without are exactly the full-attention
+# ones), so K and V come from one projection. The store keeps V alone and
+# rebuilds K on read, which halves it again. Net: 7.5 KB/token against fp8's
+# 51.6 for those layers.
+#
+# This uses 0xSero/turboquant, a pure PyTorch+Triton plugin that hooks the
+# runner, NOT TheTom's vLLM fork. The fork's approach - marking layers through
+# --kv-cache-dtype-skip-layers - makes the per-layer KV specs non-uniform, and
+# vLLM then rewrites every SlidingWindowSpec into a FullAttentionSpec, so the
+# 50 windowed layers stop being capped and the cache jumps to ~596 KB/token.
+# Isolated cleanly: fp8 with the skip list engaged could not fit 50 000 tokens
+# where fp8 without it fit 57 337, same dtype on every layer.
+#
+# vLLM comes from the prebuilt ROCm wheel rather than a source build: same
+# engine, no ~40 minute compile.
+VLLM_G4_INDEX="https://wheels.vllm.ai/rocm/"
+VLLM_G4_VLLM="0.26.0+rocm723"
+VLLM_G4_TQ_REPO="https://github.com/0xSero/turboquant"
+VLLM_G4_TQ_COMMIT="7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5"
+
+install_vllm_gemma4() {
+    REPO="$VLLM_G4_TQ_REPO"
+    COMMIT="$VLLM_G4_TQ_COMMIT"
+    FOLDER="vllm-gemma4"
+
+    # gemma-4-31B as 4-bit W4A16 compressed-tensors, quantized locally further
+    # down. Every published 4-bit Gemma 4 is a worse trade on a 24 GiB card:
+    #   ebircak/...-GPTQ            19.2 GB  asymmetric, group 128
+    #   google/...-qat-w4a16-ct     23.3 GB  group 32 + untied lm_head -> 576 (!)
+    #   ours                        17.9 GB  symmetric, group 128
+    # The 1.3 GB saved over ebircak is all KV cache, which is why the context
+    # goes up for the same card.
+    local MODEL="/AI/models/gemma-4-31B-it-W4A16-sym-g128"
+
+    # Settings that are load-bearing, each measured:
+    #   --max-model-len 262000     sizes the KV pool: vLLM requires the pool to
+    #                              hold this many tokens for one request, so it
+    #                              scales pool capacity. Setting it near the
+    #                              prompt length instead cost 40% of the pool
+    #                              (104000 -> 179 952 tokens, 262000 -> 300 410)
+    #                              and forced the scheduler to serialise the two
+    #                              sessions. It is a per-request cap, so raising
+    #                              it does not force sessions to be longer.
+    #                              Ceiling is the model's own 262 144 positions.
+    #   --max-num-seqs 2           two concurrent sessions, verified isolated.
+    #   --max-num-batched-tokens   512 is the measured optimum; 768 and 1024
+    #                              fail on prefill activations.
+    #   --kv-cache-memory-bytes    caps the pool explicitly. Sizing it from
+    #                              --gpu-memory-utilization leaves nothing for
+    #                              long-context attention scratch and the engine
+    #                              dies on the first big prompt though it booted.
+    #   --enforce-eager            graph capture does not fit beside ~18 GiB of
+    #                              weights.
+    #   --no-enable-prefix-caching REQUIRED, not a preference. A prefix-cache hit
+    #                              skips the forward pass, so the plugin never
+    #                              captures and its store stays empty - the model
+    #                              then answers with no context at all. Silent
+    #                              wrong answers, not an error.
+    # TQ_KV_SHARE=1 rebuilds K from the shared projection (halves the store).
+    # expandable_segments keeps long-context prefill from dying of fragmentation.
+    local SERVE="HIP_VISIBLE_DEVICES=0 TQ_KV_SHARE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python tq_serve.py --model $MODEL --served-model-name gemma-4-31b --max-model-len 262000 --max-num-seqs 2 --max-num-batched-tokens 512 --kv-cache-memory-bytes 2200000000 --kv-cache-dtype fp8 --enforce-eager --no-enable-prefix-caching --allowed-origins '[\"*\"]' --host 0.0.0.0 --port 8000"
+    # Two-pane chat in front of the API on :8080 - vLLM ships no UI of its own.
+    COMMAND="python -m http.server 8080 --directory demo >/dev/null 2>&1 & $SERVE"
+
+    basic_container
+
+    # libmpi_cxx.so.40: OpenMPI 4.x dropped the C++ bindings but the torch builds
+    # on the vLLM index still link against them. Same stub as install_soprano.
+    podman exec -it rocm bash -c "apt-get install -y libopenmpi40"
+    podman exec -t rocm bash -c "
+cat > /tmp/mpi_cxx_stub.cpp << 'EOF'
+extern \"C\" {
+    void ompi_mpi_cxx_op_intercept(void*, void*, int*, void*) {}
+    void ompi_op_set_cxx_callback(void*, void*) {}
+}
+namespace MPI {
+    class Datatype { public: void Free(); };
+    class Win      { public: void Free(); };
+    class Comm     { public: Comm(); };
+    void Datatype::Free() {}
+    void Win::Free()      {}
+    Comm::Comm()          {}
+}
+EOF
+g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
+    -o /usr/lib/x86_64-linux-gnu/libmpi_cxx.so.40 \
+    /tmp/mpi_cxx_stub.cpp && ldconfig"
+
+    # The plugin is imported from the working directory, so it is cloned as the
+    # app folder itself rather than into a subdirectory.
+    podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
+    podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+
+    # vllm 0.26 on the ROCm index is cp312 only, and so is the torch there.
+    basic_venv "$REPO" "3.12" "$FOLDER"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install --index-strategy unsafe-best-match --extra-index-url $VLLM_G4_INDEX \
+        'vllm==$VLLM_G4_VLLM' 'torch==2.11.0' 'torchvision==0.24.1+d801a34' 'triton==3.6.0'"
+
+    # Everything that makes the plugin work on Gemma 4 / ROCm. Upstream runs
+    # neither: prefill ignored history, a fallback returned literal zeros,
+    # chunked prefill dropped tokens, decode double-counted the current token,
+    # and every concurrent session after the first read the first one's history.
+    # The patch also adds turboquant/fused.py - one Triton kernel doing
+    # dequantise + RMSNorm + RoPE, which nearly doubled decode speed (6.5 ->
+    # 12.2 tok/s at 32k). Full account in .images/VLLM.md.
+    podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/tq-sero-rocm-gemma4.patch" \
+        "rocm:/AI/$FOLDER/tq-sero-rocm-gemma4.patch"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && git apply tq-sero-rocm-gemma4.patch"
+
+    # The fused kernel ships as a file rather than inside the patch, so it stays
+    # readable and editable in the repo instead of existing twice.
+    podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/tq_fused.py" \
+        "rocm:/AI/$FOLDER/turboquant/fused.py"
+
+    # vllm serve cannot be used directly: the plugin installs its hooks through
+    # enable_no_alloc(), which has to run in the serving process before the model
+    # is built. tq_serve.py does that and then hands over to vLLM's own server,
+    # so every serve flag still works.
+    podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/tq_serve.py" \
+        "rocm:/AI/$FOLDER/tq_serve.py"
+    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/demo"
+    podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/demo/index.html" \
+        "rocm:/AI/$FOLDER/demo/index.html"
+    # Acceptance test. Keep it: five of the concurrency bugs produced answers
+    # that looked correct, and only a run with a separate code alphabet per
+    # session plus the peak-store counter distinguishes real isolation from a
+    # shared store or from sessions the scheduler quietly serialised.
+    podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/tq_multi.py" \
+        "rocm:/AI/$FOLDER/tq_multi.py"
+
+    # Build the 4-bit checkpoint. No published Gemma 4 has the combination we
+    # need (symmetric, group 128, embeddings left tied), so it is quantized here
+    # from the bf16 release. Needs ~63 GB of download, ~50 GB of RAM and ~18 GB
+    # of output; llm-compressor gets its own venv because it pins
+    # transformers<=5.10.1, older than the one vLLM runs on.
+    # RTN, not GPTQ: no calibration set, and it stays on the CPU, so it does not
+    # evict a running server from the GPU. Pass --gptq for a slower, more
+    # accurate pass.
+    if podman exec rocm test -f "$MODEL/config.json"; then
+        echo "Quantized model already present, skipping."
+    else
+        podman exec -it rocm bash -c "cd /AI && mkdir -p gemma4-quant && cd gemma4-quant && uv venv --python 3.12"
+        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
+            uv pip install --index-strategy unsafe-best-match --extra-index-url $VLLM_G4_INDEX \
+            'torch==2.11.0' 'triton==3.6.0'"
+        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
+            uv pip install llmcompressor accelerate datasets"
+        podman cp "$SCRIPT_DIR/custom_files/gemma4-quant/quantize_w4a16_sym.py" \
+            "rocm:/AI/gemma4-quant/quantize_w4a16_sym.py"
+        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
+            mkdir -p /AI/models && CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= \
+            python quantize_w4a16_sym.py"
+    fi
+
+    basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
+}
+
+# Colibri - GLM-5.2, a 744B-parameter MoE model, run on consumer hardware by
+# streaming expert weights from disk (tiered RAM/disk/VRAM memory hierarchy).
+# Pure C engine + ROCm/HIP GPU backend. Web dashboard interface (live metrics,
+# expert-routing visualization, 3D expert atlas). Needs ~372 GB disk + 25 GB RAM.
+install_colibri() {
+    REPO="https://github.com/noobdev-ph/colibri"
+    COMMIT="7d17d9b5f18adb9c7b65f357d075f5f33e27b5ff"
+    FOLDER=$(basename "$REPO")
+    local MODEL_REPO="mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
+    # Web dashboard + OpenAI-compatible API on one port (http://localhost:8000),
+    # bound to 0.0.0.0 like every other app. coli refuses a 0.0.0.0 bind unless
+    # COLI_ALLOW_INSECURE_BIND=1 (no API key on a trusted LAN).
+    #   COLI_CUDA=1  : the launcher's GPU auto-enable is Windows-only; set it here so
+    #                  the HIP backend + the VRAM expert tier are actually used.
+    #   --auto-tier --vram 22 --ram 0 : apply the RAM/VRAM expert-cache plan (~22 GB
+    #                  VRAM + free RAM) instead of streaming every expert from disk.
+    #   --policy experimental-fast : fastest resource policy.
+    # Note: a 744B MoE streamed from disk on a 24 GB card is inherently slow
+    # (~0.5 tok/s); MTP speculative decoding (2-3x) only runs in single-client
+    # 'coli chat', not in the multi-client web server.
+    COMMAND="COLI_CUDA=1 COLI_ALLOW_INSECURE_BIND=1 ./c/coli web --model /AI/$FOLDER/model --host 0.0.0.0 --port 8000 --vram 22 --ram 0 --auto-tier --policy experimental-fast"
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+
+    # Build the inference engine with the ROCm/HIP GPU backend (this repo is about
+    # GPU interfaces, so GPU support is the default). backend_cuda.cu compiles
+    # through hipcc via the CUDA->HIP compat shim; -fPIC is required because Ubuntu
+    # links the final binary as PIE while hipcc emits non-PIE objects.
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && \
+        export ROCM_HOME=/opt/rocm PATH=/opt/rocm/bin:\$PATH && \
+        make -C c glm HIP=1 HIP_ARCH=$TARGET_GFX ROCM_HOME=/opt/rocm \
+            HIPCCFLAGS='-O3 -std=c++17 -x hip --offload-arch=$TARGET_GFX -fPIC -Wall -Wextra'"
+
+    # Build the web dashboard (live metrics, expert-routing viz, 3D expert atlas).
+    podman exec -it rocm bash -c "cd /AI/$FOLDER/web && npm install && npm run build"
+
+    # The launcher's Linux GPU detection only recognizes CUDA builds (ldd for
+    # libcudart); the HIP build links libamdhip64 instead, so --gpu would be refused.
+    # Extend the check to accept the HIP runtime as well.
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i 's/return any(\"libcudart\" in line and \"not found\" not in line/return any((\"libcudart\" in line or \"libamdhip64\" in line) and \"not found\" not in line/' c/coli && \
+        grep -q 'libamdhip64' c/coli && echo 'coli launcher patched for HIP'"
+
+    # Model: pre-converted GLM-5.2 int4 container (~372 GB, public - no HF token).
+    # Streamed from disk at run time. Skip if already present.
+    podman exec -it rocm bash -c "if [ ! -f /AI/$FOLDER/model/config.json ]; then \
+        uvx --from 'huggingface_hub[cli]' hf download $MODEL_REPO --local-dir /AI/$FOLDER/model; \
+      else echo 'Colibri model already present - reusing'; fi"
+
+    basic_run "$REPO" "$COMMAND" "&&"
+}
+
+# ----- Fine-tuning -----
+
+# Unsloth - LoRA/QLoRA/full fine-tuning + RL for LLMs, 2x faster / 70% less VRAM,
+# with production-ready AMD/ROCm support (full RDNA3/gfx1100). Ships Unsloth Studio,
+# a web UI for training and inference. CLI: unsloth train/inference/chat/export.
+install_unsloth() {
+    FOLDER="unsloth"
+    # Studio web UI on 0.0.0.0:8888 like every other app. Adding -H 0.0.0.0 exposes
+    # the raw port to the LAN (the Studio prints an API key on start for tool access).
+    COMMAND="export HSA_OVERRIDE_GFX_VERSION=\$HSA_OVERRIDE_GFX_VERSION; unsloth studio -p 8888 -H 0.0.0.0"
+
+    basic_container
+
+    podman exec -t rocm bash -c "if [ -d /AI/$FOLDER ]; then rm -rf /AI/$FOLDER; fi && mkdir -p /AI/$FOLDER"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && uv venv --python 3.12"
+
+    # ROCm torch first (uv.toml -> ROCm manylinux index), then unsloth. unsloth pulls
+    # ROCm-aware triton/xformers automatically on this torch.
+    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install torch torchvision && uv pip install unsloth"
+
+    # Set up Unsloth Studio (the web UI) into ~/.unsloth via the official installer.
+    # --no-torch keeps our ROCm torch; --skip-autostart so it does not launch here;
+    # --python points it at this venv. It also fetches ROCm (repo.radeon.com) wheels.
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        curl -fsSL https://unsloth.ai/install.sh | sh -s -- --no-torch --skip-autostart --python /AI/$FOLDER/.venv/bin/python"
+
+    basic_run "unsloth" "$COMMAND" "&&"
 }
 
 # SillyTavern
@@ -389,7 +633,7 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="b0f9e326af0bf88ea901d0481f581a791a58ccbb"
+    COMMIT="a449f5f987d49ecce18245d1402e4ec68513e7c0"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -833,81 +1077,188 @@ install_partcrafter(){
     basic_run "$REPO" "$COMMAND"
 }
 
-# TRELLIS.2_rocm
-install_trellis_2_rocm() {
-    REPO="https://github.com/hqnicolas/TRELLIS.2_rocm"
-    COMMIT="1eac4201e111755a1b9eafe5edfc1526d4db07c3"
-    COMMAND="ROCM_SAFE_SPCONV=1 FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE ATTN_BACKEND=sdpa GRADIO_SERVER_NAME=0.0.0.0 python app.py"
-    FOLDER=$(basename "$REPO")
+# trellis2.c - shared clone + weights, then a per-backend build.
+# $1 = backend: "vulkan" (Mesa RADV, ROCm-independent) or "hip" (ROCm/HIP, faster).
+# Both build the raylib GUI (trellis-gui): pick an image in the window, generate,
+# preview the 3D result; GLBs land in output/.
+COMMIT_TRELLIS2_C="51b364e3a4dbc1ea076b186bcf86665f507bfde4"
 
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO" "3.11"
-    basic_requirements "$REPO" "$FOLDER" "$SCRIPT_DIR/custom_files/$FOLDER/uv.toml"
+# Clone trellis2.c (shared by the ROCm, Vulkan and Pixal3D installers) and apply
+# the OOM patch. Idempotent: skips the clone if the tree already exists. The patch
+# (custom_files/trellis2.c/pixal3d-oom-fixes.patch) chunks the explicit attention
+# score matrix and lazily allocates the sparse C2S decoder temporaries so the heavy
+# Pixal3D 1024_cascade pipeline fits in 24 GB; it is numerically identical for
+# TRELLIS.2 as well.
+_trellis2_c_clone_and_patch() {
+    local REPO="https://github.com/Wimacs/trellis2.c"
+    local FOLDER="trellis2.c"
+    local PATCH="$SCRIPT_DIR/custom_files/trellis2.c/pixal3d-oom-fixes.patch"
 
-    # flash-attn has no prebuilt ROCm wheel; build from source using the venv's torch
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install 'flash-attn==2.8.3' --no-build-isolation"
+    podman exec -t rocm bash -c "if [ ! -d /AI/$FOLDER/.git ]; then \
+        cd /AI && rm -rf $FOLDER && \
+        git clone --recursive $REPO $FOLDER && \
+        cd $FOLDER && git checkout $COMMIT_TRELLIS2_C && git submodule update --init --recursive; \
+      else echo 'trellis2.c already cloned - reusing'; fi"
 
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8"
-
-    podman exec -it rocm bash -c "sed -i 's/hashmap_build_submanifold_conv_neighbour_map_cuda/hashmap_build_submanifold_conv_neighbour_map/g' \
-        /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
-
-    # ROCM_SAFE_SPCONV safe path must apply for any N (not just N > ROCM_SAFE_CHUNK),
-    # because small inputs (N=59) also trigger segfault in SubmanifoldConv3d HIP kernel.
-    podman exec -it rocm bash -c "sed -i \
-        's/if sparse_config.ROCM_SAFE_SPCONV and N > ROCM_SAFE_CHUNK:/if sparse_config.ROCM_SAFE_SPCONV:/' \
-        /AI/$FOLDER/trellis2/modules/sparse/conv/conv_flex_gemm.py"
-
-    podman exec -it rocm bash -c "
-        mkdir -p /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party && \
-        cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/CuMesh/third_party/cubvh/third_party/eigen && \
-        mkdir -p /AI/$FOLDER/Dependency/o-voxel/third_party && \
-        cp -a /AI/$FOLDER/Dependency/eigen /AI/$FOLDER/Dependency/o-voxel/third_party/eigen"
-
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install Dependency/nvdiffrast-hip --no-build-isolation"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install Dependency/nvdiffrec --no-build-isolation"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install Dependency/CuMesh --no-build-isolation"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install Dependency/FlexGEMM-rocm --no-build-isolation"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        BUILD_TARGET=rocm GPU_ARCHS=$TARGET_GFX ROCM_PATH=\$ROCM_HOME PYTORCH_ROCM_ARCH=$TARGET_GFX \
-        uv pip install Dependency/o-voxel --no-build-isolation"
-
-    basic_run "$REPO" "$COMMAND"
+    # Apply the OOM patch only if it is not already applied (reverse-check succeeds
+    # when it is), so re-running any of the three installers stays idempotent.
+    podman cp "$PATCH" "rocm:/tmp/pixal3d-oom-fixes.patch"
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        if git apply --check --reverse /tmp/pixal3d-oom-fixes.patch 2>/dev/null; then \
+            echo 'trellis2.c OOM patch already applied'; \
+        else \
+            git apply /tmp/pixal3d-oom-fixes.patch && echo 'trellis2.c OOM patch applied'; \
+        fi"
 }
 
-# Kimodo
-install_kimodo() {
-    REPO="https://github.com/nv-tlabs/kimodo"
-    COMMIT="c6c8ba766e52172f1ad34cd1fbe912115c82ce34"
-    FOLDER=$(basename "$REPO")
+install_trellis2_c() {
+    local BACKEND="${1:-vulkan}"
+    FOLDER="trellis2.c"
+
+    local BUILD_DIR RUN_LAUNCH
+    if [ "$BACKEND" = "hip" ]; then
+        BUILD_DIR="build-hip"
+    else
+        BACKEND="vulkan"
+        BUILD_DIR="build-vulkan"
+    fi
 
     basic_container
-    basic_git "$REPO" "$COMMIT"
-    basic_venv "$REPO"
-    basic_requirements "$REPO"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install -e ."
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install 'viser @ git+https://github.com/nv-tlabs/kimodo-viser.git'"
 
-    # viser extracts node-v20 tarball lazily on first server start with UID 1000 inside
-    # container (→ ~101000 on host via rootless podman UID remapping), making files
-    # undeletable from host. Fix: chown at install time AND at every run.sh invocation.
-    podman exec -t rocm bash -c "chown -R root:root /AI/$FOLDER/ 2>/dev/null || true"
+    _trellis2_c_clone_and_patch
 
-    # Custom run.sh: chown before start so viser node files created on any previous run
-    # are fixed before the next run, keeping all files deletable from the host.
-    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
+    # Build the selected backend. The raylib GUI viewer (trellis-gui) is built ON -
+    # it renders an X11 window on the host (X socket + DISPLAY come from
+    # podman-compose; X11/OpenGL dev packages come from the Dockerfile).
+    #   vulkan -> compute on Mesa RADV (no ROCm needed)
+    #   hip    -> compute on ROCm/HIP (rocBLAS/hipBLAS), gfx target = $TARGET_GFX.
+    #             The repo ships a native HIP backend + a CUDA->HIP compat shim, so
+    #             the hand-written kernels build unchanged (no hipify step).
+    if [ "$BACKEND" = "hip" ]; then
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && \
+            export ROCM_PATH=/opt/rocm PATH=/opt/rocm/bin:\$PATH && \
+            cmake -S . -B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release \
+                -DTRELLIS2_C_BACKEND=hip \
+                -DCMAKE_HIP_ARCHITECTURES=$TARGET_GFX \
+                -DTRELLIS2_C_BUILD_RAYLIB_VIEWER=ON \
+                -DTRELLIS2_C_BUILD_TESTS=OFF && \
+            cmake --build $BUILD_DIR -j\$(nproc)"
+    else
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && \
+            cmake -S . -B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release \
+                -DTRELLIS2_C_BACKEND=vulkan \
+                -DTRELLIS2_C_BUILD_RAYLIB_VIEWER=ON \
+                -DTRELLIS2_C_BUILD_TESTS=OFF && \
+            cmake --build $BUILD_DIR -j\$(nproc)"
+    fi
+
+    # Weights: camenduru mirrors are public (no HuggingFace token needed), unlike the
+    # gated facebook/dinov3. Layout goes to /AI/TRELLIS.2.
+    # download_weights.py only needs huggingface_hub -> throwaway venv just for it.
+    # Skip if already present (shared between the two backend variants).
+    podman exec -it rocm bash -c "if [ ! -f /AI/TRELLIS.2/TRELLIS.2-4B/pipeline.json ]; then \
+        cd /AI/$FOLDER && uv venv --python 3.13 && \
+        source .venv/bin/activate && uv pip install huggingface_hub && \
+        python tools/download_weights.py \
+            --trellis-repo camenduru/TRELLIS.2-4B \
+            --dino-repo camenduru/dinov3-vitl16-pretrain-lvd1689m \
+            -o /AI/TRELLIS.2; \
+      else echo 'TRELLIS.2 weights already present - reusing'; fi"
+
+    # Custom run.sh: launches the raylib GUI (trellis-gui) for the selected backend.
+    # Written on host then copied in to avoid nested-quote escaping.
+    if [ "$BACKEND" = "hip" ]; then
+        # ROCm/HIP: rocBLAS on the AMD device (HSA_OVERRIDE_GFX_VERSION from compose).
+        RUN_LAUNCH="cd /AI/trellis2.c && export ROCM_PATH=/opt/rocm && mkdir -p output && ./build-hip/trellis-gui --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
+    else
+        # Vulkan: pin the RADV ICD so compute + window use the discrete AMD GPU.
+        RUN_LAUNCH="cd /AI/trellis2.c && export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json && mkdir -p output && ./build-vulkan/trellis-gui --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
+    fi
+    local RUNSH
+    RUNSH=$(mktemp)
+    cat > "$RUNSH" << RUNEOF
+#!/bin/bash
+if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Error: Container rocm does not exist.'
+    exit 1
+fi
+if ! podman ps --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Container rocm is not running. Starting...'
+    podman start rocm
+fi
+# Allow the container to reach the host X server so the GUI window can open.
+command -v xhost >/dev/null 2>&1 && xhost +local: >/dev/null 2>&1 || true
+podman exec -it rocm bash -c "$RUN_LAUNCH"
+RUNEOF
+    podman cp "$RUNSH" "rocm:/AI/$FOLDER/run.sh"
+    podman exec -t rocm bash -c "chmod +x /AI/$FOLDER/run.sh"
+    rm -f "$RUNSH"
+}
+
+# Pixal3D Experimental - the Pixal3D image-to-3D model running through trellis2.c's
+# ROCm/HIP backend. Higher-fidelity than TRELLIS.2 but far heavier: 1024_cascade only
+# (~1.5M voxels, ~9-10 min/asset on a 7900XTX). It only fits in 24 GB thanks to the
+# OOM patch (chunked attention + lazy sparse-decoder temporaries) plus the runtime
+# flags baked into run.sh below. CLI only (the raylib GUI is TRELLIS.2-only).
+install_pixal3d_c() {
+    FOLDER="trellis2.c"
+
+    basic_container
+
+    _trellis2_c_clone_and_patch
+
+    # Build the ROCm/HIP backend (reuses the build dir / ccache if already built for
+    # the trellis2.c ROCm variant). GUI stays ON so a single build serves both.
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && \
+        export ROCM_PATH=/opt/rocm PATH=/opt/rocm/bin:\$PATH && \
+        cmake -S . -B build-hip -DCMAKE_BUILD_TYPE=Release \
+            -DTRELLIS2_C_BACKEND=hip \
+            -DCMAKE_HIP_ARCHITECTURES=$TARGET_GFX \
+            -DTRELLIS2_C_BUILD_RAYLIB_VIEWER=ON \
+            -DTRELLIS2_C_BUILD_TESTS=OFF && \
+        cmake --build build-hip -j\$(nproc)"
+
+    # Shared conditioning weights (DINOv3 + BiRefNet) live under /AI/TRELLIS.2, same
+    # as the trellis2.c variants. Download them if a trellis2.c install has not
+    # already fetched them (public camenduru mirrors, no HuggingFace token).
+    podman exec -it rocm bash -c "if [ ! -f /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m/model.safetensors ] || [ ! -f /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf ]; then \
+        cd /AI/$FOLDER && uv venv --python 3.13 && \
+        source .venv/bin/activate && uv pip install huggingface_hub && \
+        python tools/download_weights.py --only dino \
+            --dino-repo camenduru/dinov3-vitl16-pretrain-lvd1689m -o /AI/TRELLIS.2 && \
+        python tools/download_weights.py --only birefnet -o /AI/TRELLIS.2; \
+      else echo 'DINOv3 + BiRefNet already present - reusing'; fi"
+
+    # Pixal3D model weights (~24 GB, public TencentARC/Pixal3D - no HF token). The C
+    # engine reads its own model.json manifest from the --model dir, so copy the
+    # trellis2.c pixal3d manifest alongside the downloaded ckpts.
+    podman exec -it rocm bash -c "if [ ! -f /AI/Pixal3D/Pixal3D/ckpts/ss_flow_img_dit_1_3B_64_bf16.safetensors ]; then \
+        cd /AI/$FOLDER && source .venv/bin/activate 2>/dev/null || { uv venv --python 3.13 && source .venv/bin/activate && uv pip install huggingface_hub; }; \
+        mkdir -p /AI/Pixal3D && \
+        hf download TencentARC/Pixal3D --local-dir /AI/Pixal3D/Pixal3D; \
+      else echo 'Pixal3D weights already present - reusing'; fi"
+    podman exec -t rocm bash -c "cp /AI/$FOLDER/models/pixal3d/model.json /AI/Pixal3D/Pixal3D/model.json"
+
+    # NAF (Neighborhood Attention Filtering) upsampler - a small ValeoAI checkpoint
+    # (Apache 2.0) that Pixal3D needs. Fetch + convert to safetensors with the
+    # repo's converter (needs torch + safetensors in the venv).
+    podman exec -it rocm bash -c "if [ ! -f /AI/Pixal3D/Pixal3D/ckpts/naf_release.safetensors ]; then \
+        cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install torch safetensors && \
+        curl -L -o /tmp/naf_release.pth https://github.com/valeoai/NAF/releases/download/model/naf_release.pth && \
+        python tools/convert_naf_weights.py /tmp/naf_release.pth /AI/Pixal3D/Pixal3D/ckpts/naf_release.safetensors && \
+        rm -f /tmp/naf_release.pth; \
+      else echo 'NAF weights already present - reusing'; fi"
+
+    # Custom run.sh (CLI: ./run.sh [input_image] [output.glb]). The three runtime
+    # flags are what make Pixal3D 1024_cascade fit in 24 GB:
+    #   --no-ggml-flash-attn        : flash bf16 produces NaN on RDNA3; use the
+    #                                 (patched, query-chunked) explicit SDPA path.
+    #   --model-cache-budget-mib    : evict the ~19 GB of flow weights before decode.
+    #   --vkmesh-gpu-workspace-...  : raise the mesh-remesh workspace budget.
+    local RUNSH
+    RUNSH=$(mktemp)
+    cat > "$RUNSH" << 'RUNEOF'
 #!/bin/bash
 if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm$'; then
     echo 'Error: Container rocm does not exist.'
@@ -917,9 +1268,79 @@ if ! podman ps --format '{{.Names}}' | grep -q '^rocm$'; then
     echo 'Container rocm is not running. Starting...'
     podman start rocm
 fi
-podman exec -t rocm bash -c 'chown -R root:root /AI/kimodo/ 2>/dev/null || true'
-podman exec -it rocm bash -c 'cd /AI/kimodo && source .venv/bin/activate && TEXT_ENCODER_DEVICE=cpu kimodo_demo'
-podman exec -t rocm bash -c 'chown -R root:root /AI/kimodo/ 2>/dev/null || true'
+IMAGE="${1:-example_image/T.png}"
+OUTPUT="${2:-output/pixal3d.glb}"
+podman exec -it rocm bash -c "cd /AI/trellis2.c && export ROCM_PATH=/opt/rocm && mkdir -p output && ./build-hip/pixal3d-image-to-gltf --model /AI/Pixal3D/Pixal3D --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --image \"$IMAGE\" --no-ggml-flash-attn --model-cache-budget-mib 2048 --vkmesh-gpu-workspace-budget-mib 12288 --output \"$OUTPUT\""
+RUNEOF
+    # run.sh lives in /AI/Pixal3D (its own interface folder) so it does not clash
+    # with the trellis2.c GUI run.sh; it drives the shared /AI/trellis2.c build.
+    podman exec -t rocm bash -c "mkdir -p /AI/Pixal3D"
+    podman cp "$RUNSH" "rocm:/AI/Pixal3D/run.sh"
+    podman exec -t rocm bash -c "chmod +x /AI/Pixal3D/run.sh"
+    rm -f "$RUNSH"
+}
+
+# ARDY - NVIDIA nv-tlabs autoregressive-diffusion interactive human/robot motion
+# generation from text + kinematic constraints. Sibling of Kimodo (same lab, same
+# kimodo-viser frontend, same gated Llama-3 text encoder); ARDY is the newer,
+# real-time/online autoregressive evolution. Interactive viser demo on :2333 plus a
+# separate LLM2Vec text-encoder server. Requires a HuggingFace token with access to
+# the gated meta-llama/Meta-Llama-3-8B-Instruct model (same as Kimodo).
+install_ardy() {
+    REPO="https://github.com/nv-tlabs/ardy"
+    COMMIT="693f74d13b3d04a0a22ce127ee79c929dd89756b"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    basic_venv "$REPO" "3.11"
+
+    # uv.toml points uv at the ROCm manylinux index; without it in the working dir,
+    # uv would pull the default CUDA torch wheel the upstream README uses.
+    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
+
+    # Editable install with the [demo] extra only (viser + gradio); the [trt] extra
+    # is CUDA/TensorRT-only and is skipped. This also builds the MotionCorrection
+    # C++ CMake extension (cmake + g++ from the base image; no CUDA in it). The
+    # dependency resolution here pulls the CUDA torch wheel...
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install -e '.[demo]'"
+
+    # ...so reinstall torch/torchvision from the ROCm index LAST, overriding the CUDA
+    # wheel. Verified on a 7900XTX (gfx1100): torch 2.10.0+rocm7.2.4, GPU visible.
+    # The torchvision resolution drags numpy up to 2.x, which violates ardy's
+    # numpy<2 pin - force it back down afterwards.
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip install --reinstall torch torchvision && uv pip install 'numpy<2'"
+
+    # viser extracts a node-v20 tarball lazily on first server start as UID 1000
+    # inside the container (-> ~101000 on the host via rootless podman remapping),
+    # making the files undeletable from the host. Fix: chown at install time and on
+    # every run. Same issue/fix as Kimodo (shared kimodo-viser frontend).
+    podman exec -t rocm bash -c "chown -R root:root /AI/$FOLDER/ 2>/dev/null || true"
+
+    # Custom run.sh: start the text-encoder server in the background, then the viser
+    # demo (http://localhost:2333). Text encoder on CPU keeps the ~16 GB Llama-3 off
+    # the GPU so the 24 GB card has room for the motion model. Checkpoints download
+    # automatically on first use.
+    podman exec -t rocm bash -c "cat > /AI/$FOLDER/run.sh << 'RUNEOF'
+#!/bin/bash
+if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Error: Container rocm does not exist.'
+    exit 1
+fi
+if ! podman ps --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Container rocm is not running. Starting...'
+    podman start rocm
+fi
+podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
+# Text encoder (Llama-3) forced to CPU so the full 24 GB VRAM stays for the motion
+# model; expandable_segments avoids HIP allocator fragmentation.
+podman exec -it rocm bash -c 'cd /AI/ardy && source .venv/bin/activate && \
+    export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && \
+    { python scripts/run_text_encoder_server.py --device cpu & } && \
+    sleep 20 && python scripts/run_demo.py'
+podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
 }
@@ -938,6 +1359,55 @@ install_triposplat(){
     basic_run "$REPO" "$COMMAND"
 
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && hf download VAST-AI/TripoSplat --local-dir ckpts/"
+}
+
+# AutoRemesher - NOT an AI model: a classical (CPU/TBB) automatic quad-remeshing
+# tool. Included as a helper for retopologizing the triangle-soup meshes that the
+# 3D-generation apps (TRELLIS, trellis2.c, Pixal3D, PartCrafter, TripoSplat) output
+# into clean quad topology for animation/modeling. Qt5 GUI + headless CLI.
+install_autoremesher() {
+    REPO="https://github.com/huxingyi/autoremesher"
+    COMMIT="6b6e9adb59c4cf2abdd398173a97d030b566226e"
+    FOLDER=$(basename "$REPO")
+
+    basic_container
+
+    # Qt5 + TBB build/runtime dependencies. The container is Ubuntu-based, so install
+    # them here rather than bloating the base image. The .pro only pulls Qt core /
+    # widgets / opengl (no multimedia), so the README's libqt5multimedia5-dev is not
+    # needed - and it is absent on newer Ubuntu anyway.
+    podman exec -t rocm bash -c "apt-get update && apt-get install -y \
+        qt5-qmake qtbase5-dev qttools5-dev-tools libqt5svg5-dev libqt5opengl5-dev \
+        libtbb-dev libgl1-mesa-dev"
+
+    basic_git "$REPO" "$COMMIT"
+
+    # Build the Qt Widgets GUI + CLI (single ./autoremesher binary). geogram, eigen,
+    # isotropicremesher and tbb are bundled under thirdparty/. CPU-only (TBB).
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && qmake && make -j\$(nproc)"
+
+    # Custom run.sh: launch the GUI for interactive retopology. Load a mesh (e.g. an
+    # OBJ exported from a 3D-generation app) and remesh it to clean quads. Written on
+    # host then copied in; xhost opens the host X server for the GUI window.
+    local RUNSH
+    RUNSH=$(mktemp)
+    cat > "$RUNSH" << 'RUNEOF'
+#!/bin/bash
+if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm$'; then
+    echo 'Error: Container rocm does not exist.'
+    exit 1
+fi
+if ! podman ps --format '{{.Names}}' | grep -q '^rocm$'; then
+    echo 'Container rocm is not running. Starting...'
+    podman start rocm
+fi
+# Allow the container to reach the host X server so the GUI window can open.
+command -v xhost >/dev/null 2>&1 && xhost +local: >/dev/null 2>&1 || true
+podman exec -it rocm bash -c "cd /AI/autoremesher && ./autoremesher"
+RUNEOF
+    podman cp "$RUNSH" "rocm:/AI/$FOLDER/run.sh"
+    podman exec -t rocm bash -c "chmod +x /AI/$FOLDER/run.sh"
+    rm -f "$RUNSH"
 }
 
 # Krea 2 Turbo

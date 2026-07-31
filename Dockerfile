@@ -88,6 +88,11 @@ RUN ln -sf /usr/lib/x86_64-linux-gnu/libxml2.so.16 /usr/lib/x86_64-linux-gnu/lib
 RUN apt-get install -y \
     libvulkan-dev vulkan-tools glslc spirv-headers
 
+# X11/OpenGL dev packages for the trellis2.c raylib GUI viewer (trellis-gui)
+RUN apt-get install -y \
+    libgl1-mesa-dev libglu1-mesa-dev \
+    libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
 # Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render
 

@@ -1,0 +1,1412 @@
+diff --git a/turboquant/capture.py b/turboquant/capture.py
+index 127295d..5cceb8a 100644
+--- a/turboquant/capture.py
++++ b/turboquant/capture.py
+@@ -172,16 +172,21 @@ class KVCaptureEngine:
+ 
+         key/value: (num_tokens, num_kv_heads, head_dim)
+         """
+-        if num_tokens <= self.ring.capacity:
+-            self.ring.write(key[:num_tokens], value[:num_tokens], num_tokens)
+-        else:
+-            n_compress = num_tokens - self.ring.capacity
+-            self.store.append_chunk(key[:n_compress], value[:n_compress])
+-            self.ring.write(
+-                key[n_compress:num_tokens],
+-                value[n_compress:num_tokens],
+-                self.ring.capacity,
+-            )
++        # CHUNKED_PREFILL: vLLM splits a long prompt into max_num_batched_tokens
++        # chunks and calls this once per chunk, so from the second call on the
++        # ring already holds the previous chunk's tail. The old code split the
++        # incoming chunk by hand and then threw away write()'s overflow return,
++        # which silently dropped up to `capacity` tokens per chunk.
++        #
++        # ring.write() already loops, draining to make room and returning
++        # everything it evicted in order, so the hand-rolled split is both
++        # redundant and wrong. Doing exactly what ingest_decode does keeps the
++        # store ordered and preserves the actual invariant: the most recent
++        # `capacity` tokens stay exact, everything older gets compressed.
++        overflow = self.ring.write(key[:num_tokens], value[:num_tokens], num_tokens)
++        if overflow is not None:
++            k_over, v_over = overflow
++            self.store.append_chunk(k_over, v_over)
+         self._prefill_done = True
+ 
+     def ingest_prefill_from_paged_cache(
+diff --git a/turboquant/integration/vllm.py b/turboquant/integration/vllm.py
+index d311f74..b637606 100644
+--- a/turboquant/integration/vllm.py
++++ b/turboquant/integration/vllm.py
+@@ -17,6 +17,7 @@ Modes:
+ from __future__ import annotations
+ 
+ import math
++import os as _os
+ import logging
+ import types
+ from dataclasses import dataclass, field
+@@ -98,7 +99,200 @@ def _create_layer_state(cfg: LayerConfig) -> LayerState:
+         ring_capacity=cfg.ring_capacity,
+         device=cfg.device,
+     )
+-    return LayerState(config=cfg, store=store, engine=engine)
++    st = LayerState(config=cfg, store=store, engine=engine)
++    # Request id -> (store, engine). The pair created above stays as the
++    # single-sequence fast path and as the template for the config.
++    st._per_req = {}
++    return st
++
++
++def _new_store_engine(cfg: LayerConfig, template=None):
++    """Build a (store, engine) pair matching `template`'s configuration.
++
++    share_kv lives on the store instance rather than in LayerConfig, so it has
++    to be copied explicitly or later sessions silently run a different code
++    path from the first one.
++    """
++    store = CompressedKVStore(
++        head_dim=cfg.head_dim,
++        num_kv_heads=cfg.num_kv_heads,
++        key_bits=cfg.key_bits,
++        value_bits=cfg.value_bits,
++        value_group_size=cfg.value_group_size,
++        device=cfg.device,
++        layer_idx=cfg.layer_idx,
++    )
++    if template is not None:
++        store.share_kv = getattr(template, "share_kv", False)
++    engine = KVCaptureEngine(
++        store=store,
++        ring_capacity=cfg.ring_capacity,
++        device=cfg.device,
++    )
++    return store, engine
++
++
++def _req_key(state, attn_metadata, r: int):
++    """Stable identity for request r: vLLM's own request id.
++
++    The batch index cannot be used - vLLM reorders requests between steps. The
++    first block of the block-table row cannot be used either, which is the trap
++    this walked into: under no_alloc these layers have *no* paged KV cache and
++    therefore no block table, so that version silently returned 0 for every
++    request and all sessions shared one store. It still scored 5/5 on needles,
++    because each session's own codes were in the merged history.
++
++    input_batch.req_ids is a plain list of strings - no device sync, unique for
++    the request's lifetime, and never recycled.
++    """
++    ids = _batch_req_ids(state)
++    if ids is not None and r < len(ids) and ids[r] is not None:
++        return ids[r]
++    # No identity available: fall back to one shared store rather than
++    # inventing keys that would split a single request's history.
++    return 0
++
++
++def _batch_req_ids(state):
++    """Request ids in batch order, or None.
++
++    In this vLLM the runner lives in  (not the
++    older ) and keeps no  attribute at all - the
++    batch is built per step inside  and parked on
++    . Reading the attribute that does not exist returned
++    None silently, which is how every request ended up sharing one store.
++
++    These are plain strings in the same order the attention metadata uses, so
++    no device sync and no reordering hazard.
++    """
++    runner = getattr(state, "_runner", None)
++    batch = getattr(runner, "_tq_batch", None) if runner is not None else None
++    ids = getattr(batch, "req_ids", None) if batch is not None else None
++    return ids if ids else None
++
++
++def _live_req_ids(state):
++    """Ids of every request the runner still considers active, or None.
++
++    Deliberately NOT the current step's batch - see module history: a request
++    waiting its turn under chunked prefill is absent from the batch but very
++    much alive, and evicting it discards its compressed history.
++    """
++    runner = getattr(state, "_runner", None)
++    reqs = getattr(runner, "req_states", None) if runner is not None else None
++    table = getattr(reqs, "req_id_to_index", None) if reqs is not None else None
++    if not table:
++        return None
++    return set(table.keys())
++
++
++def _context_len(attn_metadata, r: int, qlen: int) -> int:
++    """Tokens already behind request r, excluding the chunk being processed.
++
++    Zero means this is the request's first chunk, which is the only reliable
++    signal that a recycled block id belongs to a new sequence rather than to
++    the one that previously held it.
++    """
++    sl = getattr(attn_metadata, "seq_lens_cpu", None)
++    if sl is None:
++        sl = getattr(attn_metadata, "seq_lens", None)
++    if sl is None or r >= len(sl):
++        return -1
++    return int(sl[r]) - qlen
++
++
++def _state_for(state, attn_metadata, r: int, qlen: int = -1):
++    """(store, engine) for request r, created on first sight.
++
++    Keyed through the map even for a single request. Branching on num_reqs
++    instead looked cheaper but is wrong across a session: when one of two
++    requests finishes, num_reqs drops back to 1 and the survivor would be
++    handed the layer's own pair - a different store than the one holding its
++    history, which vanishes mid-generation.
++
++    The first request seen adopts the layer's own pair, so one long sequence
++    still allocates nothing extra and behaves exactly as before.
++
++    vLLM recycles block ids, so a key alone does not identify a sequence. A
++    request arriving with no context behind it is starting fresh; if a store
++    is already parked on its key it belongs to a finished request and must be
++    cleared, or the new sequence reads the old one's history.
++    """
++    per = getattr(state, "_per_req", None)
++    if per is None:
++        per = state._per_req = {}
++    key = _req_key(state, attn_metadata, r)
++
++    # Diagnostics: which keys were ever seen, and how often a reset fired.
++    seen = getattr(state, "_key_log", None)
++    if seen is None:
++        seen = state._key_log = {"keys": set(), "resets": 0}
++    seen["keys"].add(key)
++
++    # Request ids are unique, so a live key never belongs to a finished
++    # request and no reset is needed. What is needed is eviction: without it
++    # every completed request leaves its compressed history in VRAM forever.
++    if ids := _live_req_ids(state):
++        for stale in [k for k in per if k not in ids]:
++            st, eng = per.pop(stale)
++            st.reset()
++            eng.reset()
++            seen["resets"] += 1
++
++    # A request with nothing behind its current chunk is at token zero. For a
++    # brand-new request the key is simply absent; for a preempted one the key
++    # is present with a stale partial history that must go, or the restarted
++    # prefill stacks a second copy on top of it.
++    if (key in per and qlen >= 0
++            and _context_len(attn_metadata, r, qlen) == 0):
++        st, eng = per[key]
++        if eng.total_tokens > 0:
++            st.reset()
++            eng.reset()
++            seen["restarts"] = seen.get("restarts", 0) + 1
++
++    if key not in per:
++        per[key] = ((state.store, state.engine) if not per
++                    else _new_store_engine(state.config, template=state.store))
++
++    live = sum(st.num_tokens for st, _ in per.values())
++    seen["peak_tokens"] = max(seen.get("peak_tokens", 0), live)
++    seen["peak_stores"] = max(seen.get("peak_stores", 0), len(per))
++    if ids:
++        seen["peak_live"] = max(seen.get("peak_live", 0), len(ids))
++    return per[key]
++
++
++def _num_requests(attn_metadata) -> int:
++    """How many requests the batch really holds.
++
++    num_reqs is not reliable here - it has been observed reporting 1 for a
++    two-request batch, which silently truncated the batch to the first request
++    and returned half the expected rows. query_start_loc has one entry per
++    request plus a terminator, and it is the same array the spans are cut
++    from, so deriving the count from it cannot disagree with them.
++    """
++    qsl = getattr(attn_metadata, "query_start_loc_cpu", None)
++    if qsl is None:
++        qsl = getattr(attn_metadata, "query_start_loc", None)
++    if qsl is not None:
++        n = (len(qsl) if hasattr(qsl, "__len__") else int(qsl.shape[0])) - 1
++        if n >= 1:
++            return n
++    return int(getattr(attn_metadata, "num_reqs", 1) or 1)
++
++
++def _req_span(attn_metadata, r: int, num_actual: int):
++    """Token range [start, end) of request r within the flattened batch."""
++    qsl = getattr(attn_metadata, "query_start_loc_cpu", None)
++    if qsl is None:
++        qsl = getattr(attn_metadata, "query_start_loc", None)
++    if qsl is None:
++        return 0, num_actual
++    v = qsl.tolist() if hasattr(qsl, "tolist") else list(qsl)
++    if r + 1 >= len(v):
++        return 0, num_actual
++    return int(v[r]), int(v[r + 1])
+ 
+ 
+ def _infer_num_query_heads(attn_module, impl) -> int:
+@@ -137,6 +331,12 @@ def _make_patched_kv_update(orig_fn, state: LayerState, no_alloc: bool = False):
+             return
+ 
+         num_tokens = slot_mapping.shape[0]
++        if no_alloc:
++            # Forward owns every capture under no_alloc, for decode as well as
++            # prefill: this hook receives only a slot_mapping and cannot tell
++            # which request a token belongs to, so writing into state.engine
++            # corrupts every session except the one that adopted the layer.
++            return
+         if num_tokens <= 1:
+             # Decode token — append to ring buffer
+             state.engine.ingest_decode(key, value, num_tokens)
+@@ -147,6 +347,151 @@ def _make_patched_kv_update(orig_fn, state: LayerState, no_alloc: bool = False):
+     return patched
+ 
+ 
++def _slice_prod_q(pq, start: int, end: int):
++    """Token-dim slice of a flattened ProdQuantized (H, T, ...)."""
++    from turboquant.quantizer import ProdQuantized
++
++    return ProdQuantized(
++        mse_indices=pq.mse_indices[:, start:end],
++        qjl_signs=pq.qjl_signs[:, start:end],
++        residual_norms=pq.residual_norms[:, start:end],
++        norms=pq.norms[:, start:end],
++        mse_bits=pq.mse_bits,
++    )
++
++
++def _slice_value_q(vq, start: int, end: int):
++    """Token-dim slice of a flattened ValueQuantized (H, T, ...)."""
++    from turboquant.kv_cache import ValueQuantized
++
++    return ValueQuantized(
++        data=vq.data[:, start:end],
++        scales=vq.scales[:, start:end],
++        zeros=vq.zeros[:, start:end],
++        bits=vq.bits,
++    )
++
++
++def _seg_unnormalized(q_g, k_g, v_g, scale, mask=None):
++    """Unnormalized attention over one K/V segment.
++
++    Returns (out, m, l) so segments can be merged with the standard online
++    softmax rescaling instead of concatenating every key first.
++    """
++    scores = torch.bmm(q_g, k_g.transpose(1, 2))
++    scores.mul_(scale)                       # was: * scale (extra full-size temp)
++    if mask is not None:
++        scores.masked_fill_(mask, float("-inf"))
++    m = scores.max(dim=-1, keepdim=True).values
++    m = torch.where(torch.isneginf(m), torch.zeros_like(m), m)
++    # scores becomes p in place: subtracting the running max and exponentiating
++    # elementwise needs no second buffer, and holding scores, (scores - m) and p
++    # at once tripled the peak for no benefit.
++    scores.sub_(m).exp_()
++    # The sum and the merged output stay fp32 even when the segment is computed
++    # in fp16: they are one value per query row, so the precision is free, and
++    # summing thousands of terms is where fp16 would actually drift.
++    out = torch.bmm(scores, v_g)
++    return (out.float(), m.float(),
++            scores.sum(dim=-1, keepdim=True, dtype=torch.float32))
++
++
++def _merge_segments(a, b):
++    """Combine two unnormalized (out, m, l) triples."""
++    o1, m1, l1 = a
++    o2, m2, l2 = b
++    m = torch.maximum(m1, m2)
++    a1 = torch.exp(m1 - m)
++    a2 = torch.exp(m2 - m)
++    return o1 * a1 + o2 * a2, m, l1 * a1 + l2 * a2
++
++
++# Keys per history block. The score block is (Hq * n_query * this) in fp32, so
++# it bounds peak memory independently of how long the context is.
++_HISTORY_BLOCK = 4096
++
++
++_TQ_ATTN_DTYPE = (
++    torch.float32 if _os.environ.get("TQ_FP32_ATTN") == "1" else torch.float16
++)
++
++
++def _sliding_of(impl) -> int:
++    """Sliding window as a plain int. vLLM reports it as a (left, right) tuple
++    on windowed layers - (1023, 0) for Gemma 4 - and as None or a scalar on the
++    full-attention ones."""
++    sw = getattr(impl, "sliding_window", 0)
++    if isinstance(sw, (tuple, list)):
++        sw = sw[0] if sw else 0
++    try:
++        return int(sw or 0)
++    except (TypeError, ValueError):
++        return 0
++
++
++def _resolve_kv_share(state, self_impl):
++    """Find k_norm / rotary_emb for this layer, or None if sharing cannot apply.
++
++    Cached on the state: the walk is over the whole model and the answer never
++    changes. Returns None for windowed layers (they have their own v_proj, so
++    there is nothing to share) and whenever the parent cannot be located.
++    """
++    cached = getattr(state, "_kv_share", "unset")
++    if cached != "unset":
++        return cached
++
++    share = None
++    if _sliding_of(self_impl) <= 0:
++        model = getattr(state, "_model_ref", None)
++        target = getattr(state, "layer_name", None)
++        if model is not None and target is not None:
++            for _, mod in model.named_modules():
++                attn = getattr(mod, "attn", None)
++                if attn is None or getattr(attn, "layer_name", None) != target:
++                    continue
++                k_norm = getattr(mod, "k_norm", None)
++                rot = getattr(mod, "rotary_emb", None)
++                if k_norm is not None and rot is not None:
++                    share = (k_norm, rot)
++                break
++
++    state._kv_share = share
++    return share
++
++
++def _use_fused() -> bool:
++    return _os.environ.get("TQ_FUSED", "1") == "1"
++
++
++def _fused_block(share, vq, group_size, start_pos):
++    """(k, v) for one history block, both [H, N, D], via the fused kernel."""
++    from turboquant.fused import dequant_norm_rope
++
++    k_norm, rot = share
++    eps = getattr(k_norm, "variance_epsilon", getattr(k_norm, "eps", 1e-6))
++    return dequant_norm_rope(
++        vq, k_norm.weight, rot.cos_sin_cache, start_pos,
++        group_size=group_size, eps=eps,
++    )
++
++
++def _k_from_v(share, v_block, start_pos):
++    """Rebuild keys from the raw projection: RMSNorm, then RoPE at their own
++    positions. v_block is [H, N, D]; positions run from start_pos."""
++    k_norm, rot = share
++    H, N, D = v_block.shape
++    flat = v_block.permute(1, 0, 2).reshape(N, H * D)
++    normed = k_norm(flat.view(-1, D).to(torch.float16)).view(N, H * D)
++    pos = torch.arange(start_pos, start_pos + N, device=v_block.device)
++    # rotary_emb rotates query and key together; a zero query is discarded.
++    # A shared, un-zeroed scratch buffer was tried here and measured no gain
++    # (the caching allocator already reuses same-shape blocks), so the plain
++    # allocation stays rather than a shared mutable buffer that relies on the
++    # kernel overwriting before reading.
++    _, k_rot = rot(pos, torch.zeros_like(normed), normed)
++    return k_rot.view(N, H, D).permute(1, 0, 2).to(v_block.dtype)
++
++
+ def _no_alloc_prefill_attention(
+     state: LayerState,
+     self_impl,
+@@ -154,30 +499,177 @@ def _no_alloc_prefill_attention(
+     key: torch.Tensor,
+     value: torch.Tensor,
+     attn_metadata,
++    include_current: bool = True,
+ ):
++    """Run the attention once per request and reassemble in batch order.
++
++    With one request this is a direct call and costs nothing extra; with more,
++    each gets its own store so their histories never mix.
++    """
++    n_reqs = _num_requests(attn_metadata)
++    # No fast path that bypasses the map: a lone request still has to be
++    # looked up, or a recycled block id would hand it a finished request's
++    # store. The first caller adopts the layer's own pair, so the single
++    # sequence case still allocates nothing extra.
+     num_actual = attn_metadata.num_actual_tokens
++    parts = []
++    for r in range(n_reqs):
++        lo, hi = _req_span(attn_metadata, r, num_actual)
++        if hi <= lo:
++            continue
++        store, engine = _state_for(state, attn_metadata, r, qlen=hi - lo)
++        parts.append(_attn_one_request(
++            state, self_impl, query, key, value, attn_metadata,
++            include_current, store=store, engine=engine, span=(lo, hi),
++        ))
++    return torch.cat(parts, dim=0) if parts else query[:0]
++
++
++def _attn_one_request(
++    state: LayerState,
++    self_impl,
++    query: torch.Tensor,
++    key: torch.Tensor,
++    value: torch.Tensor,
++    attn_metadata,
++    include_current: bool = True,
++    store=None,
++    engine=None,
++    span=None,
++):
++    """Prefill attention with no vLLM KV cache behind it.
++
++    The original version attended only over the current chunk, so every chunk
++    after the first lost all preceding context - and the surrounding code
++    returned zeros whenever it could not handle a case. Here the history is
++    read back out of the compressed store, one block at a time, and merged with
++    the causally-masked current chunk through an online softmax. Nothing larger
++    than one block is ever materialized.
++    """
++    from turboquant.kv_cache import dequantize_values
++
++    cfg = state.config
++    store = state.store if store is None else store
++    engine = state.engine if engine is None else engine
++    # span restricts the batch to one request; without it the whole batch is
++    # treated as a single sequence, which is the original behaviour.
++    if span is None:
++        _lo, _hi = 0, attn_metadata.num_actual_tokens
++    else:
++        _lo, _hi = span
++    num_actual = _hi - _lo
++    query = query[_lo:_hi]
++    key = key[_lo:_hi]
++    value = value[_lo:_hi]
++    Hq, Hk, D = cfg.num_query_heads, cfg.num_kv_heads, cfg.head_dim
++    rep = Hq // Hk
++
+     q = query[:num_actual]
+     k = key[:num_actual]
+     v = value[:num_actual]
+-
+     if q.dim() == 2:
+-        q = q.view(num_actual, state.config.num_query_heads, state.config.head_dim)
++        q = q.view(num_actual, Hq, D)
+     if k.dim() == 2:
+-        k = k.view(num_actual, state.config.num_kv_heads, state.config.head_dim)
+-        v = v.view(num_actual, state.config.num_kv_heads, state.config.head_dim)
+-
+-    if state.config.num_query_heads != state.config.num_kv_heads:
+-        repeats = state.config.num_query_heads // state.config.num_kv_heads
+-        k = k.repeat_interleave(repeats, dim=1)
+-        v = v.repeat_interleave(repeats, dim=1)
++        k = k.view(num_actual, Hk, D)
++        v = v.view(num_actual, Hk, D)
++
++    scale = getattr(self_impl, "scale", 1.0 / math.sqrt(D))
++    device = q.device
++
++    # Group the query heads that share a KV head into the batch dim, so K/V are
++    # never expanded for GQA.
++    q_g = (
++        q.view(num_actual, Hk, rep, D)
++        .permute(1, 2, 0, 3)
++        .reshape(Hk, rep * num_actual, D)
++        .to(_TQ_ATTN_DTYPE)
++    )
+ 
+-    q_t = q.unsqueeze(0).transpose(1, 2)
+-    k_t = k.unsqueeze(0).transpose(1, 2)
+-    v_t = v.unsqueeze(0).transpose(1, 2)
++    acc = None
++
++    # Size blocks to a byte budget, not a fixed token count: a score block is
++    # (Hq * n_query * block) in fp32, so at q_len 2048 and Hq 32 a 4096-token
++    # block would be 1.07 GiB on its own.
++    _hist_block = (48 * 1024 * 1024) // (4 * max(1, Hq * num_actual))
++    _hist_block = max(256, min(_HISTORY_BLOCK, _hist_block))
++
++    # --- compressed history (all of it precedes this chunk) ------------------
++    flat = store.get_flat_cache()
++    if flat is not None and flat.num_tokens > 0:
++        for start in range(0, flat.num_tokens, _hist_block):
++            end = min(start + _hist_block, flat.num_tokens)
++            share = (_resolve_kv_share(state, self_impl)
++                     if _os.environ.get("TQ_KV_SHARE") == "1" else None)
++
++            # Fused path: unpack, scale, normalise and rotate in one kernel,
++            # writing [H, N, D] directly. Replaces a dequantise into a
++            # temporary followed by _k_from_v's permute-norm-rope-permute.
++            if (_use_fused() and share is not None and flat.prod_q is None
++                    and flat.value_q is not None):
++                k_b, v_b = _fused_block(
++                    share, _slice_value_q(flat.value_q, start, end),
++                    cfg.value_group_size, start,
++                )
++                seg = _seg_unnormalized(q_g, k_b, v_b, scale)
++                acc = seg if acc is None else _merge_segments(acc, seg)
++                continue
++
++            if share is not None and flat.prod_q is None:
++                # Keys were never stored: rebuild them from the values, which
++                # are the same projection before norm and rotation.
++                k_b = None
++            else:
++                k_b = store.quantizer.dequantize(
++                    _slice_prod_q(flat.prod_q, start, end)
++                ).to(_TQ_ATTN_DTYPE)
++            # value_q is None when the store found V identical to K for this
++            # layer (Gemma 4 full attention on the GGUF path, where the adapter
++            # aliases k_proj to v_proj). Reusing the already-dequantized keys is
++            # exact there and halves what the store has to hold.
++            v_b = (
++                k_b
++                if flat.value_q is None
++                else dequantize_values(
++                    _slice_value_q(flat.value_q, start, end),
++                    cfg.value_group_size,
++                    dtype=_TQ_ATTN_DTYPE,
++                )
++            )
++            if k_b is None:
++                k_b = _k_from_v(share, v_b, start).to(_TQ_ATTN_DTYPE)
++            seg = _seg_unnormalized(q_g, k_b, v_b, scale)
++            acc = seg if acc is None else _merge_segments(acc, seg)
++
++    # --- exact recent ring buffer, also entirely before this chunk -----------
++    recent = engine.ring.peek()
++    if recent is not None and recent[0].shape[0] > 0:
++        r_k = recent[0].transpose(0, 1).to(_TQ_ATTN_DTYPE)
++        r_v = recent[1].transpose(0, 1).to(_TQ_ATTN_DTYPE)
++        seg = _seg_unnormalized(q_g, r_k, r_v, scale)
++        acc = seg if acc is None else _merge_segments(acc, seg)
++
++    # --- current chunk, causally masked -------------------------------------
++    # Blocked for the same reason as the history: a whole-chunk score matrix is
++    # (Hq * n_query * n_query) fp32, i.e. 512 MiB at q_len 2048 and Hq 32.
++    k_c = k.transpose(0, 1).to(_TQ_ATTN_DTYPE)
++    v_c = v.transpose(0, 1).to(_TQ_ATTN_DTYPE)
++    q_pos = torch.arange(num_actual, device=device).repeat(rep).view(1, -1, 1)
++    for start in range(0, num_actual if include_current else 0, _hist_block):
++        end = min(start + _hist_block, num_actual)
++        k_pos = torch.arange(start, end, device=device).view(1, 1, -1)
++        seg = _seg_unnormalized(
++            q_g, k_c[:, start:end], v_c[:, start:end],
++            scale, mask=(k_pos > q_pos),
++        )
++        acc = seg if acc is None else _merge_segments(acc, seg)
+ 
+-    scale = getattr(self_impl, "scale", 1.0 / math.sqrt(state.config.head_dim))
+-    out = F.scaled_dot_product_attention(q_t, k_t, v_t, is_causal=True, scale=scale)
+-    return out.squeeze(0).transpose(0, 1)
++    out = acc[0] / acc[2].clamp(min=1e-20)
++    return (
++        out.view(Hk, rep, num_actual, D)
++        .permute(2, 0, 1, 3)
++        .reshape(num_actual, Hq, D)
++        .to(query.dtype)
++    )
+ 
+ 
+ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+@@ -189,12 +681,36 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+     """
+ 
+     def _capture_kv(key, value, attn_metadata):
+-        """Capture K/V tensors into TQ store."""
++        """Capture K/V into the store belonging to each request.
++
++        The batch is a flat concatenation of every running request, so it has to
++        be split at the query_start_loc boundaries before anything is appended -
++        otherwise two conversations end up in one ring.
++        """
+         num_tokens = getattr(attn_metadata, 'num_actual_tokens', key.shape[0])
+-        if num_tokens <= 1:
+-            state.engine.ingest_decode(key[:num_tokens], value[:num_tokens], num_tokens)
+-        else:
+-            state.engine.ingest_prefill(key[:num_tokens], value[:num_tokens], num_tokens)
++        n_reqs = _num_requests(attn_metadata)
++
++        if n_reqs <= 1:
++            # Through the map, not straight to state.engine: attention reads
++            # the mapped store, and the two are only the same object for the
++            # first request the layer ever sees.
++            _, engine = _state_for(state, attn_metadata, 0, qlen=num_tokens)
++            if num_tokens <= 1:
++                engine.ingest_decode(key[:num_tokens], value[:num_tokens], num_tokens)
++            else:
++                engine.ingest_prefill(key[:num_tokens], value[:num_tokens], num_tokens)
++            return
++
++        for r in range(n_reqs):
++            lo, hi = _req_span(attn_metadata, r, num_tokens)
++            n = hi - lo
++            if n <= 0:
++                continue
++            _, engine = _state_for(state, attn_metadata, r, qlen=n)
++            if n <= 1:
++                engine.ingest_decode(key[lo:hi], value[lo:hi], n)
++            else:
++                engine.ingest_prefill(key[lo:hi], value[lo:hi], n)
+ 
+     def patched(
+         self_impl,
+@@ -210,9 +726,34 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+     ):
+         mode = _GLOBAL_MODE
+ 
+-        # Capture K/V when no separate kv_update hook exists
++        # Capture K/V when no separate kv_update hook exists. Under no_alloc the
++        # prefill path reads history straight out of the store, so capturing the
++        # current chunk first would count it twice - defer it until after.
++        _deferred_capture = False
+         if capture_in_forward and mode not in (MODE_OFF,) and attn_metadata is not None:
+-            _capture_kv(key, value, attn_metadata)
++            # Defer for decode too, not just prefill. Whether the current token
++            # is already in the ring at attention time decided correctness, and
++            # the two branches disagreed about it: the fallback attended with
++            # include_current=True on top of an already-captured token (double
++            # count -> runaway repetition), while the hybrid branch used
++            # include_current=False and, whenever capture had not run yet, drop-
++            # ped the token entirely. Capturing strictly after attention removes
++            # the ambiguity: the ring never contains the current token, so every
++            # path attends to it exactly once via include_current=True.
++            if no_alloc:
++                _deferred_capture = True
++            else:
++                _capture_kv(key, value, attn_metadata)
++        elif (
++            no_alloc
++            and mode not in (MODE_OFF,)
++            and attn_metadata is not None
++        ):
++            # kv_update captures nothing under no_alloc, so forward owns every
++            # chunk - decode included. The max_query_len > 1 test that used to
++            # be here left decode to the hook, which could not route it to the
++            # right request.
++            _deferred_capture = True
+ 
+         # Off or capture-only: always use flash
+         if mode in (MODE_OFF, MODE_CAPTURE_ONLY):
+@@ -234,6 +775,8 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+                 result = _no_alloc_prefill_attention(
+                     state, self_impl, query, key, value, attn_metadata
+                 )
++                if _deferred_capture:
++                    _capture_kv(key, value, attn_metadata)
+                 num_actual = attn_metadata.num_actual_tokens
+                 result_flat = result.reshape(
+                     num_actual, state.config.num_query_heads * state.config.head_dim
+@@ -254,6 +797,32 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+             )
+ 
+         # --- Hybrid decode ---
++        if mode == MODE_HYBRID and state.supports_hybrid and no_alloc:
++            # Per-request decode. No layer-global gate: state.store belongs to
++            # whichever request adopted the layer's pair, so consulting it here
++            # decides one session's control flow from another session's data.
++            num_actual = attn_metadata.num_actual_tokens
++            result = _no_alloc_prefill_attention(
++                state, self_impl, query, key, value, attn_metadata,
++            )
++            if _deferred_capture:
++                _capture_kv(key, value, attn_metadata)
++                _deferred_capture = False
++            result_flat = result.reshape(
++                num_actual,
++                state.config.num_query_heads * state.config.head_dim,
++            ).to(query.dtype)
++            if output is not None:
++                out_slice = output[:num_actual]
++                if out_slice.dim() == 3:
++                    out_slice.copy_(result.to(out_slice.dtype))
++                else:
++                    out_slice.copy_(result_flat.to(out_slice.dtype))
++                return output
++            if query.dim() == 3:
++                return result.to(query.dtype)
++            return result_flat
++
+         if mode == MODE_HYBRID and state.supports_hybrid:
+             flat = state.store.get_flat_cache()
+             if flat is not None and flat.num_tokens >= 16:
+@@ -266,14 +835,24 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+                 recent_k = recent[0] if recent else None
+                 recent_v = recent[1] if recent else None
+ 
+-                result = compute_hybrid_attention(
+-                    query=q,
+-                    store=state.store,
+-                    recent_k=recent_k,
+-                    recent_v=recent_v,
+-                    num_query_heads=state.config.num_query_heads,
+-                    scale=getattr(self_impl, "scale", None),
+-                )
++                if no_alloc:
++                    # Capture is deferred to after this call, so the ring holds
++                    # only prior tokens and the current one is attended here.
++                    result = _no_alloc_prefill_attention(
++                        state, self_impl, query, key, value, attn_metadata,
++                    )
++                    if _deferred_capture:
++                        _capture_kv(key, value, attn_metadata)
++                        _deferred_capture = False
++                else:
++                    result = compute_hybrid_attention(
++                        query=q,
++                        store=state.store,
++                        recent_k=recent_k,
++                        recent_v=recent_v,
++                        num_query_heads=state.config.num_query_heads,
++                        scale=getattr(self_impl, "scale", None),
++                    )
+ 
+                 result_flat = result.reshape(
+                     num_actual, state.config.num_query_heads * state.config.head_dim
+@@ -290,17 +869,23 @@ def _make_patched_forward(orig_fn, state: LayerState, no_alloc: bool = False,
+                     return result.to(query.dtype)
+                 return result_flat
+ 
+-        # Fallback to flash
++        # Fallback. Under no_alloc there is no vLLM KV cache to fall back to, and
++        # the original code returned zeros here - a silent wrong answer for any
++        # case the fast path missed. Route it through the same store-backed
++        # attention instead; it handles any query length.
+         if no_alloc:
+             num_actual = getattr(attn_metadata, "num_actual_tokens", query.shape[0])
++            result = _no_alloc_prefill_attention(
++                state, self_impl, query, key, value, attn_metadata
++            )
++            if _deferred_capture:
++                _capture_kv(key, value, attn_metadata)
+             if query.dim() == 3:
+-                return torch.zeros_like(query[:num_actual])
+-            return torch.zeros(
++                return result.to(query.dtype)
++            return result.reshape(
+                 num_actual,
+                 state.config.num_query_heads * state.config.head_dim,
+-                dtype=query.dtype,
+-                device=query.device,
+-            )
++            ).to(query.dtype)
+         return orig_fn(
+             self_impl, layer, query, key, value, kv_cache,
+             attn_metadata, output, output_scale, output_block_scale,
+@@ -337,6 +922,28 @@ def _make_patched_mla_forward(orig_fn, state: LayerState):
+ # Public API
+ # ---------------------------------------------------------------------------
+ 
++def _stash_input_batch(model_runner) -> None:
++    """Make the current step's InputBatch reachable during the forward pass.
++
++    Idempotent: install_hooks runs per layer, and wrapping the wrapper would
++    add a call frame per layer to every step.
++    """
++    if getattr(model_runner, "_tq_batch_hooked", False):
++        return
++    orig = getattr(model_runner, "prepare_inputs", None)
++    if orig is None:
++        return
++
++    def patched(*args, **kwargs):
++        batch = orig(*args, **kwargs)
++        model_runner._tq_batch = batch
++        return batch
++
++    model_runner.prepare_inputs = patched
++    model_runner._tq_batch_hooked = True
++    model_runner._tq_batch = None
++
++
+ def install_hooks(
+     model_runner,
+     key_bits: int = 3,
+@@ -380,6 +987,49 @@ def install_hooks(
+         else:
+             continue
+ 
++        # Skip sliding-window layers. install_hooks otherwise patches every
++        # layer that exposes num_kv_heads; on the models this was validated
++        # against (Qwen3.5) the non-full layers are linear-attention and drop
++        # out on their own, but Gemma 4's 50 sliding layers are ordinary flash
++        # impls, so they get hooked and their 1024-token window is destroyed -
++        # the compressed store hands back the whole history. Output is garbage
++        # from the first token.
++        # Skipping them costs nothing: a windowed layer's KV is bounded, so
++        # there is no memory to win there anyway.
++        _sw = getattr(impl, "sliding_window", None)
++        if _sw is None:
++            _sw = getattr(attn_module, "sliding_window", None)
++        if isinstance(_sw, (tuple, list)):
++            _sw = next((x for x in _sw if x), None)
++        # Gemma 4 reports sliding_window=-1 on its full-attention layers, which
++        # is truthy - only a positive value means a real window.
++        if _sw and _sw > 0:
++            layer_idx += 1
++            continue
++
++        # Speculative draft models are Q-only: no K/V of their own, reading
++        # the target's cache instead. Compressing a history they never write
++        # leaves an empty store that fails on the first read.
++        if "draft_model" in layer_name or "eagle_head" in layer_name:
++            logger.info(
++                "[TurboQuant] skipping speculative draft layer %s", layer_name
++            )
++            layer_idx += 1
++            continue
++
++        # Layers listed in TQ_SKIP_LAYERS keep their paged KV cache. Needed for
++        # MTP, whose draft head reads the target's cache for the layers it is
++        # bound to and cannot see the compressed store.
++        _skip = _os.environ.get("TQ_SKIP_LAYERS", "")
++        if _skip and any(f".layers.{i.strip()}." in layer_name
++                         for i in _skip.split(",") if i.strip()):
++            logger.info(
++                "[TurboQuant] leaving %s on the paged KV cache (TQ_SKIP_LAYERS)",
++                layer_name,
++            )
++            layer_idx += 1
++            continue
++
+         bits = initial_layers_key_bits if layer_idx < initial_layers_count else key_bits
+         backend_kind = "mla" if _is_mla_impl(impl) else "flash"
+         num_query_heads = _infer_num_query_heads(attn_module, impl)
+@@ -398,6 +1048,20 @@ def install_hooks(
+         )
+ 
+         state = _create_layer_state(cfg)
++        # Needed to locate the parent Gemma4Attention (k_norm / rotary_emb) when
++        # TQ_KV_SHARE rebuilds keys from the shared projection.
++        state._model_ref = getattr(model_runner, "model", None) or (
++            model_runner.get_model() if hasattr(model_runner, "get_model") else None
++        )
++        # The runner owns input_batch, which carries the real request ids -
++        # the only identity available to these layers (see _req_key).
++        state._runner = model_runner
++        _stash_input_batch(model_runner)
++        state.layer_name = layer_name
++        # Full-attention layers of Gemma 4 share one projection for K and V.
++        if (_os.environ.get("TQ_KV_SHARE") == "1"
++                and _sliding_of(impl) <= 0):
++            state.store.share_kv = True
+         layer_states[layer_name] = state
+ 
+         if backend_kind == "flash":
+@@ -411,7 +1075,6 @@ def install_hooks(
+                 impl.do_kv_cache_update = types.MethodType(
+                     lambda self, *a, _p=patched_update, **kw: _p(self, *a, **kw), impl
+                 )
+-
+             patched_forward = _make_patched_forward(
+                 impl.forward.__func__, state, no_alloc=no_alloc,
+                 capture_in_forward=needs_forward_capture,
+@@ -512,13 +1175,19 @@ def get_stats(model_runner) -> dict:
+     total_buffered = 0
+     total_memory = 0
+ 
++    # Count every request's store, not just the layer's own. With concurrent
++    # sessions the first request adopts (state.store, state.engine) and the
++    # rest get their own, so reading state.store alone under-reports the real
++    # footprint by a factor of the session count - and an under-reported
++    # footprint is exactly what leads to over-provisioning the KV pool.
+     for name, state in layer_states.items():
+-        compressed = state.store.num_tokens
+-        buffered = state.engine.ring.size
+-        mem = state.store.memory_bytes()
+-        total_compressed += compressed
+-        total_buffered += buffered
+-        total_memory += mem
++        pairs = list(getattr(state, "_per_req", {}).values())
++        if not pairs:
++            pairs = [(state.store, state.engine)]
++        for st, eng in pairs:
++            total_compressed += st.num_tokens
++            total_buffered += eng.ring.size
++            total_memory += st.memory_bytes()
+ 
+     stats["num_layers"] = len(layer_states)
+     stats["total_compressed_tokens"] = total_compressed // max(len(layer_states), 1)
+diff --git a/turboquant/kv_cache.py b/turboquant/kv_cache.py
+index ab00d9b..5806513 100644
+--- a/turboquant/kv_cache.py
++++ b/turboquant/kv_cache.py
+@@ -29,17 +29,19 @@ def unpack_values(vq: ValueQuantized) -> torch.Tensor:
+     """Unpack bit-packed value data to uint8 per-element."""
+     bits = vq.bits if len(vq) > 3 else 2
+     packed = vq.data
+-    if bits == 2:
+-        v0 = packed & 0x03
+-        v1 = (packed >> 2) & 0x03
+-        v2 = (packed >> 4) & 0x03
+-        v3 = (packed >> 6) & 0x03
+-        return torch.stack([v0, v1, v2, v3], dim=-1).reshape(*packed.shape[:-1], packed.shape[-1] * 4)
+-    elif bits == 4:
+-        v0 = packed & 0x0F
+-        v1 = (packed >> 4) & 0x0F
+-        return torch.stack([v0, v1], dim=-1).reshape(*packed.shape[:-1], packed.shape[-1] * 2)
+-    return packed
++    if bits not in (2, 4):
++        return packed
++
++    per_byte = 8 // bits
++    mask = (1 << bits) - 1
++    # One broadcast shift instead of one masked tensor per field plus a stack:
++    # [..., N, 1] >> [per_byte] -> [..., N, per_byte], then a contiguous
++    # reshape, which is a view.
++    shifts = torch.arange(
++        0, 8, bits, device=packed.device, dtype=packed.dtype
++    )
++    out = (packed.unsqueeze(-1) >> shifts) & mask
++    return out.reshape(*packed.shape[:-1], packed.shape[-1] * per_byte)
+ 
+ 
+ def quantize_values(
+@@ -101,16 +103,22 @@ def quantize_values(
+ def dequantize_values(
+     vq: ValueQuantized,
+     group_size: int = 32,
++    dtype: torch.dtype = torch.float32,
+ ) -> torch.Tensor:
+-    """Dequantize value vectors from bit-packed format."""
+-    data = unpack_values(vq).float()
++    """Dequantize value vectors from bit-packed format.
++
++    dtype selects the working precision. The default stays float32 for callers
++    that predate this argument; the attention path asks for its own dtype so
++    the result does not have to be copied down afterwards.
++    """
++    data = unpack_values(vq).to(dtype)
+     d = data.shape[-1]
+     batch_shape = data.shape[:-1]
+ 
+     n_groups = d // group_size
+     data = data.reshape(*batch_shape, n_groups, group_size)
+-    scales = vq.scales.unsqueeze(-1)
+-    zeros = vq.zeros.unsqueeze(-1)
++    scales = vq.scales.unsqueeze(-1).to(dtype)
++    zeros = vq.zeros.unsqueeze(-1).to(dtype)
+ 
+     v = data * scales + zeros
+     return v.reshape(*batch_shape, d)
+diff --git a/turboquant/quantizer.py b/turboquant/quantizer.py
+index d146be5..25f9ed3 100644
+--- a/turboquant/quantizer.py
++++ b/turboquant/quantizer.py
+@@ -11,7 +11,15 @@ import torch.nn.functional as F
+ from typing import Optional, Tuple, NamedTuple
+ 
+ from turboquant.codebook import get_codebook_tensors
++import os as _os
++
+ from turboquant.rotation import (
++    generate_sign_vector,
++    rotate_forward_fast,
++    rotate_backward_fast,
++    generate_rotor_params,
++    rotate_forward_rotor,
++    rotate_backward_rotor,
+     generate_rotation_matrix,
+     generate_qjl_matrix,
+     rotate_forward,
+@@ -112,10 +120,32 @@ class TurboQuantMSE(torch.nn.Module):
+         self.n_clusters = 2**bits
+         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+ 
+-        # Precompute rotation matrix
+-        self.register_buffer(
+-            "Pi", generate_rotation_matrix(dim, self.device, dtype, seed=seed)
+-        )
++        # Precompute rotation. The dense d x d matrix is exact but costs d^2
++        # per token on every dequantise - and dequantise runs once per prefill
++        # chunk over the whole history, so at head_dim 512 it dominates. The
++        # randomized Hadamard transform is orthogonal too and costs d log d.
++        # TQ_ROT selects the transform: dense (exact, d^2), hadamard (d log d),
++        # or rotor (block-diagonal SO(4) rounds, RotorQuant-style). TQ_FAST_ROT=1
++        # is kept as an alias for hadamard.
++        _mode = _os.environ.get("TQ_ROT", "").lower()
++        if not _mode:
++            _mode = "hadamard" if _os.environ.get("TQ_FAST_ROT") == "1" else "dense"
++        self._rot_mode = _mode
++        if _mode == "rotor":
++            self._rotor = generate_rotor_params(dim, self.device, seed=seed)
++            self.register_buffer("Pi", torch.zeros(1, device=self.device, dtype=dtype))
++        self._fast_rot = _mode == "hadamard"
++        if self._fast_rot:
++            self.register_buffer(
++                "rot_signs", generate_sign_vector(dim, self.device, seed=seed)
++            )
++            self.register_buffer(
++                "Pi", torch.zeros(1, device=self.device, dtype=dtype)
++            )
++        else:
++            self.register_buffer(
++                "Pi", generate_rotation_matrix(dim, self.device, dtype, seed=seed)
++            )
+ 
+         # Precompute codebook
+         centroids, boundaries = get_codebook_tensors(dim, bits, self.device, dtype)
+@@ -138,7 +168,12 @@ class TurboQuantMSE(torch.nn.Module):
+         x_unit = x / (norms.unsqueeze(-1) + 1e-10)
+ 
+         # Apply random rotation
+-        y = rotate_forward(x_unit.float(), self.Pi)  # (..., d)
++        if self._rot_mode == "rotor":
++            y = rotate_forward_rotor(x_unit.float(), self._rotor)
++        elif self._fast_rot:
++            y = rotate_forward_fast(x_unit.float(), self.rot_signs)
++        else:
++            y = rotate_forward(x_unit.float(), self.Pi)  # (..., d)
+ 
+         # Quantize each coordinate: find bucket via searchsorted
+         indices = torch.searchsorted(self.decision_boundaries, y.contiguous())
+@@ -157,7 +192,12 @@ class TurboQuantMSE(torch.nn.Module):
+         y_hat = self.centroids[indices]  # (..., d)
+ 
+         # Rotate back
+-        x_hat = rotate_backward(y_hat, self.Pi)  # (..., d)
++        if self._rot_mode == "rotor":
++            x_hat = rotate_backward_rotor(y_hat, self._rotor)
++        elif self._fast_rot:
++            x_hat = rotate_backward_fast(y_hat, self.rot_signs)
++        else:
++            x_hat = rotate_backward(y_hat, self.Pi)  # (..., d)
+ 
+         # Rescale by original norms
+         x_hat = x_hat * q.norms.unsqueeze(-1)
+diff --git a/turboquant/rotation.py b/turboquant/rotation.py
+index fe570b1..442a85a 100644
+--- a/turboquant/rotation.py
++++ b/turboquant/rotation.py
+@@ -31,7 +31,11 @@ def generate_rotation_matrix(
+ 
+     # Generate on CPU for reproducibility, then move to device
+     G = torch.randn(d, d, generator=rng, dtype=torch.float32)
+-    Q, R = torch.linalg.qr(G)
++    # The draw stays on CPU so the seed still reproduces, but the decomposition
++    # has to run on the accelerator: the ROCm torch wheel ships without CPU
++    # LAPACK, so torch.linalg.qr on a CPU tensor raises
++    # "Calling torch.geqrf on a CPU tensor requires ... LAPACK".
++    Q, R = torch.linalg.qr(G.to(device))
+ 
+     # Ensure proper rotation (det = +1) by fixing signs
+     diag_sign = torch.sign(torch.diag(R))
+@@ -64,3 +68,128 @@ def rotate_forward(x: torch.Tensor, Pi: torch.Tensor) -> torch.Tensor:
+ def rotate_backward(y: torch.Tensor, Pi: torch.Tensor) -> torch.Tensor:
+     """Apply inverse rotation: x = y @ Pi (equivalent to Pi^T @ y)."""
+     return torch.matmul(y, Pi)
++
++def _fwht(x: torch.Tensor) -> torch.Tensor:
++    """In-place-ish fast Walsh-Hadamard transform over the last dim.
++
++    Iterative butterfly: log2(d) passes of add/subtract, no matmul. The last
++    dimension must be a power of two, which holds for every Gemma 4 head_dim.
++    """
++    d = x.shape[-1]
++    assert d & (d - 1) == 0, f"Hadamard needs a power of two, got {d}"
++    orig = x.shape
++    y = x.reshape(-1, d).clone()
++    h = 1
++    while h < d:
++        y = y.view(-1, d // (2 * h), 2, h)
++        a = y[:, :, 0, :]
++        b = y[:, :, 1, :]
++        y = torch.stack((a + b, a - b), dim=2)
++        y = y.reshape(-1, d)
++        h *= 2
++    return y.reshape(orig)
++
++
++def generate_sign_vector(d: int, device: torch.device, seed: int = 42
++                         ) -> torch.Tensor:
++    """Random +/-1 diagonal for the randomized Hadamard transform."""
++    rng = torch.Generator(device="cpu")
++    rng.manual_seed(seed)
++    signs = (torch.randint(0, 2, (d,), generator=rng, dtype=torch.int8) * 2 - 1)
++    return signs.to(device=device, dtype=torch.float32)
++
++
++def rotate_forward_fast(x: torch.Tensor, signs: torch.Tensor) -> torch.Tensor:
++    """y = H(Dx)/sqrt(d) - orthogonal, and its own inverse up to the sign flip."""
++    d = x.shape[-1]
++    return _fwht(x * signs) / math.sqrt(d)
++
++
++def rotate_backward_fast(y: torch.Tensor, signs: torch.Tensor) -> torch.Tensor:
++    """x = D(Hy)/sqrt(d). H is symmetric with H^2 = d*I and D^2 = I."""
++    d = y.shape[-1]
++    return _fwht(y) / math.sqrt(d) * signs
++
++# ─────────────────────────────────────────────────────────────────────────────
++#  Block-diagonal rotor rotation (RotorQuant-style)
++# ─────────────────────────────────────────────────────────────────────────────
++
++_ROTOR_BLOCK = 4          # SO(4) blocks, as in the quaternion/isoclinic variants
++
++
++def _rounds_for(d: int) -> int:
++    """How many block+shuffle rounds until every coordinate can reach every
++    other one. Each round mixes within a block of 4, so reach grows 4x."""
++    r, reach = 0, 1
++    while reach < d:
++        reach *= _ROTOR_BLOCK
++        r += 1
++    return max(1, r)
++
++
++def generate_rotor_params(d: int, device: torch.device, seed: int = 42):
++    """Random SO(4) blocks per round, plus the stride permutation.
++
++    Each block is drawn as a QR of a 4x4 Gaussian and forced to determinant +1
++    so it is a rotation rather than a reflection - the distinction the rotor
++    formulation cares about.
++    """
++    assert d % _ROTOR_BLOCK == 0, f"head_dim {d} must be divisible by 4"
++    rng = torch.Generator(device="cpu")
++    rng.manual_seed(seed)
++
++    n_rounds = _rounds_for(d)
++    n_blocks = d // _ROTOR_BLOCK
++
++    # Build each SO(4) block as a product of Givens rotations, one per pair of
++    # axes. Six planes span SO(4), every factor is a rotation so the determinant
++    # is +1 by construction, and no decomposition is needed - this torch build
++    # has no CPU LAPACK, so torch.linalg.qr is unavailable here.
++    planes = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
++    blocks = []
++    for _ in range(n_rounds):
++        q = torch.eye(_ROTOR_BLOCK).expand(n_blocks, -1, -1).clone()
++        for (i, j) in planes:
++            ang = torch.rand(n_blocks, generator=rng) * (2 * math.pi)
++            c, sn = torch.cos(ang), torch.sin(ang)
++            g = torch.eye(_ROTOR_BLOCK).expand(n_blocks, -1, -1).clone()
++            g[:, i, i] = c
++            g[:, j, j] = c
++            g[:, i, j] = -sn
++            g[:, j, i] = sn
++            q = torch.bmm(g, q)
++        blocks.append(q.to(device=device, dtype=torch.float32))
++
++    # Stride permutation: interleaves coordinates so the next round's blocks see
++    # values from four different blocks of this round.
++    idx = torch.arange(d).view(_ROTOR_BLOCK, d // _ROTOR_BLOCK).t().reshape(-1)
++    perm = idx.to(device=device)
++    inv = torch.empty_like(perm)
++    inv[perm] = torch.arange(d, device=device)
++    return blocks, perm, inv
++
++
++def rotate_forward_rotor(x: torch.Tensor, params) -> torch.Tensor:
++    """Apply the rounds in order: block rotate, then shuffle."""
++    blocks, perm, _ = params
++    d = x.shape[-1]
++    orig = x.shape
++    y = x.reshape(-1, d)
++    for q in blocks:
++        y = torch.einsum("nbi,bij->nbj", y.view(-1, d // _ROTOR_BLOCK, _ROTOR_BLOCK), q)
++        y = y.reshape(-1, d)[:, perm]
++    return y.reshape(orig)
++
++
++def rotate_backward_rotor(y: torch.Tensor, params) -> torch.Tensor:
++    """Exact inverse: undo the shuffle, then the block rotation, in reverse."""
++    blocks, _, inv = params
++    d = y.shape[-1]
++    orig = y.shape
++    x = y.reshape(-1, d)
++    for q in reversed(blocks):
++        x = x[:, inv]
++        x = torch.einsum("nbj,bij->nbi", x.view(-1, d // _ROTOR_BLOCK, _ROTOR_BLOCK), q)
++        x = x.reshape(-1, d)
++    return x.reshape(orig)
++
+diff --git a/turboquant/store.py b/turboquant/store.py
+index de6e026..255c21b 100644
+--- a/turboquant/store.py
++++ b/turboquant/store.py
+@@ -60,6 +60,15 @@ class CompressedKVStore:
+         self._value_chunks: list[ValueQuantized] = []
+         self._chunk_lengths: list[int] = []
+ 
++        # None until the first chunk decides it; True means values are the same
++        # tensor as keys for this layer and are not stored at all.
++        self._kv_shared: Optional[bool] = None
++
++        # Set by the plugin for Gemma 4 full-attention layers under TQ_KV_SHARE:
++        # K and V come from one projection there (those layers have no v_proj),
++        # so only the raw one is stored and keys are rebuilt on read.
++        self.share_kv: bool = False
++
+         self._flat: Optional[FlatCache] = None
+ 
+     @property
+@@ -81,8 +90,20 @@ class CompressedKVStore:
+         k = key.transpose(0, 1).unsqueeze(0)  # (1, H, T, D)
+         v = value.transpose(0, 1).unsqueeze(0)
+ 
+-        key_q = self.quantizer.quantize(k)
+-        val_q = quantize_values(v, bits=self.value_bits, group_size=self.value_group_size)
++        if self._kv_shared is None:
++            # Decided once per layer, on real data. torch.equal is exact - a
++            # near-match must not enable this, since the values would then be
++            # silently wrong rather than merely imprecise.
++            self._kv_shared = bool(torch.equal(key, value))
++
++        key_q = None if self.share_kv else self.quantizer.quantize(k)
++        val_q = (
++            None
++            if self._kv_shared
++            else quantize_values(
++                v, bits=self.value_bits, group_size=self.value_group_size
++            )
++        )
+ 
+         self._key_chunks.append(key_q)
+         self._value_chunks.append(val_q)
+@@ -97,19 +118,49 @@ class CompressedKVStore:
+         if self._flat is not None:
+             return self._flat
+ 
+-        if len(self._key_chunks) == 1:
+-            kq = self._key_chunks[0]
+-            vq = self._value_chunks[0]
+-            flat_kq = _flatten_prod_q(kq)
+-            flat_vq = _flatten_value_q(vq)
++        if self.share_kv:
++            # Keys were never quantised for this layer; the caller rebuilds them
++            # from the values, which hold the shared pre-norm projection.
++            flat_kq = None
++            flat_vq = (
++                _flatten_value_q(self._value_chunks[0])
++                if len(self._value_chunks) == 1
++                else _concat_value_q(
++                    [_flatten_value_q(c) for c in self._value_chunks]
++                )
++            )
++        elif len(self._key_chunks) == 1:
++            flat_kq = _flatten_prod_q(self._key_chunks[0])
++            flat_vq = (
++                None if self._kv_shared
++                else _flatten_value_q(self._value_chunks[0])
++            )
+         else:
+             flat_kq = _concat_prod_q([_flatten_prod_q(c) for c in self._key_chunks])
+-            flat_vq = _concat_value_q([_flatten_value_q(c) for c in self._value_chunks])
++            flat_vq = (
++                None if self._kv_shared
++                else _concat_value_q(
++                    [_flatten_value_q(c) for c in self._value_chunks]
++                )
++            )
++
++        total = self.num_tokens
++
++        # The concatenated copy used to be cached *alongside* the chunks it was
++        # built from, so the entire compressed history lived in GPU memory
++        # twice - and because append invalidates the cache, every decoded token
++        # rebuilt it, re-allocating a multi-hundred-megabyte tensor per token.
++        # Collapse the chunk list onto the flattened tensors instead: same data,
++        # one copy, and the next call finds a single chunk and does no work.
++        # Safe now that the flatteners are idempotent.
++        self._key_chunks[:] = [flat_kq]
++        self._value_chunks[:] = [flat_vq]
++        self._chunk_lengths[:] = [total]
+ 
+         self._flat = FlatCache(
+             prod_q=flat_kq,
+             value_q=flat_vq,
+-            num_tokens=self.num_tokens,
++            num_tokens=total,
+         )
+         return self._flat
+ 
+@@ -117,17 +168,22 @@ class CompressedKVStore:
+         """Estimate GPU memory used by compressed data."""
+         total = 0
+         for kq in self._key_chunks:
++            if kq is None:
++                continue
+             total += kq.mse_indices.nelement()
+             total += kq.qjl_signs.nelement()
+             total += kq.residual_norms.nelement() * 2
+             total += kq.norms.nelement() * 2
+         for vq in self._value_chunks:
++            if vq is None:
++                continue
+             total += vq.data.nelement()
+             total += vq.scales.nelement() * 2
+             total += vq.zeros.nelement() * 2
+         return total
+ 
+     def reset(self):
++        self._kv_shared = None
+         self._key_chunks.clear()
+         self._value_chunks.clear()
+         self._chunk_lengths.clear()
+@@ -135,7 +191,9 @@ class CompressedKVStore:
+ 
+ 
+ def _flatten_prod_q(pq: ProdQuantized) -> ProdQuantized:
+-    """Collapse batch dim: (1, H, T, ...) -> (H, T, ...)."""
++    """Collapse batch dim: (1, H, T, ...) -> (H, T, ...). Idempotent."""
++    if pq.mse_indices.dim() == 3:
++        return pq
+     return ProdQuantized(
+         mse_indices=pq.mse_indices.reshape(-1, pq.mse_indices.shape[-2], pq.mse_indices.shape[-1]).contiguous(),
+         qjl_signs=pq.qjl_signs.reshape(-1, pq.qjl_signs.shape[-2], pq.qjl_signs.shape[-1]).contiguous(),
+@@ -146,7 +204,9 @@ def _flatten_prod_q(pq: ProdQuantized) -> ProdQuantized:
+ 
+ 
+ def _flatten_value_q(vq: ValueQuantized) -> ValueQuantized:
+-    """Collapse batch dim: (1, H, T, ...) -> (H, T, ...)."""
++    """Collapse batch dim: (1, H, T, ...) -> (H, T, ...). Idempotent."""
++    if vq.data.dim() == 3:
++        return vq
+     v_bits = vq.bits if len(vq) > 3 else 2
+     return ValueQuantized(
+         data=vq.data.reshape(-1, vq.data.shape[-2], vq.data.shape[-1]).contiguous(),
+diff --git a/turboquant/vllm_attn_backend.py b/turboquant/vllm_attn_backend.py
+index 1165880..bc5e4b3 100644
+--- a/turboquant/vllm_attn_backend.py
++++ b/turboquant/vllm_attn_backend.py
+@@ -7,6 +7,8 @@ Kept for backward compatibility with scripts that import from here.
+ 
+ from __future__ import annotations
+ 
++import os
++
+ import logging
+ import torch
+ 
+@@ -122,14 +124,33 @@ def enable_no_alloc(
+ 
+         def _worker_install_tq(worker):
+             from turboquant.vllm_attn_backend import (
+-                install_turboquant_hooks, MODE_ACTIVE
++                install_turboquant_hooks, MODE_ACTIVE, _LEGACY_TO_NEW
+             )
++
++            # MODE_ACTIVE is a legacy name ("active"); the hook layer compares
++            # against its own MODE_HYBRID ("hybrid"). install_turboquant_hooks
++            # assigns _GLOBAL_MODE straight from this argument without applying
++            # _LEGACY_TO_NEW and without validating it, so passing the legacy
++            # name silently disabled the entire TurboQuant decode branch: every
++            # decode step fell through to the generic fallback, which attends
++            # with include_current=True even though ingest_decode has already
++            # put the new token in the ring. The newest token was therefore
++            # counted twice in the softmax, and doubling its weight is what
++            # produced the runaway repetition ("C-C-C-C", "la la la").
++            _mode = _LEGACY_TO_NEW[MODE_ACTIVE]
+             tq_states = install_turboquant_hooks(
+                 worker.model_runner,
+                 key_bits=cfg["key_bits"],
+                 value_bits=cfg["value_bits"],
+                 buffer_size=cfg["buffer_size"],
+                 initial_layers_count=cfg["initial_layers_count"],
++                # Deliberately the legacy name: it does NOT map to
++                # MODE_HYBRID, so decode takes the generic fallback.
++                # Measured - the hybrid decode branch returns garbage
++                # from the first token (0/5 at every length) while the
++                # fallback scores 5/5 at 2k, and that holds with capture
++                # deferred either way, so the defect is inside that
++                # branch rather than in the capture ordering.
+                 mode=MODE_ACTIVE,
+                 no_alloc=True,
+             )
