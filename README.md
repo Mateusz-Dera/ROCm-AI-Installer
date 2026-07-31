@@ -37,7 +37,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |SillyTavern|[SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern)|8000||
 |llama.cpp|[ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)<br> [unsloth/gemma-4-12b-it-GGUF](https://huggingface.co/unsloth/gemma-4-12b-it-GGUF)|8080|1. Runs in <b>router mode</b> - <b>pick/switch models from the WebUI</b> without restarting (see <i>Switching models</i> below).<br> 2. By default downloads the <b>gemma-4-12b-it Q8_0</b> model into <b>user-models/</b>.<br> 3. A Vulkan version is also available.|
 |turboquant-rocm-llamacpp|[jagsan-cyber/turboquant-rocm-llamacpp](https://github.com/jagsan-cyber/turboquant-rocm-llamacpp)<br> [unsloth/gemma-4-12b-it-GGUF](https://huggingface.co/unsloth/gemma-4-12b-it-GGUF)|8080|1. TurboQuant 4-bit KV-cache compression (q4_0).<br> 2. <b>Router mode</b> - pick/switch models from the WebUI (see <i>Switching models</i> below).<br> 3. By default downloads the <b>gemma-4-12b-it Q8_0</b> model into <b>user-models/</b>.<br> 4. ROCm only.|
-|vLLM Gemma 4|[vllm-project/vllm](https://github.com/vllm-project/vllm)<br> [0xSero/turboquant](https://github.com/0xSero/turboquant)<br> [google/gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it)|8000<br>8080|Gemma 4 31B on an OpenAI-compatible API, quantized to 4-bit W4A16 <b>during install</b>. A compressed KV cache fits <b>150k tokens</b> in one session or <b>two concurrent sessions of 150k</b>, against 111k on plain fp8. Port 8000 is the API, 8080 a two-pane chat UI.<br> <b>Prefix caching must stay off</b> (the run script disables it) - a cache hit skips the forward pass, so the model answers with no context.<br> Long prompts take a while before the first token (~57 s at 32k); that is prefill, not a hang. Details: <code>.images/VLLM.md</code>.|
+|vLLM Gemma 4|[vllm-project/vllm](https://github.com/vllm-project/vllm)<br> [0xSero/turboquant](https://github.com/0xSero/turboquant)<br> [google/gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it)|8000<br>8080|TODO|
 
 #### Switching models (llama.cpp / llama.cpp Vulkan / turboquant-rocm-llamacpp)
 
@@ -76,7 +76,7 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 ###  Fine-tuning:
 |Name|Links|Port|Additional information|
 |:---|:---|:---:|:---|
-|Unsloth|[unslothai/unsloth](https://github.com/unslothai/unsloth)<br> [unsloth.ai](https://unsloth.ai/docs/basics/amd)|8888|1. LoRA / QLoRA / full fine-tuning + RL for LLMs - <b>2x faster, 70% less VRAM</b>. Exports to GGUF / LoRA / safetensors.<br> 2. Production-ready <b>AMD/ROCm</b> support (full RDNA3 / gfx1100), runs fully <b>locally</b> on the GPU.<br> 3. Launches <b>Unsloth Studio</b> (web UI for training + inference) on <b>port 8888</b>.<br> 4. CLI also available: <b>unsloth train / inference / chat / export</b>.|
+|Unsloth|[unslothai/unsloth](https://github.com/unslothai/unsloth)<br> [unsloth.ai](https://unsloth.ai/docs/basics/amd)|8888|TODO|
 
 ###  Music generation:
 |Name|Links|Port|Additional information|
@@ -95,7 +95,7 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 |:---|:---|:---:|:---|
 |PartCrafter|[wgsxm/PartCrafter](https://github.com/wgsxm/PartCrafter)<br>[Mateusz-Dera/pytorch_cluster_rocm](https://github.com/Mateusz-Dera/pytorch_cluster_rocm)|7860|1. Added custom simple UI.|
 |trellis2.c|[Wimacs/trellis2.c](https://github.com/Wimacs/trellis2.c)|—|1. A Vulkan version is also available.|
-|Pixal3D Experimental|[Wimacs/trellis2.c](https://github.com/Wimacs/trellis2.c)<br> [TencentARC/Pixal3D](https://huggingface.co/TencentARC/Pixal3D)<br> [valeoai/NAF](https://github.com/valeoai/NAF)|—|1. Fits in 24 GB via a custom OOM patch and preset runtime flags. <br> 2. |
+|Pixal3D Experimental|[Wimacs/trellis2.c](https://github.com/Wimacs/trellis2.c)<br> [TencentARC/Pixal3D](https://huggingface.co/TencentARC/Pixal3D)<br> [valeoai/NAF](https://github.com/valeoai/NAF)|—|1. Fits in 24 GB via a custom OOM patch and preset runtime flags. <br> 2. TODO|
 |ARDY|[nv-tlabs/ardy](https://github.com/nv-tlabs/ardy)<br> [meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)|2333|1. NVIDIA autoregressive-diffusion <b>interactive human/robot motion generation</b> from text + kinematic constraints (successor to Kimodo).<br> 2. Interactive <b>viser web demo</b> on <b>port 2333</b> (run.sh); a headless CLI (<b>scripts/generate.py</b>) is also available.<br> 3. Set <b>HuggingFace Token</b> in Variables and request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (LLM2Vec text encoder, runs on CPU).<br> 4. Checkpoints download automatically on first use.|
 |TripoSplat|[VAST-AI-Research/TripoSplat](https://github.com/VAST-AI-Research/TripoSplat)|7860||
 |AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|7860|1. Automatic (not AI) quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps.|
@@ -105,7 +105,7 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 1\. Install Podman.
 
 > [!Note]
-> If you are using Debian 13.5, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 26.04)
+> If you are using Debian 13.6, you can use <b>sudo apt-get update && sudo apt-get -y install podman podman-compose qemu-system</b> (should also work on Ubuntu 26.04)
 
 2\. Make sure that <b>/dev/dri</b> and <b>/dev/kfd</b> are accessible.
 ```bash
