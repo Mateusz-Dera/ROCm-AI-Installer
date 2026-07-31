@@ -2,9 +2,16 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-17-orange.svg)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-17-grey.svg?labelColor=white)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+![ROCm](https://img.shields.io/badge/ROCm-7.2.4-grey.svg?labelColor=white)
 
-![ROCm](https://img.shields.io/badge/ROCm-7.2.4-red.svg)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
+[![Podman](https://img.shields.io/badge/Podman-892CA0?logo=podman&logoColor=fff)](#)
+[![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=fff)](#)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
+[![Node.js](https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white)](#)
+[![Gradio](https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white)](#)
+[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=fff)](#)
 
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
@@ -49,22 +56,22 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 #### SillyTavern Extensions:
 |Name|Link|Additional information|
 |:---|:---|:---|
-|WhisperSpeech web UI|https://github.com/Mateusz-Dera/whisperspeech-webui|Install and run WhisperSpeech web UI first.|
+|WhisperSpeech web UI|[Mateusz-Dera/whisperspeech-webui](https://github.com/Mateusz-Dera/whisperspeech-webui)|Install and run WhisperSpeech web UI first.|
 
 ###  Image & video generation:
 |Name|Links|Port|Additional information|
 |:---|:---|:---:|:---|
 |ComfyUI|[comfyanonymous/ComfyUI](https://github.com/comfyanonymous/ComfyUI)<br> [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)|8188|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
-|Krea 2 Turbo + Edit|[krea-ai/krea-2](https://github.com/krea-ai/krea-2)<br> [krea/Krea-2-Turbo](https://huggingface.co/krea/Krea-2-Turbo)<br> [collections/krea](https://huggingface.co/collections/krea/krea-2-loras)<br> [conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit)<br> [lbouaraba/comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit)|7860|1. 4-bit NF4 quantized to fit 24 GB VRAM<br> 2. Turbo model (8 steps)<br> 3. 9 official style LoRAs available<br> 4. Custom LoRA upload supported (native Krea 2 LoRAs are auto-converted to diffusers format)<br> 5. <b>Identity Edit</b> tab: instruction-based, identity-preserving editing of a single photo, or combining two photos (scene + person)<br> 6. Identity Edit uses the <b>unofficial community LoRA</b> <a href="https://huggingface.co/conradlocke/krea2-identity-edit">conradlocke/krea2-identity-edit</a> <br> 7. Krea 2 and the LoRAs are licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>.|
+|Krea 2 Turbo + Edit|[krea-ai/krea-2](https://github.com/krea-ai/krea-2)<br> [krea/Krea-2-Turbo](https://huggingface.co/krea/Krea-2-Turbo)<br> [krea/krea-2-loras](https://huggingface.co/collections/krea/krea-2-loras)<br> [conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit)<br> [lbouaraba/comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit)|7860|1. 4-bit NF4 quantized to fit 24 GB VRAM<br> 2. Turbo model (8 steps)<br> 3. 9 official style LoRAs available<br> 4. Custom LoRA upload supported (native Krea 2 LoRAs are auto-converted to diffusers format)<br> 5. <b>Identity Edit</b> tab: instruction-based, identity-preserving editing of a single photo, or combining two photos (scene + person)<br> 6. Identity Edit uses the <b>unofficial community LoRA</b> <a href="https://huggingface.co/conradlocke/krea2-identity-edit">conradlocke/krea2-identity-edit</a> <br> 7. Krea 2 and the LoRAs are licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>.|
 
 #### ComfyUI Addons:
 |Name|Link|Additional information|
 |:---|:---|:---|
-|Qwen-Image-2512-GGUF|https://huggingface.co/Qwen/Qwen-Image-2512<br>https://huggingface.co/unsloth/Qwen-Image-2512-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps|Uses <b>Q5_0</b> quant.<br> Uses <b>2-step turbo LoRA</b>.|
-|Qwen-Image-2511-Edit-GGUF|https://huggingface.co/Qwen/Qwen-Image-Edit-2511<br> https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF<br> https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI<br> https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning|Uses <b>Q5_0</b> quant.<br> Uses <b>4-step Lightning LoRA</b>|
-|Z-Image-Turbo|https://huggingface.co/Tongyi-MAI/Z-Image-Turbo<br> https://huggingface.co/Comfy-Org/z_image_turbo||
-|Z-Anime|https://huggingface.co/SeeSee21/Z-Anime<br> https://huggingface.co/Comfy-Org/z_image_turbo||
-|Wan2.2-TI2V-5B|https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B<br> https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged||
+|Qwen-Image-2512-GGUF|[Qwen/Qwen-Image-2512](https://huggingface.co/Qwen/Qwen-Image-2512)<br>[unsloth/Qwen-Image-2512-GGUF](https://huggingface.co/unsloth/Qwen-Image-2512-GGUF)<br> [Comfy-Org/Qwen-Image_ComfyUI](https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI)<br> [Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps](https://huggingface.co/Wuli-art/Qwen-Image-2512-Turbo-LoRA-2-Steps)|Uses <b>Q5_0</b> quant.<br> Uses <b>2-step turbo LoRA</b>.|
+|Qwen-Image-2511-Edit-GGUF|[Qwen/Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511)<br> [unsloth/Qwen-Image-Edit-2511-GGUF](https://huggingface.co/unsloth/Qwen-Image-Edit-2511-GGUF)<br> [Comfy-Org/Qwen-Image_ComfyUI](https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI)<br> [lightx2v/Qwen-Image-Edit-2511-Lightning](https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning)|Uses <b>Q5_0</b> quant.<br> Uses <b>4-step Lightning LoRA</b>|
+|Z-Image-Turbo|[Tongyi-MAI/Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo)<br> [Comfy-Org/z_image_turbo](https://huggingface.co/Comfy-Org/z_image_turbo)|
+|Z-Anime|[SeeSee21/Z-Anime](https://huggingface.co/SeeSee21/Z-Anime)<br> [Comfy-Org/z_image_turbo](https://huggingface.co/Comfy-Org/z_image_turbo)|
+|Wan2.2-TI2V-5B|[Wan-AI/Wan2.2-TI2V-5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B)<br> [Comfy-Org/Wan_2.2_ComfyUI_Repackaged](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged)|
 
 ###  Fine-tuning:
 |Name|Links|Port|Additional information|
@@ -91,7 +98,7 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 |Pixal3D Experimental|[Wimacs/trellis2.c](https://github.com/Wimacs/trellis2.c)<br> [TencentARC/Pixal3D](https://huggingface.co/TencentARC/Pixal3D)<br> [valeoai/NAF](https://github.com/valeoai/NAF)|—|1. Fits in 24 GB via a custom OOM patch and preset runtime flags. <br> 2. |
 |ARDY|[nv-tlabs/ardy](https://github.com/nv-tlabs/ardy)<br> [meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)|2333|1. NVIDIA autoregressive-diffusion <b>interactive human/robot motion generation</b> from text + kinematic constraints (successor to Kimodo).<br> 2. Interactive <b>viser web demo</b> on <b>port 2333</b> (run.sh); a headless CLI (<b>scripts/generate.py</b>) is also available.<br> 3. Set <b>HuggingFace Token</b> in Variables and request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (LLM2Vec text encoder, runs on CPU).<br> 4. Checkpoints download automatically on first use.|
 |TripoSplat|[VAST-AI-Research/TripoSplat](https://github.com/VAST-AI-Research/TripoSplat)|7860||
-|AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|7860|1. <b>Not an AI model</b> - a classical (CPU/TBB) automatic quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps (TripoSplat, Pixal3D, TRELLIS, trellis2.c, PartCrafter) into clean quad topology for animation/modeling.<br> 3. Qt5 <b>GUI</b> (run.sh) for interactive remeshing; a headless CLI is also available (<b>--input/--output/--target-quads</b>).|
+|AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|7860|1. Automatic (not AI) quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps.|
 
 ## Instalation:
 

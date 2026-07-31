@@ -220,6 +220,23 @@ VLLM_G4_TQ_COMMIT="7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5"
 install_vllm_gemma4() {
     REPO="$VLLM_G4_TQ_REPO"
     COMMIT="$VLLM_G4_TQ_COMMIT"
+
+    # vLLM comes as a prebuilt wheel rather than a source build, which saves a
+    # ~40 minute compile but fixes the set of GPU architectures. The wheel
+    # carries gfx1100/1101 (RDNA3), gfx1150/1151 (RDNA3.5), gfx1200/1201
+    # (RDNA4) and gfx942/950 (CDNA); torch covers more (gfx1030, gfx1102/1103,
+    # gfx900/906/908) but without vLLM's own kernels that does not help. Say so
+    # here instead of letting it die on the first launch.
+    case "${TARGET_GFX:-gfx1100}" in
+        gfx1100|gfx1101|gfx1150|gfx1151|gfx1200|gfx1201|gfx942|gfx950) ;;
+        *)
+            echo "Error: the prebuilt vLLM ROCm wheel has no kernels for ${TARGET_GFX}."
+            echo "Supported: gfx1100 gfx1101 gfx1150 gfx1151 gfx1200 gfx1201 gfx942 gfx950"
+            echo "Building vLLM from source for this GPU would be needed instead."
+            read -p "Press Enter to continue..."
+            return 1
+            ;;
+    esac
     FOLDER="vllm-gemma4"
 
     # gemma-4-31B as 4-bit W4A16 compressed-tensors, quantized locally further
@@ -231,7 +248,12 @@ install_vllm_gemma4() {
     # goes up for the same card.
     local MODEL="/AI/models/gemma-4-31B-it-W4A16-sym-g128"
 
-    # Settings that are load-bearing, each measured:
+    # Settings that are load-bearing, each measured on a 24 GB card. They are
+    # sized for that budget and are not derived from the detected VRAM (the
+    # installer has no such variable): a smaller card needs --kv-cache-memory-bytes
+    # and --max-model-len scaled down together, since the pool must hold
+    # max-model-len tokens for one request or the engine refuses to start.
+    # Settings that are load-bearing:
     #   --max-model-len 262000     sizes the KV pool: vLLM requires the pool to
     #                              hold this many tokens for one request, so it
     #                              scales pool capacity. Setting it near the
@@ -585,7 +607,14 @@ install_comfyui() {
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
     #fi
-    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-manager --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
+    # --enable-dynamic-vram is needed on AMD even though DynamicVRAM is on by
+    # default: enables_dynamic_vram() is true here, which runs the first init, but
+    # main.py gates the per-device init_devices() call on
+    #   args.enable_dynamic_vram or (enables_dynamic_vram() and is_nvidia() and ...)
+    # so on ROCm the device stage is skipped unless the flag is passed explicitly.
+    # Needs torch >= 2.8 (we run 2.10). --vram-headroom is left at its default of 0
+    # because --reserve-vram already feeds the first stage; setting both reserves twice.
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-dynamic-vram --enable-manager --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
     ADDONS="$@"
 
@@ -1116,10 +1145,20 @@ install_trellis2_c() {
     # Written on host then copied in to avoid nested-quote escaping.
     if [ "$BACKEND" = "hip" ]; then
         # ROCm/HIP: rocBLAS on the AMD device (HSA_OVERRIDE_GFX_VERSION from compose).
-        RUN_LAUNCH="cd /AI/trellis2.c && export ROCM_PATH=/opt/rocm && mkdir -p output && ./build-hip/trellis-gui --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
+        # The mesh workspace budget is raised on both backends so the GUI's 512/1024
+        # buttons both work: Vulkan's remesh finalizer runs out of memory at 1024 with
+        # the default cap (measured - it dies at a 16 GB peak while ROCm completes at
+        # 19.7 GB). It is an upper bound, not an up-front allocation, so 512 is
+        # unaffected and the two launchers stay symmetric.
+        RUN_LAUNCH="cd /AI/trellis2.c && export ROCM_PATH=/opt/rocm && mkdir -p output && ./build-hip/trellis-gui --vkmesh-gpu-workspace-budget-mib 12288 --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
     else
         # Vulkan: pin the RADV ICD so compute + window use the discrete AMD GPU.
-        RUN_LAUNCH="cd /AI/trellis2.c && export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json && mkdir -p output && ./build-vulkan/trellis-gui --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
+        # The mesh workspace budget is raised because the GUI offers a 1024 button
+        # and the Vulkan remesh finalizer runs out of memory at that profile with the
+        # default budget - measured, it dies at a 16 GB peak while ROCm completes at
+        # 19.7 GB, so it is the workspace cap that is short, not the card. Harmless at
+        # 512: it is an upper bound, not an up-front allocation.
+        RUN_LAUNCH="cd /AI/trellis2.c && export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json && mkdir -p output && ./build-vulkan/trellis-gui --vkmesh-gpu-workspace-budget-mib 12288 --model /AI/TRELLIS.2/TRELLIS.2-4B --dino /AI/TRELLIS.2/dinov3-vitl16-pretrain-lvd1689m --birefnet /AI/TRELLIS.2/BiRefNet/BiRefNet-F16.gguf --out-dir /AI/trellis2.c/output --pipeline 512"
     fi
     local RUNSH
     RUNSH=$(mktemp)
@@ -1143,10 +1182,13 @@ RUNEOF
 }
 
 # Pixal3D Experimental - the Pixal3D image-to-3D model running through trellis2.c's
-# ROCm/HIP backend. Higher-fidelity than TRELLIS.2 but far heavier: 1024_cascade only
-# (~1.5M voxels, ~9-10 min/asset on a 7900XTX). It only fits in 24 GB thanks to the
-# OOM patch (chunked attention + lazy sparse-decoder temporaries) plus the runtime
-# flags baked into run.sh below. CLI only (the raylib GUI is TRELLIS.2-only).
+# ROCm/HIP backend. Higher-fidelity than TRELLIS.2 but far heavier. run.sh uses
+# 1024_cascade (~1.5M voxels, 9 min/asset on a 7900XTX, ~9 GB peak). 1536_cascade
+# also fits and was measured at 29 min and a 19.3 GB peak - three times the wait
+# for a 2.5 GB asset, which is why it is not the default. It only fits in 24 GB
+# thanks to the OOM patch (chunked attention + lazy sparse-decoder temporaries)
+# plus the runtime flags baked into run.sh below. CLI only (the raylib GUI is
+# TRELLIS.2-only: it rejects any --pipeline other than 512 or 1024).
 install_pixal3d_c() {
     FOLDER="trellis2.c"
 
