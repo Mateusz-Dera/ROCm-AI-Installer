@@ -368,8 +368,7 @@ text_generation() {
             2 "Install llama.cpp" \
             3 "Install llama.cpp Vulkan" \
             4 "Install turboquant-rocm-llamacpp" \
-            5 "Install Colibri (GLM-5.2 744B)" \
-            6 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
+            5 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -392,9 +391,6 @@ text_generation() {
                 install_turboquant_rocm_llamacpp
                 ;;
             "5")
-                install_colibri
-                ;;
-            "6")
                 install_vllm_gemma4
                 ;;
             "")

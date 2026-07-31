@@ -2,7 +2,6 @@ Added:
     - Krea-2-Turbo
     - trellis2.c (ROCm/HIP and Vulkan variants)
     - Pixal3D Experimental (Pixal3D image-to-3D via trellis2.c ROCm; custom OOM patch to fit 24 GB)
-    - Colibri (GLM-5.2 744B MoE, ROCm/HIP, disk-streaming, web dashboard)
     - AutoRemesher (non-AI quad-remeshing helper for retopologizing 3D-generation outputs)
     - ARDY (NVIDIA autoregressive-diffusion motion generation, viser demo)
     - Fine-tuning category with Unsloth (LoRA/QLoRA fine-tuning + Unsloth Studio, ROCm)

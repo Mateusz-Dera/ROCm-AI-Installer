@@ -355,59 +355,6 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
 }
 
-# Colibri - GLM-5.2, a 744B-parameter MoE model, run on consumer hardware by
-# streaming expert weights from disk (tiered RAM/disk/VRAM memory hierarchy).
-# Pure C engine + ROCm/HIP GPU backend. Web dashboard interface (live metrics,
-# expert-routing visualization, 3D expert atlas). Needs ~372 GB disk + 25 GB RAM.
-install_colibri() {
-    REPO="https://github.com/noobdev-ph/colibri"
-    COMMIT="7d17d9b5f18adb9c7b65f357d075f5f33e27b5ff"
-    FOLDER=$(basename "$REPO")
-    local MODEL_REPO="mateogrgic/GLM-5.2-colibri-int4-with-int8-mtp"
-    # Web dashboard + OpenAI-compatible API on one port (http://localhost:8000),
-    # bound to 0.0.0.0 like every other app. coli refuses a 0.0.0.0 bind unless
-    # COLI_ALLOW_INSECURE_BIND=1 (no API key on a trusted LAN).
-    #   COLI_CUDA=1  : the launcher's GPU auto-enable is Windows-only; set it here so
-    #                  the HIP backend + the VRAM expert tier are actually used.
-    #   --auto-tier --vram 22 --ram 0 : apply the RAM/VRAM expert-cache plan (~22 GB
-    #                  VRAM + free RAM) instead of streaming every expert from disk.
-    #   --policy experimental-fast : fastest resource policy.
-    # Note: a 744B MoE streamed from disk on a 24 GB card is inherently slow
-    # (~0.5 tok/s); MTP speculative decoding (2-3x) only runs in single-client
-    # 'coli chat', not in the multi-client web server.
-    COMMAND="COLI_CUDA=1 COLI_ALLOW_INSECURE_BIND=1 ./c/coli web --model /AI/$FOLDER/model --host 0.0.0.0 --port 8000 --vram 22 --ram 0 --auto-tier --policy experimental-fast"
-
-    basic_container
-    basic_git "$REPO" "$COMMIT"
-
-    # Build the inference engine with the ROCm/HIP GPU backend (this repo is about
-    # GPU interfaces, so GPU support is the default). backend_cuda.cu compiles
-    # through hipcc via the CUDA->HIP compat shim; -fPIC is required because Ubuntu
-    # links the final binary as PIE while hipcc emits non-PIE objects.
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && \
-        export ROCM_HOME=/opt/rocm PATH=/opt/rocm/bin:\$PATH && \
-        make -C c glm HIP=1 HIP_ARCH=$TARGET_GFX ROCM_HOME=/opt/rocm \
-            HIPCCFLAGS='-O3 -std=c++17 -x hip --offload-arch=$TARGET_GFX -fPIC -Wall -Wextra'"
-
-    # Build the web dashboard (live metrics, expert-routing viz, 3D expert atlas).
-    podman exec -it rocm bash -c "cd /AI/$FOLDER/web && npm install && npm run build"
-
-    # The launcher's Linux GPU detection only recognizes CUDA builds (ldd for
-    # libcudart); the HIP build links libamdhip64 instead, so --gpu would be refused.
-    # Extend the check to accept the HIP runtime as well.
-    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i 's/return any(\"libcudart\" in line and \"not found\" not in line/return any((\"libcudart\" in line or \"libamdhip64\" in line) and \"not found\" not in line/' c/coli && \
-        grep -q 'libamdhip64' c/coli && echo 'coli launcher patched for HIP'"
-
-    # Model: pre-converted GLM-5.2 int4 container (~372 GB, public - no HF token).
-    # Streamed from disk at run time. Skip if already present.
-    podman exec -it rocm bash -c "if [ ! -f /AI/$FOLDER/model/config.json ]; then \
-        uvx --from 'huggingface_hub[cli]' hf download $MODEL_REPO --local-dir /AI/$FOLDER/model; \
-      else echo 'Colibri model already present - reusing'; fi"
-
-    basic_run "$REPO" "$COMMAND" "&&"
-}
-
 # ----- Fine-tuning -----
 
 # Unsloth - LoRA/QLoRA/full fine-tuning + RL for LLMs, 2x faster / 70% less VRAM,
