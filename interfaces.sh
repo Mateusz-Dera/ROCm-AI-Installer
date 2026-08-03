@@ -110,7 +110,7 @@ basic_pip(){
 # ----- llama.cpp -----
 
 LLAMA_REPO="https://github.com/ggml-org/llama.cpp"
-LLAMA_COMMIT="da296d6e726654949bce10d7cae9a2195d292bfc"
+LLAMA_COMMIT="6f3c0a790be2c8599663a98f03b95fb3eae767f8"
 
 install_llama_cpp() {
     REPO="$LLAMA_REPO"
@@ -324,7 +324,7 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     # and every concurrent session after the first read the first one's history.
     # The patch also adds turboquant/fused.py - one Triton kernel doing
     # dequantise + RMSNorm + RoPE, which nearly doubled decode speed (6.5 ->
-    # 12.2 tok/s at 32k). Full account in .images/VLLM.md.
+    # 12.2 tok/s at 32k). The patch header carries the per-change rationale.
     podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/tq-sero-rocm-gemma4.patch" \
         "rocm:/AI/$FOLDER/tq-sero-rocm-gemma4.patch"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && git apply tq-sero-rocm-gemma4.patch"
@@ -411,7 +411,7 @@ install_unsloth() {
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
-    COMMIT="51ad27fb86d39a3daca3adaa970375c9670c12df"
+    COMMIT="8172dcd0ee672d3cd9a5e5f7af134f91a45cd2b8"
     COMMAND="bash start.sh"
     FOLDER=$(basename "$REPO")
 
@@ -601,8 +601,8 @@ comfy_wait() {
 
 # ComfyUI
 install_comfyui() {
-    REPO="https://github.com/comfyanonymous/ComfyUI"
-    COMMIT="a449f5f987d49ecce18245d1402e4ec68513e7c0"
+    REPO="https://github.com/Comfy-Org/ComfyUI"
+    COMMIT="5cc026f5b81b3f01fe7a1438a0fd4131d2ebda25"
     TUNABLEOP=""
     #if [[ "$GFX_VERSION" == gfx110* ]]; then
     #    TUNABLEOP="PYTORCH_TUNABLEOP_ENABLED=1 PYTORCH_TUNABLEOP_TUNING=1"
@@ -727,8 +727,8 @@ PYEOF"
 
     # Qwen-Image (shared text encoder + vae for Qwen models)
     if [[ "$ADDONS" == *"1"* ]] || [[ "$ADDONS" == *"2"* ]]; then
-        comfy_download "$FOLDER/models/text_encoders" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
-        comfy_download "$FOLDER/models/vae" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "c232bcb51c1523899c62d6dcaa960b2627668de5" "split_files/vae/qwen_image_vae.safetensors"
+        comfy_download "$FOLDER/models/text_encoders" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "46839d338df81ce625d5fae27d7e370314c0fbc9" "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+        comfy_download "$FOLDER/models/vae" "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI" "46839d338df81ce625d5fae27d7e370314c0fbc9" "split_files/vae/qwen_image_vae.safetensors"
     fi
 
     # 1 - Qwen-Image-2512
@@ -745,13 +745,13 @@ PYEOF"
 
     # Z-Image / Z-Anime shared (vae + text encoder used by both)
     if [[ "$ADDONS" == *"3"* ]] || [[ "$ADDONS" == *"4"* ]]; then
-        comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/vae/ae.safetensors"
+        comfy_download "$FOLDER/models/vae/" "https://huggingface.co/Comfy-Org/z_image_turbo" "d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e" "split_files/vae/ae.safetensors"
         comfy_download "$FOLDER/models/text_encoders/" "https://huggingface.co/SeeSee21/Z-Anime" "0f5fb51464638a2f7328a1d74590281e63e1fde2" "text_encoder/qwen_3_4b-bf16.safetensors"
     fi
 
     # 3 - Z-Image-Turbo
     if [[ "$ADDONS" == *"3"* ]]; then
-        comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "2f862278568d3f0a83167a16e5f11094da6dee72" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
+        comfy_download "$FOLDER/models/diffusion_models/" "https://huggingface.co/Comfy-Org/z_image_turbo" "d24c4cf2a0cd98a42f23467e27e3d76ee9438b8e" "split_files/diffusion_models/z_image_turbo_bf16.safetensors"
     fi
 
     # 4 - Z-Anime
@@ -762,7 +762,7 @@ PYEOF"
     # 5 - Wan 2.2 TI2V 5B
     if [[ "$ADDONS" == *"5"* ]]; then
         WAN_REPO="https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
-        WAN_COMMIT="f97505f0d38bea4897c970db66cb5f97f73676de"
+        WAN_COMMIT="fb1388adc906ab39ffc26ee40e96b22886b56bc4"
         comfy_download "$FOLDER/models/text_encoders/" "$WAN_REPO" "$WAN_COMMIT" "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
         comfy_download "$FOLDER/models/vae/" "$WAN_REPO" "$WAN_COMMIT" "split_files/vae/wan_2.1_vae.safetensors"
         comfy_download "$FOLDER/models/vae/" "$WAN_REPO" "$WAN_COMMIT" "split_files/vae/wan2.2_vae.safetensors"
@@ -775,7 +775,7 @@ PYEOF"
 # ACE-Step-1.5
 install_ace_step_1_5() {
     REPO="https://github.com/ace-step/ACE-Step-1.5"
-    COMMIT="dce621408bee8c31b4fcf4811682eb9359e1bc94"
+    COMMIT="6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0"
     COMMAND="ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST python -m acestep.acestep_v15_pipeline --server-name 0.0.0.0 --port 7860 --config_path acestep-v15-turbo --lm_model_path acestep-5Hz-lm-4B --init_service true --backend pt"
     FOLDER=$(basename "$REPO")
 
@@ -893,7 +893,7 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
 # OmniVoice
 install_omnivoice(){
     REPO="https://github.com/k2-fsa/OmniVoice"
-    COMMIT="b2dcccaa9f68fe0255326ce675d24b6d112b685a"
+    COMMIT="28bc0889d92110491d726a9c79f26a895db5a074"
     COMMAND="omnivoice-demo --ip 0.0.0.0 --port 7860"
     FOLDER=$(basename "$REPO")
 
@@ -1028,7 +1028,7 @@ PYEOF"
 # PartCrafter
 install_partcrafter(){
     REPO="https://github.com/wgsxm/PartCrafter"
-    COMMIT="269bd4164fbe35b17a6e58f8d6934262822082eb"
+    COMMIT="3d773bf02fad51c7ab31a5615573fec93b287b30"
     COMMAND="uv run partcrafter_webui.py"
     FOLDER=$(basename "$REPO")
 
@@ -1356,7 +1356,7 @@ install_triposplat(){
 # into clean quad topology for animation/modeling. Qt5 GUI + headless CLI.
 install_autoremesher() {
     REPO="https://github.com/huxingyi/autoremesher"
-    COMMIT="6b6e9adb59c4cf2abdd398173a97d030b566226e"
+    COMMIT="6465e0ab9e9700cd85e5753c42d4d6d995972235"
     FOLDER=$(basename "$REPO")
 
     basic_container
@@ -1414,7 +1414,7 @@ install_krea2() {
         uv pip install torch torchvision"
 
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install 'git+https://github.com/huggingface/diffusers.git' \
+        uv pip install 'git+https://github.com/huggingface/diffusers' \
         'transformers>=4.57.0' accelerate sentencepiece bitsandbytes peft gradio"
 
     podman cp "$SCRIPT_DIR/custom_files/Krea-2-Turbo/app.py" "rocm:/AI/$FOLDER/app.py"

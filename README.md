@@ -13,6 +13,12 @@ Installation scripts for an AI applications using ROCm on Linux.
 [![Gradio](https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white)](#)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=fff)](#)
 
+> [!Warning]
+> This is an <b>experimental branch</b>. Things here are work in progress:
+> some applications may not work, pinned versions change often, and
+> <b>not everything will necessarily be merged into the main branch</b>.<br>
+> Use the main branch if you want a stable installer.
+
 > [!Note]
 > From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
 > All you need is a correctly configured <b>Podman</b> and <b>amdgpu</b>.
@@ -61,7 +67,7 @@ podman cp my-model.Q4_K_M.gguf rocm:/AI/llama.cpp/user-models/
 ###  Image & video generation:
 |Name|Links|Port|Additional information|
 |:---|:---|:---:|:---|
-|ComfyUI|[comfyanonymous/ComfyUI](https://github.com/comfyanonymous/ComfyUI)<br> [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)|8188|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
+|ComfyUI|[Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI)<br> [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)|8188|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
 |Krea 2 Turbo + Edit|[krea-ai/krea-2](https://github.com/krea-ai/krea-2)<br> [krea/Krea-2-Turbo](https://huggingface.co/krea/Krea-2-Turbo)<br> [krea/krea-2-loras](https://huggingface.co/collections/krea/krea-2-loras)<br> [conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit)<br> [lbouaraba/comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit)|7860|1. 4-bit NF4 quantized to fit 24 GB VRAM<br> 2. Turbo model (8 steps)<br> 3. 9 official style LoRAs available<br> 4. Custom LoRA upload supported (native Krea 2 LoRAs are auto-converted to diffusers format)<br> 5. <b>Identity Edit</b> tab: instruction-based, identity-preserving editing of a single photo, or combining two photos (scene + person)<br> 6. Identity Edit uses the <b>unofficial community LoRA</b> <a href="https://huggingface.co/conradlocke/krea2-identity-edit">conradlocke/krea2-identity-edit</a> <br> 7. Krea 2 and the LoRAs are licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>.|
 
 #### ComfyUI Addons:
