@@ -20,10 +20,10 @@ import time
 
 os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
 
-DEFAULT_MODEL = "/AI/models/gemma-4-31B-it-W4A16-sym-g128"
+DEFAULT_MODEL = os.environ.get(
+    "TQ_MODEL", "/AI/models/gemma-4-31B-qat-W4A16-sym-g128")
 DEPTHS = [0.0, 0.25, 0.50, 0.75, 0.95]
 
-# One alphabet per session, deliberately dissimilar so a leak is unmistakable.
 ALPHABETS = [
     ["ALFA-7734", "BRAVO-2251", "CHARLIE-9013", "DELTA-4468", "ECHO-1195"],
     ["MIKE-3382", "NOVEMBER-6607", "OSCAR-1428", "PAPA-8891", "QUEBEC-5573"],
@@ -131,8 +131,6 @@ def main() -> None:
 
     label = "fp8-baseline" if args.baseline else f"tq-k{args.key_bits}v{args.value_bits}"
     start = time.time()
-    # One call with several conversations: vLLM schedules them together, which
-    # is what puts more than one sequence in the plugin at the same time.
     outs = llm.chat(convs, sampling)
     elapsed = time.time() - start
 
@@ -170,11 +168,6 @@ def main() -> None:
                   % (mb, st.get("num_layers", 0),
                      mb * 1024 / max(1, total_tokens)), flush=True)
 
-            # Report the stores directly. A per-token cost that comes out at
-            # exactly 1/N of the single-session figure is the signature of N
-            # sessions sharing one store - and a shared store is a correctness
-            # failure that the needle test can miss, because each session's own
-            # codes are still present in the merged history.
             states = getattr(runner, "_tq_layer_states", {}) or {}
             for name, lstate in list(states.items())[:1]:
                 pairs = getattr(lstate, "_per_req", {})
@@ -195,8 +188,6 @@ def main() -> None:
                          getattr(lstate, "_c_default_store", 0),
                          getattr(lstate, "_c_hybrid", 0)), flush=True)
                 klog = getattr(lstate, "_key_log", {"keys": set(), "resets": 0})
-                # The peak is what sizes the budget; whatever survives to the
-                # end is just the last request that had not been evicted yet.
                 print("    warstwa %s: szczyt %d magazynow / %d tokenow, "
                       "szczyt zywych zadan=%d, zadania=%d, eksmisje=%d, wznowienia=%d"
                       % (name, klog.get("peak_stores", 0),

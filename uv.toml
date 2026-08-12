@@ -1,3 +1,5 @@
+index-strategy = "unsafe-first-match"
+
 [[index]]
-url = "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2.4/"
-format = "flat"
+url = "https://repo.amd.com/rocm/whl-multi-arch/"
+ignore-error-codes = [403]

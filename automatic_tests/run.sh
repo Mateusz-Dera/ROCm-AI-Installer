@@ -1,9 +1,4 @@
 #!/bin/bash
-# Runs all test scripts (*.sh except run.sh and common.sh) in alphabetical order.
-#
-# Usage: run.sh [--test name [name ...]]
-#   --test name [name ...]   Run only the specified tests (e.g. --test llama_cpp comfyui)
-#   (no args)                Run all tests in order
 
 set -euo pipefail
 
@@ -11,7 +6,6 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$(cd "$TESTS_DIR/.." && pwd)"
 LOG_FILE="$SCRIPT_DIR/test.log"
 
-# ── Parse arguments ───────────────────────────────────────────
 SELECTED_TESTS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -45,7 +39,6 @@ log "Started: $(date '+%Y-%m-%d_%H-%M-%S')"
 log "Log: $LOG_FILE"
 log "============================================="
 
-# ── Collect test files ────────────────────────────────────────
 mapfile -t ALL_FILES < <(
     find "$TESTS_DIR" -maxdepth 1 -name '*.sh' -not -name 'run.sh' -not -name 'common.sh' \
         | sort
@@ -56,7 +49,6 @@ if [ ${#ALL_FILES[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Filter to selected tests if --test was given
 if [ ${#SELECTED_TESTS[@]} -gt 0 ]; then
     log "Running selected tests: ${SELECTED_TESTS[*]}"
     TEST_FILES=()

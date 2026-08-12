@@ -12,15 +12,13 @@ test_whisperspeech() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "WhisperSpeech web UI" install_whisperspeech_web_ui "/AI/whisperspeech-webui"
 
-    # --- Test ---
     local ws_dir="/AI/whisperspeech-webui"
     local ws_port=7860
     local ws_log="/tmp/whisper_server.log"
 
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '$ws_log'" || true
+    podman exec -t rocm bash -c "pkill -f '[w]ebui.py' 2>/dev/null; sleep 1; : > '$ws_log'" || true
 
     info "Starting WhisperSpeech web UI (port $ws_port)..."
     podman exec -d rocm bash -c \
@@ -100,9 +98,9 @@ test_whisperspeech() {
     fi
 
     info "Stopping WhisperSpeech..."
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null || true" || true
+    podman exec -t rocm bash -c "pkill -f '[w]ebui.py' 2>/dev/null || true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'webui.py' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f '[w]ebui.py' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
     pass "WhisperSpeech stopped"

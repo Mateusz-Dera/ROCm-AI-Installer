@@ -12,8 +12,6 @@ import os
 import sys
 
 os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
-# Gemma 4's full-attention layers have no v_proj; K is rebuilt from the shared
-# projection instead of being stored. Halves the compressed store.
 os.environ.setdefault("TQ_KV_SHARE", "1")
 
 from turboquant.vllm_attn_backend import enable_no_alloc  # noqa: E402

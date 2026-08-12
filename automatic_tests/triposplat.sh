@@ -12,10 +12,8 @@ test_triposplat() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "TripoSplat" install_triposplat "/AI/TripoSplat"
 
-    # --- Test ---
     local app_dir="/AI/TripoSplat"
     local app_port=7860
     local app_log="/tmp/triposplat_server.log"
@@ -23,7 +21,7 @@ test_triposplat() {
     local helper_dst="/tmp/triposplat_api_helper.py"
 
     podman exec -t rocm bash -c \
-        "pkill -f 'python.*run_gradio\.py' 2>/dev/null; \
+        "pkill -f '[p]ython.*run_gradio\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; \
          rm -f '${app_log}'; touch '${app_log}'" || true
 
@@ -87,7 +85,7 @@ test_triposplat() {
 
     info "Stopping TripoSplat..."
     podman exec -t rocm bash -c \
-        "pkill -f 'python.*run_gradio\.py' 2>/dev/null; \
+        "pkill -f '[p]ython.*run_gradio\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \

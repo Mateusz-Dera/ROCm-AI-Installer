@@ -12,15 +12,13 @@ test_soprano() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "Soprano" install_soprano "/AI/soprano-rocm"
 
-    # --- Test ---
     local app_dir="/AI/soprano-rocm"
     local app_log="/tmp/soprano_server.log"
     local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
 
-    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -9 -f '[s]oprano' 2>/dev/null; true" 2>/dev/null || true
     podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
     sleep 3
     podman exec -t rocm bash -c \
@@ -30,7 +28,8 @@ test_soprano() {
     info "Starting Soprano TTS..."
     podman exec -d rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
-         TORCH_BLAS_PREFER_HIPBLASLT=1 soprano-webui \
+         PYTHONPATH='${app_dir}'/.venv/lib/python3.14/site-packages/_rocm_sdk_core/share/amd_smi \
+         TORCH_BLAS_PREFER_HIPBLASLT=1 HIP_VISIBLE_DEVICES=0 soprano-webui \
          >> '${app_log}' 2>&1"
 
     info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
@@ -86,7 +85,7 @@ test_soprano() {
     fi
 
     info "Stopping Soprano..."
-    podman exec -t rocm bash -c "pkill -9 -f 'soprano' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -9 -f '[s]oprano' 2>/dev/null; true" 2>/dev/null || true
     podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
     sleep 2
     podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true

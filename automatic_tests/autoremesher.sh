@@ -4,10 +4,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# AutoRemesher is a CPU (TBB) quad-remeshing helper, not an AI model. The test
-# mirrors upstream's "Running a quick test": build it, then remesh a mesh via the
-# headless CLI and check the output. A UV sphere is generated locally so the test
-# needs no external sample-mesh download.
 test_autoremesher() {
     info "============================================="
     info "TEST: AutoRemesher (build + headless CLI remesh)"
@@ -15,17 +11,14 @@ test_autoremesher() {
 
     basic_container || abort "Container 'rocm' is not running."
 
-    # --- Install (apt deps + qmake build) ---
     run_install "AutoRemesher" install_autoremesher "/AI/autoremesher"
 
     local app_dir="/AI/autoremesher"
 
-    # --- Verify the binary built ---
     container_file_exists "${app_dir}/autoremesher" \
         || abort "AutoRemesher: binary ./autoremesher missing after build"
     pass "AutoRemesher binary built"
 
-    # --- Generate a UV-sphere OBJ to remesh (no external download) ---
     info "Generating a test mesh (UV sphere)..."
     podman exec -t rocm bash -c "cd '${app_dir}' && python3 -c \"
 import math
@@ -47,7 +40,6 @@ with open('sphere.obj','w') as f:
 print('verts',len(V),'faces',len(F))
 \"" 2>&1 | tr -d '\r' || abort "AutoRemesher: failed to generate test mesh"
 
-    # --- Headless CLI remesh (the upstream quick test) ---
     info "Running headless quad remesh via CLI..."
     if ! podman exec -t rocm bash -c "cd '${app_dir}' && \
             ./autoremesher --input sphere.obj --output remeshed.obj \
@@ -58,20 +50,17 @@ print('verts',len(V),'faces',len(F))
         abort "AutoRemesher: CLI remesh returned non-zero"
     fi
 
-    # --- Verify the remeshed output (non-empty + contains quad faces) ---
     local out_size
     out_size=$(podman exec -t rocm bash -c "stat -c %s '${app_dir}/remeshed.obj' 2>/dev/null" | tr -d '\r') || out_size=""
     if [ -z "$out_size" ] || [ "$out_size" -le 0 ] 2>/dev/null; then
         podman exec -t rocm bash -c "tail -25 /tmp/autoremesher_run.log" 2>/dev/null || true
         abort "AutoRemesher: output remeshed.obj is missing or empty"
     fi
-    # A quad remesh must emit 4-index face lines ("f a b c d").
     if ! podman exec -t rocm bash -c "grep -qE '^f( +[0-9]+){4}' '${app_dir}/remeshed.obj'"; then
         abort "AutoRemesher: output has no quad faces (remesh did not produce quads)"
     fi
     pass "AutoRemesher produced a quad mesh (${out_size} bytes)"
 
-    # --- Cleanup test artifacts ---
     podman exec -t rocm bash -c \
         "rm -f '${app_dir}/sphere.obj' '${app_dir}/remeshed.obj' '${app_dir}/remeshed_report.txt' /tmp/autoremesher_run.log" 2>/dev/null || true
 

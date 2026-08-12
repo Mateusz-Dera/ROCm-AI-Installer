@@ -12,17 +12,15 @@ test_omnivoice() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "OmniVoice" install_omnivoice "/AI/OmniVoice"
 
-    # --- Test ---
     local app_dir="/AI/OmniVoice"
     local app_port=7860
     local app_log="/tmp/omnivoice_server.log"
     local ref_wav="/tmp/omnivoice_ref.wav"
     local GEN_TEXT="OmniVoice text to speech synthesis is working correctly."
 
-    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[o]mnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
@@ -51,7 +49,6 @@ test_omnivoice() {
     pass "OmniVoice Gradio API ready on port ${app_port}"
     sleep 5
 
-    # ---- Step 1: Voice Design ----
     info "--- Step 1: Voice Design (no reference) ---"
     local event_id
     event_id=$(podman exec -t rocm bash -c "
@@ -127,7 +124,6 @@ test_omnivoice() {
         abort "OmniVoice: failed to copy reference audio to ${ref_wav}"
     pass "Voice Design audio saved as reference: ${ref_wav}"
 
-    # ---- Step 2: Voice Clone ----
     info "--- Step 2: Voice Clone (using generated audio as reference) ---"
 
     local upload_response
@@ -151,7 +147,7 @@ test_omnivoice() {
             -d '{\"data\": [
                 \"${GEN_TEXT}\", \"Auto\",
                 {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                \"\", 32, 2.0, true, 1.0, null, true, true
+                \"\", \"\", 32, 2.0, true, 1.0, null, true, true
             ]}' | tr -d '\r'
     " 2>/dev/null \
     | grep -o '\"event_id\":\"[^\"]*\"' \
@@ -191,7 +187,7 @@ test_omnivoice() {
     fi
 
     info "Stopping OmniVoice..."
-    podman exec -t rocm bash -c "pkill -f 'omnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[o]mnivoice-demo' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
     podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0

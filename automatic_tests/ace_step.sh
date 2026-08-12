@@ -12,15 +12,13 @@ test_ace_step() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "ACE-Step-1.5" install_ace_step_1_5 "/AI/ACE-Step-1.5"
 
-    # --- Test ---
     local app_dir="/AI/ACE-Step-1.5"
     local app_port=7860
     local app_log="/tmp/acestep15_server.log"
 
-    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[a]cestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
@@ -120,7 +118,7 @@ test_ace_step() {
     fi
 
     info "Stopping ACE-Step-1.5..."
-    podman exec -t rocm bash -c "pkill -f 'acestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[a]cestep_v15_pipeline' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
     podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0

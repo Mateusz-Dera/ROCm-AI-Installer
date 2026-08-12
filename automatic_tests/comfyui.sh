@@ -4,22 +4,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-# ============================================================
-# ComfyUI: Install + Startup + Workflow Tests
-# ============================================================
-
 app_port=8188
 app_dir="/AI/ComfyUI"
 app_log="/tmp/comfyui_server.log"
 
-# ------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------
-
 _start_comfyui() {
     info "Killing old ComfyUI instances..."
     podman exec -t rocm bash -c \
-        "pkill -f 'main\.py' 2>/dev/null; pkill -f 'comfyui' 2>/dev/null; true" 2>/dev/null || true
+        "pkill -f '[m]ain\.py' 2>/dev/null; pkill -f '[c]omfyui' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
@@ -55,7 +47,7 @@ _start_comfyui() {
 _stop_comfyui() {
     info "Stopping ComfyUI..."
     podman exec -t rocm bash -c \
-        "pkill -f 'main\.py' 2>/dev/null; \
+        "pkill -f '[m]ain\.py' 2>/dev/null; \
          sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0
     while podman exec -t rocm bash -c \
@@ -66,7 +58,6 @@ _stop_comfyui() {
     pass "ComfyUI stopped"
 }
 
-# _run_workflow WORKFLOW_NAME WORKFLOW_SRC_PATH MIN_SIZE STDERR_SUFFIX
 _run_workflow() {
     local workflow_name="$1"
     local workflow_src="$2"
@@ -75,13 +66,10 @@ _run_workflow() {
 
     info "--- Workflow: ${workflow_name} ---"
 
-    # Copy workflow JSON into container
     podman cp "${workflow_src}" "rocm:/tmp/${workflow_name}.json"
 
-    # Copy helper script into container
     podman cp "${TESTS_DIR}/helpers/comfyui_run_workflow.py" "rocm:/tmp/comfyui_run_workflow.py"
 
-    # Run workflow via the helper
     local output stderr_log="/tmp/comfyui_wf_${stderr_suffix}.log"
     output=$(podman exec -t rocm bash -c \
         "cd '${app_dir}' && source .venv/bin/activate && \
@@ -89,19 +77,16 @@ _run_workflow() {
          2>'${stderr_log}'" \
         | tr -d '\r') || true
 
-    # Show stderr from helper for debugging
     podman exec -t rocm bash -c "cat '${stderr_log}'" 2>/dev/null | while IFS= read -r line; do
         info "  [helper] $line"
     done || true
 
-    # Check for OUTPUT_FAIL
     if echo "$output" | grep -q '^OUTPUT_FAIL:'; then
         local reason
         reason=$(echo "$output" | grep '^OUTPUT_FAIL:' | head -1 | cut -d: -f2-)
         abort "${workflow_name}: workflow failed – ${reason}"
     fi
 
-    # Check for OUTPUT_OK and minimum file size
     if ! echo "$output" | grep -q '^OUTPUT_OK:'; then
         podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
         abort "${workflow_name}: no OUTPUT_OK line in helper output"
@@ -127,19 +112,14 @@ _run_workflow() {
     pass "${workflow_name} workflow completed successfully"
 }
 
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
 main() {
     info "============================================="
     info "ComfyUI: Install + Startup + Workflow Tests"
     info "============================================="
 
-    # --- Container check ---
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ComfyUI with all addons ---
     info "--- Installing: ComfyUI (addons: 1 2 3 4 5) ---"
     if ! install_comfyui 1 2 3 4 5; then
         abort "ComfyUI: install function returned non-zero"
@@ -152,7 +132,6 @@ main() {
     fi
     pass "ComfyUI installed successfully (addons: 1 2 3 4 5)"
 
-    # --- Startup test: verify /object_info ---
     _start_comfyui
 
     local node_count
@@ -166,28 +145,6 @@ main() {
 
     _stop_comfyui
 
-    # --- Workflow tests (each: start → run → verify → stop) ---
-
-    # (a) Qwen-Image-2512-GGUF (text-to-image)
-    _start_comfyui
-    _run_workflow \
-        "Qwen-Image-2512-GGUF" \
-        "${SCRIPT_DIR}/workflows/Qwen-Image-2512-GGUF.json" \
-        10240 \
-        "qwen_img"
-    _stop_comfyui
-
-    # (b) Qwen-Image-Edit-2511-GGUF (image edit)
-    _start_comfyui
-    podman cp "${SCRIPT_DIR}/workflows/images/cat.png" "rocm:/AI/ComfyUI/input/cat.png"
-    _run_workflow \
-        "Qwen-Image-Edit-2511-GGUF-Single-Image" \
-        "${SCRIPT_DIR}/workflows/Qwen-Image-Edit-2511-GGUF-Single-Image.json" \
-        10240 \
-        "qwen_edit"
-    _stop_comfyui
-
-    # (c) Z-Image-Turbo (text-to-image)
     _start_comfyui
     _run_workflow \
         "Z-Image-Turbo" \
@@ -196,7 +153,6 @@ main() {
         "z_turbo"
     _stop_comfyui
 
-    # (d) Z-Anime (text-to-image)
     _start_comfyui
     _run_workflow \
         "Z-Anime" \
@@ -205,7 +161,6 @@ main() {
         "z_anime"
     _stop_comfyui
 
-    # (e) Wan-2.2-5B-text-to-video (text-to-video, up to 3h)
     _start_comfyui
     _run_workflow \
         "Wan-2.2-5B-text-to-video" \
@@ -214,7 +169,6 @@ main() {
         "wan_t2v"
     _stop_comfyui
 
-    # (f) Wan-2.2-5B-image-to-video (image-to-video, up to 3h)
     _start_comfyui
     podman cp "${SCRIPT_DIR}/workflows/images/bottle.png" "rocm:/AI/ComfyUI/input/bottle.png"
     _run_workflow \

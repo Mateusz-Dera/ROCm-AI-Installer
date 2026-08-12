@@ -44,6 +44,11 @@
   <span>pula 300 410 tok</span>
   <span>2 sesje równolegle</span>
   <span id="api">—</span>
+  <label style="color:var(--dim)">temp
+    <input id="temp" type="number" min="0" max="2" step="0.1" value="0.3"
+           style="width:52px;background:transparent;color:var(--fg);
+                  border:1px solid var(--line);padding:1px 4px;font:inherit">
+  </label>
 </header>
 
 <div id="wrap">
@@ -70,6 +75,16 @@
 <script>
 const API = location.protocol + "//" + location.hostname + ":8000/v1";
 document.getElementById("api").textContent = API;
+
+// Asked for, rather than hardcoded, because a wrong name here is invisible
+// until the first message is sent: the page loads, both panes report ready,
+// and only the reply comes back 404 "The model `x` does not exist". The
+// fallback matches --served-model-name in the installer's SERVE line.
+let MODEL = "gemma-4-31b";
+fetch(API + "/models")
+  .then(r => r.ok ? r.json() : null)
+  .then(j => { if (j?.data?.[0]?.id) MODEL = j.data[0].id; })
+  .catch(() => {});
 
 // Each pane keeps its own message list. The server has no session state, so
 // the whole history is resent every turn - which is also what exercises the
@@ -113,7 +128,14 @@ class Term {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gemma4", stream: true, temperature: 0.7,
+          model: MODEL, stream: true,
+          // Counting tasks ("write exactly 200 lines") used to need a low
+          // temperature: on the pre-QAT checkpoint t=0.7 stopped numbering its
+          // own output, lost the only way it had to track how many lines it had
+          // produced, and ran to the token limit. The QAT model does not: both
+          // t=0.0 and t=0.7 add numbering unprompted and stop at exactly 200
+          // (8917 vs 8918 tokens, finish_reason stop both times).
+          temperature: parseFloat(document.getElementById("temp").value) || 0,
           max_tokens: 2048, messages: this.msgs,
         }),
       });

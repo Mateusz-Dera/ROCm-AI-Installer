@@ -21,10 +21,8 @@
 
 FROM ubuntu:26.04
 
-# Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install basic dependencies
 RUN apt-get update && apt-get install -y \
     nano \
     wget \
@@ -47,6 +45,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     libsparsehash-dev \
+    libnuma-dev \
     libxml2-16 \
     libopenmpi40 \
     libdw1 \
@@ -57,84 +56,63 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0t64
 
-    # && rm -rf /var/lib/apt/lists/*
-
-# Add AMD ROCm repositories
 RUN mkdir -p /etc/apt/keyrings && \
-    wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null
-RUN echo "deb [arch=amd64,i386 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/31.30/ubuntu resolute main" \
-        > /etc/apt/sources.list.d/amdgpu.list && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.2.4 noble main" \
-        > /etc/apt/sources.list.d/rocm.list && \
-    printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' \
-        > /etc/apt/preferences.d/rocm-pin
+    wget https://repo.amd.com/rocm/packages-multi-arch/gpg/rocm.gpg -O - | gpg --dearmor | tee /etc/apt/keyrings/amdrocm.gpg > /dev/null
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/amdrocm.gpg] https://repo.amd.com/rocm/packages-multi-arch/ubuntu2604 stable main" \
+        > /etc/apt/sources.list.d/rocm.list
 
 RUN apt-get update
 
-# ROCM
-RUN apt-get install -y \
-    rocm rocminfo rocm-cmake rocm-smi rocm-smi-lib rocm-hip-sdk rocm-hip-runtime rocm-hip-runtime-dev \
-    hipblas hipcc hipify-clang hiprand hiprand-dev hipfft hipfft-dev hipsparse hipsparse-dev \
-    hipcub hipcub-dev hipsolver hipsolver-dev hipsparselt hipsparselt-dev \
-    amd-smi-lib \
-    rocrand rocrand-dev rocfft rocfft-dev rocprim rocprim-dev rocthrust rocthrust-dev rocprofiler-sdk hsa-amd-aqlprofile \
-    miopen-hip miopen-hip-dev
+ARG TARGET_GFX_ALL=gfx1100
 
-# libxml2 symlink: ROCm apt packages (noble) were built against libxml2.so.2,
-# Ubuntu 26.04 (resolute) ships libxml2.so.16 — create compat symlink
-RUN ln -sf /usr/lib/x86_64-linux-gnu/libxml2.so.16 /usr/lib/x86_64-linux-gnu/libxml2.so.2
+RUN set -eu; \
+    pkgs=""; \
+    for arch in $(echo "$TARGET_GFX_ALL" | tr ';' ' '); do \
+        pkgs="$pkgs amdrocm7.14-$arch amdrocm-core-dev7.14-$arch"; \
+    done; \
+    echo "ROCm packages:$pkgs"; \
+    apt-get install -y $pkgs
+
+RUN for d in bin lib include share libexec; do \
+        [ -d "/opt/rocm/core-7.14/$d" ] && ln -sfn "core-7.14/$d" "/opt/rocm/$d"; \
+    done; true
 
 # Vulkan
 RUN apt-get install -y \
     libvulkan-dev vulkan-tools glslc spirv-headers
 
-# X11/OpenGL dev packages for the trellis2.c raylib GUI viewer (trellis-gui)
 RUN apt-get install -y \
     libgl1-mesa-dev libglu1-mesa-dev \
     libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
-# Create render group if it doesn't exist (for GPU access)
 RUN getent group render || groupadd -r render
 
-# Remove default ubuntu user to avoid UID conflicts in rootless podman
 RUN userdel -r ubuntu 2>/dev/null || true
 
-# Create AI directory
-# In rootless podman, root in container (UID 0) is mapped to host user
-# Files created here will be owned by host user outside container
 RUN mkdir -p /AI && \
     chmod 777 /AI
 
-# Copy entrypoint script
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/
 
-# Set ROCm environment variables
 ENV PATH="/opt/rocm/bin:/opt/rocm/opencl/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rocm/lib:/opt/rocm/lib64:${LD_LIBRARY_PATH}"
 ENV ROCM_PATH="/opt/rocm"
 ENV ROCM_HOME="/opt/rocm"
 ENV VLLM_TARGET_DEVICE="rocm"
 
-# Set GPU and PyTorch environment variables
-ENV HIP_VISIBLE_DEVICES=0
 ENV TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 ENV TORCH_BLAS_PREFER_HIPBLASLT=0
 ENV FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
 ENV MIOPEN_LOG_LEVEL=3
 
-# Set working directory
 WORKDIR /AI
 
-# Install uv for root user
-# In rootless podman, this root user is mapped to host user
 RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install uv
-RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hub[cli]==1.12.0'
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hub[cli]==1.12.0' && \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx inject huggingface-hub click
 
-# Add uv to PATH
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Set entrypoint to fix permissions on startup
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# Default command
 CMD ["/bin/bash"]

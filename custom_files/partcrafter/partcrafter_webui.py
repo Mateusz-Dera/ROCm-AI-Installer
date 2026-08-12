@@ -13,7 +13,6 @@ from huggingface_hub import snapshot_download
 from PIL import Image
 from accelerate.utils import set_seed
 
-# Add the project root to Python path
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src.utils.data_utils import get_colored_mesh_composition
@@ -22,11 +21,9 @@ from src.pipelines.pipeline_partcrafter import PartCrafterPipeline
 from src.utils.image_utils import prepare_image
 from src.models.briarmbg import BriaRMBG
 
-# Global variables for models
 pipe = None
 rmbg_net = None
 
-# ROCm compatibility fixes
 if torch.cuda.is_available():
     device = "cuda"
     torch.cuda.empty_cache()
@@ -44,7 +41,6 @@ def load_models():
     if pipe is not None and rmbg_net is not None:
         return
     
-    # Download pretrained weights
     partcrafter_weights_dir = "pretrained_weights/PartCrafter"
     rmbg_weights_dir = "pretrained_weights/RMBG-1.4"
     
@@ -53,11 +49,9 @@ def load_models():
     if not os.path.exists(rmbg_weights_dir):
         snapshot_download(repo_id="briaai/RMBG-1.4", local_dir=rmbg_weights_dir)
     
-    # Load RMBG model
     rmbg_net = BriaRMBG.from_pretrained(rmbg_weights_dir).to(device)
     rmbg_net.eval()
     
-    # Load PartCrafter pipeline
     pipe = PartCrafterPipeline.from_pretrained(partcrafter_weights_dir).to(device, dtype)
     
     if device == "cuda":
@@ -118,13 +112,10 @@ def generate_parts(
         return None, None, None, None, "Please upload an image first."
     
     try:
-        # Load models if not already loaded
         load_models()
         
-        # Set seed
         set_seed(seed)
         
-        # Run inference
         outputs, processed_image, inference_time = run_triposg(
             image_input=image,
             num_parts=num_parts,
@@ -136,22 +127,18 @@ def generate_parts(
             rmbg=remove_background,
         )
         
-        # Create temporary directory for outputs
         temp_dir = tempfile.mkdtemp()
         
-        # Save individual parts
         part_files = []
         for i, mesh in enumerate(outputs):
             part_path = os.path.join(temp_dir, f"part_{i:02}.glb")
             mesh.export(part_path)
             part_files.append(part_path)
         
-        # Create merged mesh
         merged_mesh = get_colored_mesh_composition(outputs)
         merged_path = os.path.join(temp_dir, "object.glb")
         merged_mesh.export(merged_path)
         
-        # Render if requested
         rendered_image = None
         rendered_gif = None
         if render_output:
@@ -180,15 +167,12 @@ def generate_parts(
                 nrow=3
             )
             
-            # Save first rendered image
             rendered_image = rendered_images[0]
             
-            # Save rendered GIF
             gif_path = os.path.join(temp_dir, "rendering.gif")
             export_renderings(rendered_images, gif_path, fps=fps)
             rendered_gif = gif_path
         
-        # Clean up GPU memory
         if device == "cuda":
             torch.cuda.empty_cache()
         
@@ -201,14 +185,12 @@ def generate_parts(
             torch.cuda.empty_cache()
         return None, None, None, None, f"Error: {str(e)}"
 
-# Create Gradio interface
 with gr.Blocks(title="PartCrafter", theme=gr.themes.Soft()) as demo:
     gr.Markdown("# PartCrafter")
     gr.Markdown("Generate 3D parts from a single image using PartCrafter")
     
     with gr.Row():
         with gr.Column(scale=1):
-            # Input controls
             input_image = gr.Image(
                 label="Input Image",
                 type="pil",
@@ -274,7 +256,6 @@ with gr.Blocks(title="PartCrafter", theme=gr.themes.Soft()) as demo:
             generate_btn = gr.Button("Generate Parts", variant="primary")
         
         with gr.Column(scale=2):
-            # Output display
             status_text = gr.Textbox(
                 label="Status",
                 interactive=False
@@ -304,7 +285,6 @@ with gr.Blocks(title="PartCrafter", theme=gr.themes.Soft()) as demo:
                         file_types=[".gif"]
                     )
     
-    # Connect the generate button
     generate_btn.click(
         fn=generate_parts,
         inputs=[
@@ -327,7 +307,6 @@ with gr.Blocks(title="PartCrafter", theme=gr.themes.Soft()) as demo:
         ]
     )
     
-    # Add example
     gr.Examples(
         examples=[
             ["assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png", 3, 0, 1024, 50, 7.0, False, False, True],

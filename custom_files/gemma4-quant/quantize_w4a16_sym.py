@@ -29,17 +29,11 @@ from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 from llmcompressor import oneshot
 from llmcompressor.modifiers.quantization import GPTQModifier, QuantizationModifier
 
-DEFAULT_MODEL = "google/gemma-4-31B-it"
-DEFAULT_OUT = "/AI/models/gemma-4-31B-it-W4A16-sym-g128"
+DEFAULT_MODEL = "google/gemma-4-31B-it-qat-q4_0-unquantized"
+DEFAULT_OUT = "/AI/models/gemma-4-31B-qat-W4A16-sym-g128"
 
-# Tied to embed_tokens; quantizing it would untie and grow the checkpoint.
 IGNORE = ["lm_head"]
 
-# The checkpoint is a Gemma4ForConditionalGeneration one, so the language tower
-# sits under `model.language_model.*` while Gemma4ForCausalLM expects `model.*`.
-# transformers 5.10 has no built-in mapping for gemma4, so without this every
-# text weight silently loads as MISSING and gets randomly initialized - the
-# result quantizes fine and then emits " is is is is".
 KEY_MAPPING = {r"^model\.language_model": "model"}
 
 
@@ -99,9 +93,6 @@ def load_text_tower(model_id: str, trust_remote_code: bool = False):
             trust_remote_code=True,
             output_loading_info=True,
         )
-        # The name in the loaded model and the name in the file need not match:
-        # transformers may flatten `model.language_model.*` to `model.*` on its
-        # own. Resolve the two independently.
         _sd = model.state_dict()
         probe = next(
             (c for c in (
@@ -114,9 +105,6 @@ def load_text_tower(model_id: str, trust_remote_code: bool = False):
             raise RuntimeError("nie znaleziono tensora do weryfikacji w modelu")
         raw_name = None  # resolved against the files below
     else:
-        # Pick the text-only class for whichever multimodal family this is. Both
-        # Gemma 4 and Qwen 3.5/3.6 park their language weights under
-        # `model.language_model.*`, so the same remapping serves both.
         cls = _text_class(model_id)
         model, info = cls.from_pretrained(
             model_id,
@@ -128,10 +116,6 @@ def load_text_tower(model_id: str, trust_remote_code: bool = False):
         probe = "model.layers.0.mlp.down_proj.weight"
         raw_name = "model.language_model.layers.0.mlp.down_proj.weight"
 
-    # Anything missing here means randomly initialized weights, which produce a
-    # model that looks structurally valid and is complete garbage. Fail loudly.
-    # lm_head is exempt: it is tied to embed_tokens and has no own checkpoint
-    # entry.
     missing = [
         k for k in info.get("missing_keys", [])
         if "rotary" not in k and not k.startswith("lm_head")
@@ -142,17 +126,20 @@ def load_text_tower(model_id: str, trust_remote_code: bool = False):
             f"{missing[:5]} - the key remapping did not apply"
         )
 
-    # Belt and braces: compare one real tensor against the raw file.
     import glob
 
     from safetensors import safe_open
 
-    for path in sorted(glob.glob(
-        os.path.expanduser(
-            f"~/.cache/huggingface/hub/models--{model_id.replace('/', '--')}"
-            "/snapshots/*/*.safetensors"
-        )
-    )):
+    if os.path.isdir(model_id):
+        _candidates = sorted(glob.glob(os.path.join(model_id, "*.safetensors")))
+    else:
+        _candidates = sorted(glob.glob(
+            os.path.expanduser(
+                f"~/.cache/huggingface/hub/models--{model_id.replace('/', '--')}"
+                "/snapshots/*/*.safetensors"
+            )
+        ))
+    for path in _candidates:
         with safe_open(path, "pt") as f:
             if raw_name is None:
                 keys = set(f.keys())
@@ -177,6 +164,48 @@ def load_text_tower(model_id: str, trust_remote_code: bool = False):
         raise RuntimeError("nie znaleziono tensora do weryfikacji w plikach")
 
     return model
+
+
+def _drop_tied_lm_head(out_dir: str) -> None:
+    """Remove lm_head.weight when it is a verbatim copy of the embeddings.
+
+    The QAT release ships lm_head.weight as a full tensor even though its config
+    sets tie_word_embeddings: True, and it is bit-identical to
+    embed_tokens.weight. At vocab 262144 x 5376 that redundant copy is 2.8 GB -
+    2.8 GB the KV cache does not get, on a card where the whole KV budget is
+    about 2 GB. It is the same bloat that makes Google's own QAT W4A16 release
+    23.3 GB and unusable here.
+
+    Equality is checked before removal: if a future release genuinely unties the
+    head and trains it separately, dropping it would silently change the model,
+    so in that case it stays.
+    """
+    import glob
+
+    from safetensors import safe_open
+    from safetensors.torch import save_file
+
+    for path in sorted(glob.glob(os.path.join(out_dir, "*.safetensors"))):
+        with safe_open(path, "pt") as fh:
+            keys = list(fh.keys())
+            if "lm_head.weight" not in keys:
+                continue
+            emb = next((k for k in keys if k.endswith("embed_tokens.weight")), None)
+            if emb is None:
+                continue
+            if not torch.equal(fh.get_tensor("lm_head.weight").float(),
+                               fh.get_tensor(emb).float()):
+                print("      lm_head is not a copy of the embeddings - keeping it")
+                return
+            meta = fh.metadata() or {"format": "pt"}
+            tensors = {k: fh.get_tensor(k) for k in keys if k != "lm_head.weight"}
+
+        tmp = path + ".new"
+        save_file(tensors, tmp, metadata=meta)
+        os.replace(tmp, path)
+        print("      dropped the tied lm_head copy (%.1f GB saved)"
+              % (262144 * 5376 * 2 / 1e9))
+        return
 
 
 def main() -> None:
@@ -241,11 +270,8 @@ def main() -> None:
 
     tokenizer.save_pretrained(args.output)
 
-    # Gemma4TextConfig carries use_bidirectional_attention="vision" over from the
-    # multimodal parent. With no vision tower left it can never fire, but vLLM
-    # still reads it as use_mm_prefix=True and then rejects every ROCm attention
-    # backend that could serve a TurboQuant KV cache:
-    #   TURBOQUANT: [partial multimodal token full attention not supported]
+    _drop_tied_lm_head(args.output)
+
     config_path = os.path.join(args.output, "config.json")
     with open(config_path) as fh:
         config = json.load(fh)

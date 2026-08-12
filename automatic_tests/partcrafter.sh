@@ -12,17 +12,15 @@ test_partcrafter() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "PartCrafter" install_partcrafter "/AI/PartCrafter"
 
-    # --- Test ---
     local app_dir="/AI/PartCrafter"
     local app_port=7860
     local app_log="/tmp/partcrafter_server.log"
     local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
     local output_glb="/tmp/partcrafter_object.glb"
 
-    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[p]artcrafter_webui' 2>/dev/null; pkill -f '[p]artcrafter' 2>/dev/null; true" 2>/dev/null || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
@@ -128,7 +126,7 @@ test_partcrafter() {
     fi
 
     info "Stopping PartCrafter..."
-    podman exec -t rocm bash -c "pkill -f 'partcrafter_webui' 2>/dev/null; pkill -f 'partcrafter' 2>/dev/null; true" 2>/dev/null || true
+    podman exec -t rocm bash -c "pkill -f '[p]artcrafter_webui' 2>/dev/null; pkill -f '[p]artcrafter' 2>/dev/null; true" 2>/dev/null || true
     sleep 2
     podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
     local kw=0

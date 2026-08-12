@@ -12,15 +12,13 @@ test_krea2() {
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # --- Install ---
     run_install "Krea 2 Turbo + Edit" install_krea2 "/AI/Krea-2-Turbo"
 
-    # --- Start server ---
     local app_dir="/AI/Krea-2-Turbo"
     local app_port=7860
     local app_log="/tmp/krea2_server.log"
 
-    podman exec -t rocm bash -c "pkill -f 'app.py' 2>/dev/null; sleep 1; : > '$app_log'" || true
+    podman exec -t rocm bash -c "pkill -f '[a]pp.py' 2>/dev/null; sleep 1; : > '$app_log'" || true
 
     info "Starting Krea 2 Turbo + Edit (port $app_port)..."
     podman exec -d rocm bash -c \
@@ -36,7 +34,7 @@ test_krea2() {
                "curl -sf http://localhost:${app_port}/ > /dev/null" 2>/dev/null; then
             ready=true; break
         fi
-        if ! podman exec -t rocm bash -c "pgrep -f 'python app.py' > /dev/null" 2>/dev/null; then
+        if ! podman exec -t rocm bash -c "pgrep -f '[p]ython app.py' > /dev/null" 2>/dev/null; then
             info "Process died. Last log lines:"
             podman exec -t rocm bash -c "tail -30 '$app_log'" 2>/dev/null || true
             abort "Krea 2 Turbo + Edit process died before becoming ready"
@@ -70,7 +68,6 @@ test_krea2() {
     fi
     pass "Gradio API ready"
 
-    # --- Helper: generate via Gradio v2 API ---
     _krea2_generate() {
         local desc="$1"
         local json_data="$2"
@@ -118,17 +115,12 @@ test_krea2() {
         fi
     }
 
-    # --- Generate without LoRA ---
     _krea2_generate "no LoRA, 1024x1024, 8 steps" \
         '{"prompt": "a red fox sitting in snow, photorealistic", "negative_prompt": "", "lora_name": "None", "lora_strength": 1.0, "steps": 8, "guidance": 0.0, "width": 1024, "height": 1024, "seed": 42, "randomize": false}'
 
-    # --- Generate with LoRA ---
     _krea2_generate "Retro Anime LoRA, 1024x1024, 8 steps" \
         '{"prompt": "a deer grazing in the forest, Purple retro anime style", "negative_prompt": "", "lora_name": "Retro Anime", "lora_strength": 1.0, "steps": 8, "guidance": 0.0, "width": 1024, "height": 1024, "seed": 42, "randomize": false}'
 
-    # --- Helper: identity edit via Gradio v2 API ---
-    # Separate from _krea2_generate: the edit endpoint takes image inputs and needs a
-    # far longer timeout (the first call downloads and converts the ~1.8 GB LoRA).
     _krea2_edit() {
         local desc="$1"
         local json_data="$2"
@@ -177,9 +169,6 @@ test_krea2() {
         fi
     }
 
-    # --- Identity Edit: prepare inputs ---
-    # 512x512 keeps the token count low: the edit path prepends one source latent block
-    # per reference, so cost scales with (1 + n_refs) against the target.
     info "Creating test images for Identity Edit..."
     podman exec -t rocm bash -c "cd '$app_dir' && source .venv/bin/activate && python3 -c \"
 from PIL import Image
@@ -202,25 +191,20 @@ Image.new('RGB', (512, 512), (200, 170, 150)).save('/tmp/krea2_person.png')
     fi
     info "  Uploaded scene: $scene_path, person: $person_path"
 
-    # --- Identity Edit: single image ---
-    # First edit call also downloads + converts the identity LoRA, hence the long timeout.
     info "Note: the first edit downloads and converts the ~1.8 GB identity-edit LoRA."
     _krea2_edit "identity edit, single image, 512x512, 8 steps" \
         "{\"source_image\": {\"path\": \"${scene_path}\"}, \"person_image\": null, \"instruction\": \"make the background a night market with neon lights\", \"grounding_px\": 768, \"steps\": 8, \"guidance\": 0.0, \"seed\": 42, \"randomize\": false}" \
         2400
 
-    # --- Identity Edit: two images (scene + person) ---
-    # Training-fixed order: scene is image 1, person is image 2.
     _krea2_edit "identity edit, two images (scene + person), 512x512, 8 steps" \
         "{\"source_image\": {\"path\": \"${scene_path}\"}, \"person_image\": {\"path\": \"${person_path}\"}, \"instruction\": \"create a photo of this person standing in the scene\", \"grounding_px\": 768, \"steps\": 8, \"guidance\": 0.0, \"seed\": 42, \"randomize\": false}" \
         1800
 
-    # --- Cleanup ---
     info "Stopping Krea 2 Turbo + Edit..."
     podman exec -t rocm bash -c "rm -f /tmp/krea2_scene.png /tmp/krea2_person.png" 2>/dev/null || true
-    podman exec -t rocm bash -c "pkill -f 'python app.py' 2>/dev/null || true" || true
+    podman exec -t rocm bash -c "pkill -f '[p]ython app.py' 2>/dev/null || true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'python app.py' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f '[p]ython app.py' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
     pass "Krea 2 Turbo + Edit stopped"

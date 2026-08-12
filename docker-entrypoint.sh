@@ -23,5 +23,9 @@ umask 0002
 
 echo "Container started with umask 0002 for shared file access"
 
+if ! getent hosts "$(hostname)" > /dev/null 2>&1; then
+    echo "127.0.0.1 $(hostname)" >> /etc/hosts
+fi
+
 # Execute the main command
 exec "$@"

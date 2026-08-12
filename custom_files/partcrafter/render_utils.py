@@ -43,7 +43,6 @@ def render(
         if depth_range > 1e-8:  # Use small epsilon to avoid numerical issues
             depth = (depth - depth_min) / depth_range * 255.0
         else:
-            # If depth is uniform, normalize to a reasonable value
             depth = np.full_like(depth, 0.0 if depth_min == 0 else 255.0)
     if return_type == 'pil':
         image = Image.fromarray(image)
@@ -69,8 +68,6 @@ def create_circular_camera_positions(
     radius: float,
     axis: np.ndarray = np.array([0.0, 1.0, 0.0])
 ) -> List[np.ndarray]:
-    # Create a list of positions for a circular camera trajectory
-    # around the given axis with the given radius.
     positions = []
     axis = axis / np.linalg.norm(axis)
     for i in range(num_views):
@@ -91,10 +88,6 @@ def create_circular_camera_poses(
     radius: float,
     axis: np.ndarray = np.array([0.0, 1.0, 0.0])
 ) -> List[np.ndarray]:
-    # Create a list of poses for a circular camera trajectory
-    # around the given axis with the given radius.
-    # The camera always looks at the origin.
-    # The up vector is always [0, 1, 0].
     canonical_pose = np.array([
         [1.0, 0.0, 0.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -219,10 +212,6 @@ def create_camera_pose_on_sphere(
     elevation: float = 0.0, # in degrees
     radius: float = 3.5,
 ) -> np.ndarray:
-    # Create a camera pose for a given azimuth and elevation
-    # with the given radius.
-    # The camera always looks at the origin.
-    # The up vector is always [0, 1, 0].
     canonical_pose = np.array([
         [1.0, 0.0, 0.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -301,7 +290,6 @@ def render_single_view(
                 color=np.ones(3),
                 intensity=light_intensity
             ), pose=pose)
-        # set light to None
         light = None
 
     image, depth = render(

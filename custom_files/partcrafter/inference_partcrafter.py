@@ -3,7 +3,6 @@ import os
 import sys
 from glob import glob
 
-# Add the project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import time
 from typing import Any, Union
@@ -57,17 +56,14 @@ def run_triposg(
     print(f"Time elapsed: {end_time - start_time:.2f} seconds")
     for i in range(len(outputs)):
         if outputs[i] is None:
-            # If the generated mesh is None (decoding error), use a dummy mesh
             outputs[i] = trimesh.Trimesh(vertices=[[0, 0, 0]], faces=[[0, 0, 0]])
     return outputs, img_pil
 
 MAX_NUM_PARTS = 16
 
 if __name__ == "__main__":
-    # ROCm compatibility fixes
     if torch.cuda.is_available():
         device = "cuda"
-        # Clear GPU cache and set memory fraction for ROCm
         torch.cuda.empty_cache()
         if hasattr(torch.cuda, 'set_per_process_memory_fraction'):
             torch.cuda.set_per_process_memory_fraction(0.8)
@@ -92,27 +88,22 @@ if __name__ == "__main__":
 
     assert 1 <= args.num_parts <= MAX_NUM_PARTS, f"num_parts must be in [1, {MAX_NUM_PARTS}]"
 
-    # download pretrained weights
     partcrafter_weights_dir = "pretrained_weights/PartCrafter"
     rmbg_weights_dir = "pretrained_weights/RMBG-1.4"
     snapshot_download(repo_id="wgsxm/PartCrafter", local_dir=partcrafter_weights_dir)
     snapshot_download(repo_id="briaai/RMBG-1.4", local_dir=rmbg_weights_dir)
 
-    # init rmbg model for background removal
     try:
         rmbg_net = BriaRMBG.from_pretrained(rmbg_weights_dir).to(device)
         rmbg_net.eval() 
-        # Clear cache after model loading
         if device == "cuda":
             torch.cuda.empty_cache()
     except Exception as e:
         print(f"Error loading RMBG model: {e}")
         raise
 
-    # init tripoSG pipeline
     try:
         pipe: PartCrafterPipeline = PartCrafterPipeline.from_pretrained(partcrafter_weights_dir).to(device, dtype)
-        # Clear cache after pipeline loading
         if device == "cuda":
             torch.cuda.empty_cache()
     except Exception as e:
@@ -121,7 +112,6 @@ if __name__ == "__main__":
 
     set_seed(args.seed)
 
-    # run inference
     try:
         outputs, processed_image = run_triposg(
             pipe,
@@ -138,7 +128,6 @@ if __name__ == "__main__":
             dtype=dtype,
             device=device,
         )
-        # Clear cache after inference
         if device == "cuda":
             torch.cuda.empty_cache()
     except Exception as e:
@@ -208,7 +197,6 @@ if __name__ == "__main__":
         rendered_grid.save(os.path.join(export_dir, "rendering_grid.png"))
         print("Rendering done.")
     
-    # Final cleanup
     if device == "cuda":
         torch.cuda.empty_cache()
         torch.cuda.synchronize()

@@ -16,27 +16,18 @@ _restore_st_config() {
 }
 trap _restore_st_config EXIT
 
-# ============================================================
-# SillyTavern + WhisperSpeech: install + integration test
-# ============================================================
 test_sillytavern_integration() {
     info "============================================="
     info "SILLYTAVERN + WHISPERSPEECH: INSTALL + INTEGRATION TEST"
     info "============================================="
 
-    # ----------------------------------------------------------
-    # INSTALL
-    # ----------------------------------------------------------
     basic_container || abort "Container 'rocm' is not running."
     clean_hf_incomplete
 
-    # Install WhisperSpeech (needed for ST extension)
     run_install "WhisperSpeech web UI" install_whisperspeech_web_ui "/AI/whisperspeech-webui"
 
-    # Install SillyTavern
     run_install "SillyTavern" install_sillytavern "/AI/SillyTavern"
 
-    # Install WhisperSpeech extension
     info "--- Installing: SillyTavern WhisperSpeech extension ---"
     if ! install_sillytavern_whisperspeech_web_ui; then
         abort "SillyTavern WhisperSpeech extension: install function returned non-zero"
@@ -47,21 +38,14 @@ test_sillytavern_integration() {
     fi
     pass "SillyTavern WhisperSpeech extension installed successfully"
 
-    # ----------------------------------------------------------
-    # TEST
-    # ----------------------------------------------------------
     local st_dir="/AI/SillyTavern"
     local st_port=8000
-    # WhisperSpeech exposes two servers:
-    #   7860 – Gradio web UI
-    #   5050 – REST API used by the SillyTavern plugin (POST /generate -> audio)
     local ws_api_port=5050
     local ws_gui_port=7860
     local st_log="/tmp/st_server.log"
     local ws_log="/tmp/whisper_server.log"
     local ws_api_url="http://127.0.0.1:${ws_api_port}"
 
-    # --- Verify WhisperSpeech plugin is installed in SillyTavern ---
     local ws_ext_dir="${st_dir}/public/scripts/extensions/third-party/whisperspeech-webui"
     if container_dir_exists "$ws_ext_dir"; then
         pass "WhisperSpeech extension installed at $ws_ext_dir"
@@ -69,13 +53,11 @@ test_sillytavern_integration() {
         abort "WhisperSpeech extension NOT installed – ${ws_ext_dir} missing"
     fi
 
-    # --- Ensure WhisperSpeech is running (REST API on port 5050) ---
-    # The plugin connects to the REST API, not the Gradio GUI.
     if ! podman exec -t rocm bash -c \
            "curl -sf http://localhost:${ws_api_port}/ > /dev/null" 2>/dev/null; then
         info "WhisperSpeech REST API not running – starting it now..."
         podman exec -t rocm bash -c \
-            "pkill -f 'webui.py' 2>/dev/null; sleep 1; : > '${ws_log}'" || true
+            "pkill -f '[w]ebui.py' 2>/dev/null; sleep 1; : > '${ws_log}'" || true
         podman exec -d rocm bash -c \
             "cd /AI/whisperspeech-webui && source .venv/bin/activate \
              && uv run --extra rocm webui.py --listen --api \
@@ -99,16 +81,14 @@ test_sillytavern_integration() {
         info "WhisperSpeech REST API already running on port ${ws_api_port}"
     fi
 
-    # --- Kill any leftover SillyTavern processes (including start.sh) ---
     podman exec -t rocm bash -c \
-        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; true" || true
+        "pkill -f '[s]tart\.sh' 2>/dev/null; pkill -f '[n]ode.*server' 2>/dev/null; true" || true
     sleep 3
     podman exec -t rocm bash -c \
         "fuser -k ${st_port}/tcp 2>/dev/null; true" || true
     sleep 1
     podman exec -t rocm bash -c ": > '$st_log'" || true
 
-    # --- Ensure config.yaml exists (SillyTavern creates it on first run) ---
     if ! container_file_exists "$st_dir/config.yaml"; then
         info "config.yaml missing – starting SillyTavern briefly to initialize it..."
         local init_log="/tmp/st_init.log"
@@ -119,7 +99,7 @@ test_sillytavern_integration() {
             info "  ...waiting for config.yaml ($cw/300s)"
         done
         podman exec -t rocm bash -c \
-            "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+            "pkill -f '[s]tart\.sh' 2>/dev/null; pkill -f '[n]ode.*server' 2>/dev/null; \
              fuser -k ${st_port}/tcp 2>/dev/null; true" || true
         sleep 3
         podman exec -t rocm bash -c ": > '$st_log'" || true
@@ -129,7 +109,6 @@ test_sillytavern_integration() {
         pass "SillyTavern config.yaml initialized"
     fi
 
-    # --- Patch config.yaml if basicAuth is not enabled with user/password credentials ---
     if ! podman exec rocm bash -c \
            "grep -q 'basicAuthMode: true' '$st_dir/config.yaml' && \
             grep -q 'username: \"user\"' '$st_dir/config.yaml' && \
@@ -145,7 +124,6 @@ test_sillytavern_integration() {
         pass "config.yaml patched for test (will be restored on exit)"
     fi
 
-    # --- Read basicAuth credentials from config.yaml ---
     local st_user st_pass
     st_user=$(podman exec rocm bash -c \
         "grep -A2 'basicAuthUser:' '$st_dir/config.yaml' 2>/dev/null | grep 'username:' \
@@ -157,17 +135,10 @@ test_sillytavern_integration() {
     st_pass=$(printf '%s' "$st_pass" | tr -d '\r'); st_pass="${st_pass:-password}"
     info "SillyTavern basicAuth: user='$st_user'"
 
-    # --- Start SillyTavern (WhisperSpeech keeps running) ---
     info "Starting SillyTavern (WhisperSpeech keeps running)..."
     podman exec -d rocm bash -c \
         "cd '$st_dir' && bash start.sh >> '$st_log' 2>&1"
 
-    # --- Wait for SillyTavern to become ready ---
-    # SillyTavern startup can take up to ~10 min on first run (content file sync +
-    # webpack compilation). "Go to:" is printed right after webpack finishes,
-    # immediately before the server starts accepting HTTP connections.
-    # The log is cleared above (: > '$st_log') so the log-based signal is safe.
-    # The process monitor uses 'start.sh' (present from launch until ST exits).
     info "Waiting for SillyTavern to become ready (up to 900s)..."
     local max_wait=900
     local wait_rc=0
@@ -188,9 +159,7 @@ test_sillytavern_integration() {
     fi
     pass "SillyTavern is running on port $st_port"
 
-    # --- Verify main page ---
     info "Verifying SillyTavern main page..."
-    # No -t to avoid TTY \r injection into 700KB HTML; retry up to 3x for race
     local st_html_ok=false
     for _i in 1 2 3; do
         info "  HTML check attempt $_i..."
@@ -208,19 +177,15 @@ test_sillytavern_integration() {
         abort "SillyTavern page did not return expected HTML content"
     fi
 
-    # --- Configure WhisperSpeech plugin URL in SillyTavern settings ---
-    # The plugin connects to the REST API (port 5050), not the Gradio GUI (port 7860).
     info "Configuring WhisperSpeech extension URL in SillyTavern settings..."
     local settings_file="$st_dir/data/default-user/settings.json"
 
-    # Wait for SillyTavern to write default settings (up to 30 s)
     local sw=0
     while ! container_file_exists "$settings_file" && [ $sw -lt 30 ]; do
         sleep 3; sw=$((sw + 3))
     done
 
     if container_file_exists "$settings_file"; then
-        # Update plugin URL via python3 (available in container)
         podman exec -t rocm bash -c "
 python3 - <<'PYEOF'
 import json, sys
@@ -243,8 +208,6 @@ PYEOF
         abort "SillyTavern settings.json not found – cannot configure extension"
     fi
 
-    # --- Test TTS generation via the REST API (replicates the plugin's Test button) ---
-    # The plugin sends POST /generate with JSON and expects a binary audio response.
     info "Testing TTS generation via WhisperSpeech REST API (POST /generate)..."
     local tts_size
     tts_size=$(podman exec -t rocm bash -c "
@@ -264,21 +227,20 @@ PYEOF
         abort "TTS generation FAILED – /generate returned ${tts_size} bytes (expected > 1000)"
     fi
 
-    # --- Shut down SillyTavern and WhisperSpeech ---
     info "Stopping SillyTavern..."
     podman exec -t rocm bash -c \
-        "pkill -f 'start\.sh' 2>/dev/null; pkill -f 'node.*server' 2>/dev/null; \
+        "pkill -f '[s]tart\.sh' 2>/dev/null; pkill -f '[n]ode.*server' 2>/dev/null; \
          fuser -k ${st_port}/tcp 2>/dev/null; true" || true
     local kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'node.*server' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f '[n]ode.*server' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
     pass "SillyTavern stopped"
 
     info "Stopping WhisperSpeech web UI..."
-    podman exec -t rocm bash -c "pkill -f 'webui.py' 2>/dev/null || true" || true
+    podman exec -t rocm bash -c "pkill -f '[w]ebui.py' 2>/dev/null || true" || true
     kw=0
-    while podman exec -t rocm bash -c "pgrep -f 'webui.py' > /dev/null" 2>/dev/null; do
+    while podman exec -t rocm bash -c "pgrep -f '[w]ebui.py' > /dev/null" 2>/dev/null; do
         sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
     done
     pass "WhisperSpeech web UI stopped"

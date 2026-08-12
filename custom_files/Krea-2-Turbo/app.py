@@ -1,5 +1,4 @@
 # Krea 2 is licensed under the Krea 2 Community License Agreement.
-# For more information, visit https://krea.ai/krea-2-licensing.
 
 import os
 import json
@@ -32,8 +31,6 @@ CUSTOM_METADATA_FILE = os.path.join(CUSTOM_LORA_DIR, "metadata.json")
 IMAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-# --- Identity Edit (community LoRA) -------------------------------------------------
-# Unofficial community fine-tune of Krea 2 by conradlocke. Not affiliated with
 # or endorsed by Krea.ai. Distributed under the Krea 2 Community License.
 EDIT_LORA_REPO = "conradlocke/krea2-identity-edit"
 EDIT_LORA_WEIGHT = "krea2_identity_edit_v1_2.safetensors"
@@ -44,13 +41,16 @@ EDIT_DEFAULT_STEPS = 8          # card: Turbo, 8-12 steps
 EDIT_DEFAULT_GUIDANCE = 0.0     # card: CFG 1.0 == guidance disabled (Krea convention)
 EDIT_DEFAULT_GROUNDING_PX = 768  # card: v1.1 trained range 384-768
 EDIT_MAX_MEGAPIXELS = 1.0       # card: <=2MP; two-ref prefers 1-1.5MP. The edit path
-                                # prepends each source latent, so tokens scale with
-                                # (1 + n_refs). 1MP keeps 24 GB VRAM comfortable.
 
-# Image-grounded instruction templates from ComfyUI-Krea2Edit. The system prefix is
-# byte-identical to the diffusers Krea 2 text template; the difference is the
-# <|vision_start|><|image_pad|><|vision_end|> block(s) inserted before the instruction
-# so the VLM grounds the edit on the source image(s).
+OUTPAINT_LORA_REPO = "yijunwang2/krea2-outpaint"
+OUTPAINT_LORA_WEIGHT = "krea2_outpaint_rank32.safetensors"
+OUTPAINT_ADAPTER = "outpaint"
+OUTPAINT_SOURCE_MAX_EDGE = 384   # card: reference conditioning encoded at max edge 384
+OUTPAINT_SEAM_PX = 32            # card: 32 px inward feather when compositing back
+OUTPAINT_DEFAULT_STEPS = 8       # card: distilled 8-step inference
+OUTPAINT_MAX_MEGAPIXELS = 1.5    # canvas cap so the extended image still fits 24 GB
+
+
 _GROUNDED_SYSTEM = (
     "<|im_start|>system\nDescribe the image by detailing the color, shape, size, "
     "texture, quantity, text, spatial relationships of the objects and background:"
@@ -58,7 +58,6 @@ _GROUNDED_SYSTEM = (
 )
 _VISION_BLOCK = "<|vision_start|><|image_pad|><|vision_end|>"
 GROUNDED_TEMPLATE = _GROUNDED_SYSTEM + _VISION_BLOCK + "{}<|im_end|>\n<|im_start|>assistant\n"
-# Two references: vision blocks in training order — scene first, subject second.
 GROUNDED_TEMPLATE_2REF = (
     _GROUNDED_SYSTEM + _VISION_BLOCK + _VISION_BLOCK + "{}<|im_end|>\n<|im_start|>assistant\n"
 )
@@ -87,18 +86,12 @@ pipe.enable_model_cpu_offload()
 
 print("Krea 2 Turbo loaded successfully.")
 
-# Qwen3-VL processor for the grounded (image + text) encode used by Identity Edit.
-# The Krea 2 repo ships only a text tokenizer; the vision-side preprocessing
-# (image mean/std, 16px patch, spatial-merge=2) comes from the Qwen3-VL processor.
-# Krea 2's text encoder is Qwen3-VL-4B (hidden dim 2560), so the 4B processor matches.
 try:
     processor = AutoProcessor.from_pretrained("Qwen/Qwen3-VL-4B-Instruct")
 except Exception as e:
     print(f"[warn] could not load Qwen3-VL processor, Identity Edit will be text-only: {e}")
     processor = None
 
-# The transformer works in normalized latent space; randn target latents already live
-# there, so the VAE-encoded source must be normalized the same way: (z - mean) / std.
 _LATENTS_MEAN = torch.tensor(pipe.vae.config.latents_mean).view(1, pipe.vae.config.z_dim, 1, 1, 1)
 _LATENTS_STD = torch.tensor(pipe.vae.config.latents_std).view(1, pipe.vae.config.z_dim, 1, 1, 1)
 
@@ -159,7 +152,6 @@ def _load_custom_loras():
     meta = _load_custom_metadata()
     custom = {}
     for f in sorted(os.listdir(CUSTOM_LORA_DIR)):
-        # Dotfiles are internal (e.g. the converted identity-edit LoRA), not user uploads.
         if not f.endswith(".safetensors") or f.startswith("."):
             continue
         file_meta = meta.get(f, {})
@@ -179,8 +171,6 @@ def _all_lora_choices():
 def _is_custom(lora_name):
     return lora_name not in ("None",) and lora_name not in BUILTIN_LORAS
 
-
-# ── Native Krea 2 LoRA → diffusers format converter ──────────────────────────
 
 _NATIVE_PREFIX_MAP = [
     ("diffusion_model.txtfusion.layerwise_blocks.", "transformer.text_fusion.layerwise_blocks."),
@@ -257,8 +247,6 @@ def _convert_krea2_native_to_diffusers(src_path, dst_path):
     _st_save(out, dst_path)
     print(f"[LoRA] Conversion done: {len(out)} keys written to {os.path.basename(dst_path)}")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 
 _current_lora = None
 
@@ -385,7 +373,6 @@ def delete_custom_lora(lora_name):
 
     path, weight_name, _ = custom[lora_name]
 
-    # Drop it from the pipeline first if it is the live style adapter.
     global _current_lora
     if _current_lora == lora_name:
         pipe.delete_adapters(STYLE_ADAPTER)
@@ -399,20 +386,6 @@ def delete_custom_lora(lora_name):
 
     gr.Info(f"Deleted '{lora_name}'.")
     return gr.update(choices=_all_lora_choices(), value="None")
-
-
-# ── Identity Edit ────────────────────────────────────────────────────────────
-# Reproduces the two custom pieces of the ComfyUI-Krea2Edit node pack in plain
-# diffusers, because stock Krea2Pipeline is text-to-image only and provides
-# neither half of the LoRA's dual-conditioning recipe:
-#
-#   1. Grounded encode — the instruction is encoded *together with* the source
-#      image(s) through the Qwen3-VL text encoder, so the VLM grounds the edit
-#      semantics ("the man on the left") on what it can actually see.
-#   2. Source-latent prepend — the VAE-encoded source is prepended to the
-#      transformer sequence as clean tokens, distinguished from the noisy target
-#      only by the 3-axis RoPE frame index (sources 1..N, target 0). The sequence
-#      becomes [text | source(s) | target] and only target tokens are kept.
 
 
 def _ensure_on_device(module):
@@ -433,8 +406,6 @@ def _ensure_identity_lora():
         return
     print(f"[Identity Edit] Downloading {EDIT_LORA_REPO}/{EDIT_LORA_WEIGHT} ...")
     src = hf_hub_download(EDIT_LORA_REPO, EDIT_LORA_WEIGHT)
-    # Ships in ai-toolkit naming (diffusion_model.* / lora_down / lora_up), the same
-    # native format the custom-LoRA uploader converts.
     dst = os.path.join(CUSTOM_LORA_DIR, ".identity_edit_diffusers.safetensors")
     if not os.path.exists(dst):
         _convert_krea2_native_to_diffusers(src, dst)
@@ -457,7 +428,6 @@ def _grounded_encode(instruction, images, grounding_px):
     prepped = []
     for img in images:
         img = img.convert("RGB")
-        # Cap the longest side fed to the VLM (v1.1 trained with 384-768px jitter).
         if grounding_px and max(img.size) > grounding_px:
             s = grounding_px / max(img.size)
             img = img.resize(
@@ -481,8 +451,6 @@ def _grounded_encode(instruction, images, grounding_px):
         image_grid_thw=inputs.get("image_grid_thw"),
         output_hidden_states=True,
     )
-    # Qwen3-VL needs mm_token_type_ids to compute multimodal M-RoPE positions
-    # when image tokens are present.
     if inputs.get("mm_token_type_ids") is not None:
         te_kwargs["mm_token_type_ids"] = inputs["mm_token_type_ids"]
 
@@ -548,10 +516,6 @@ def _edit_transformer_forward(latents, src_packed, prompt_embeds, prompt_mask,
     hidden = torch.cat([enc, m.img_in(combined_img)], dim=1)  # [text | sources | target]
     image_rotary_emb = m.rotary_emb(position_ids)
 
-    # Single prompt, batch=1 and no padding, so every token is valid. Passing
-    # attention_mask=None lets SDPA pick flash / mem-efficient kernels; a dense
-    # boolean mask would force the score-materializing MATH path and OOM given the
-    # token count multiplied by prepending the source(s).
     with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
         for block in m.transformer_blocks:
             hidden = block(hidden, temb_mod, image_rotary_emb, None)
@@ -606,7 +570,6 @@ def edit(
     def _as_pil(img):
         return img if isinstance(img, Image.Image) else Image.fromarray(img)
 
-    # Order is fixed by training: scene is always image 1, person is always image 2.
     sources = [_as_pil(source_image).convert("RGB")]
     if person_image is not None:
         sources.append(_as_pil(person_image).convert("RGB"))
@@ -615,17 +578,13 @@ def edit(
     _ensure_identity_lora()
     _set_active_adapters([EDIT_ADAPTER], [1.0])  # card: LoRA strength 1.0
 
-    # Output AR follows the scene image; two-ref edits stay near 1MP per the card.
     height, width = _target_size(sources[0], EDIT_MAX_MEGAPIXELS)
 
-    # --- Semantic path: grounded instruction encode ---
     prompt_embeds, prompt_mask = _grounded_encode(instruction, sources, int(grounding_px))
     do_cfg = float(guidance) > 0
     if do_cfg:
-        # Card: at CFG > 1, ground the negative too (empty prompt, same images).
         neg_embeds, neg_mask = _grounded_encode("", sources, int(grounding_px))
 
-    # --- Appearance path: encode + pack each source latent ---
     src_packed = [_encode_source_latent(s, height, width) for s in sources]
 
     num_channels_latents = pipe.transformer.config.in_channels // (pipe.patch_size ** 2)
@@ -642,7 +601,6 @@ def edit(
             neg_embeds.shape[1], grid_h, grid_w, len(sources), device
         )
 
-    # Distilled schedule: fixed mu = 1.15.
     sigmas = np.linspace(1.0, 1 / int(steps), int(steps))
     timesteps, _ = retrieve_timesteps(pipe.scheduler, int(steps), device, sigmas=sigmas, mu=1.15)
 
@@ -683,6 +641,207 @@ def edit(
 
     image.save(os.path.join(IMAGES_DIR, datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"))
     return image, seed
+
+
+def _ensure_outpaint_lora():
+    """Load the outpaint LoRA on first use (kept alongside the other adapters)."""
+    if OUTPAINT_ADAPTER in _loaded_adapters():
+        return
+    print(f"[Outpaint] Downloading {OUTPAINT_LORA_REPO}/{OUTPAINT_LORA_WEIGHT} ...")
+    src = hf_hub_download(OUTPAINT_LORA_REPO, OUTPAINT_LORA_WEIGHT)
+    dst = os.path.join(CUSTOM_LORA_DIR, ".outpaint_diffusers.safetensors")
+    if not os.path.exists(dst):
+        _convert_krea2_native_to_diffusers(src, dst)
+    pipe.load_lora_weights(
+        os.path.dirname(dst), weight_name=os.path.basename(dst), adapter_name=OUTPAINT_ADAPTER
+    )
+    print("[Outpaint] LoRA ready.")
+
+
+def _outpaint_plan(source, direction, extend_pct):
+    """Canvas size and source box for a one-pass extension.
+
+    The card allows a single pass only when the source box spans the full canvas
+    width or height, so the box always covers the axis that is not being
+    extended. Its other side follows from the source aspect ratio, which the
+    model requires the box to preserve.
+    """
+    unit = 16  # canvas sides must be multiples of 16
+    src_w, src_h = source.size
+    horizontal = direction in ("Right", "Left", "Left + right")
+    factor = 1.0 + max(0.0, float(extend_pct)) / 100.0
+
+    if horizontal:
+        box_h = max(unit, int(round(src_h / unit)) * unit)
+        box_w = max(1, round(src_w * box_h / src_h))
+        canvas_h = box_h
+        canvas_w = max(box_w + unit, int(round(box_w * factor / unit)) * unit)
+    else:
+        box_w = max(unit, int(round(src_w / unit)) * unit)
+        box_h = max(1, round(src_h * box_w / src_w))
+        canvas_w = box_w
+        canvas_h = max(box_h + unit, int(round(box_h * factor / unit)) * unit)
+
+    budget = OUTPAINT_MAX_MEGAPIXELS * 1_000_000
+    if canvas_w * canvas_h > budget:
+        scale = (budget / (canvas_w * canvas_h)) ** 0.5
+        if horizontal:
+            box_h = max(unit, int(round(box_h * scale / unit)) * unit)
+            box_w = max(1, round(src_w * box_h / src_h))
+            canvas_h = box_h
+            canvas_w = max(box_w + unit, int(round(canvas_w * scale / unit)) * unit)
+        else:
+            box_w = max(unit, int(round(box_w * scale / unit)) * unit)
+            box_h = max(1, round(src_h * box_w / src_w))
+            canvas_w = box_w
+            canvas_h = max(box_h + unit, int(round(canvas_h * scale / unit)) * unit)
+
+    if horizontal:
+        free = canvas_w - box_w
+        x0 = 0 if direction == "Right" else (free if direction == "Left" else free // 2)
+        bbox = (x0, 0, x0 + box_w, canvas_h)
+    else:
+        free = canvas_h - box_h
+        y0 = 0 if direction == "Down" else (free if direction == "Up" else free // 2)
+        bbox = (0, y0, canvas_w, y0 + box_h)
+
+    return (canvas_w, canvas_h), bbox
+
+
+def _outpaint_composite(generated, placed_source, bbox, seam_px=OUTPAINT_SEAM_PX):
+    """Paste the exact source pixels back over the generated canvas.
+
+    The decoder does not reproduce the known region bit for bit, so the original
+    pixels are restored; the feather only hides the small difference at the
+    boundary. Ported from the model's own outpaint.py (Apache-2.0).
+    """
+    w, h = placed_source.size
+    yy, xx = np.mgrid[:h, :w]
+    edge = np.minimum.reduce((xx, yy, w - 1 - xx, h - 1 - yy))
+    alpha = np.clip(edge / max(1, seam_px), 0.0, 1.0)
+    mask = Image.fromarray((alpha * 255).astype(np.uint8), mode="L")
+    out = generated.convert("RGB").copy()
+    out.paste(placed_source, bbox[:2], mask)
+    return out
+
+
+def _encode_reference_latent(image):
+    """VAE-encode the reference at its own size; returns packed tokens and grid."""
+    unit = pipe.vae_scale_factor * pipe.patch_size
+    w = max(unit, (image.width // unit) * unit)
+    h = max(unit, (image.height // unit) * unit)
+    packed = _encode_source_latent(image.resize((w, h), Image.LANCZOS), h, w)
+    return packed, h // unit, w // unit
+
+
+def _registered_position_ids(text_seq_len, grid_h, grid_w, ref_h, ref_w, bbox_norm, device):
+    """Rotary coords with the reference registered onto the target grid.
+
+    This is the whole difference from the identity-edit path: instead of the
+    reference occupying its own grid starting at (0,0), its rows and columns are
+    mapped onto the target grid cells its bounding box covers. It keeps frame
+    axis 1, so it is still a reference rather than part of the target.
+    """
+    text_ids = torch.zeros(text_seq_len, 3, device=device)
+
+    x0, y0, x1, y1 = (float(v) for v in bbox_norm)
+    ref_ids = torch.zeros(ref_h, ref_w, 3, device=device)
+    ref_ids[..., 0] = 1
+    ys = y0 * grid_h + (torch.arange(ref_h, device=device) + 0.5) * ((y1 - y0) * grid_h / ref_h) - 0.5
+    xs = x0 * grid_w + (torch.arange(ref_w, device=device) + 0.5) * ((x1 - x0) * grid_w / ref_w) - 0.5
+    ref_ids[..., 1] = ys[:, None]
+    ref_ids[..., 2] = xs[None, :]
+
+    tgt_ids = torch.zeros(grid_h, grid_w, 3, device=device)
+    tgt_ids[..., 1] = torch.arange(grid_h, device=device)[:, None]
+    tgt_ids[..., 2] = torch.arange(grid_w, device=device)[None, :]
+
+    return torch.cat([text_ids, ref_ids.reshape(-1, 3), tgt_ids.reshape(-1, 3)], dim=0)
+
+
+def outpaint(
+    source_image,
+    prompt="",
+    direction="Right",
+    extend_pct=50,
+    steps=OUTPAINT_DEFAULT_STEPS,
+    seed=0,
+    randomize=True,
+    progress=gr.Progress(track_tqdm=True),
+):
+    if source_image is None:
+        raise gr.Error("Upload an image to extend.")
+    if not prompt or not prompt.strip():
+        raise gr.Error("Describe the complete output image, not just the new part.")
+
+    prompt = prompt.strip()
+    if randomize:
+        seed = random.randint(0, MAX_SEED)
+    seed = int(seed)
+
+    source = source_image if isinstance(source_image, Image.Image) else Image.fromarray(source_image)
+    source = source.convert("RGB")
+
+    (width, height), bbox = _outpaint_plan(source, direction, extend_pct)
+    placed = source.resize((bbox[2] - bbox[0], bbox[3] - bbox[1]), Image.LANCZOS)
+    condition = placed.copy()
+    condition.thumbnail((OUTPAINT_SOURCE_MAX_EDGE, OUTPAINT_SOURCE_MAX_EDGE), Image.LANCZOS)
+    bbox_norm = [bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height]
+
+    device = pipe._execution_device
+    _ensure_outpaint_lora()
+    _set_active_adapters([OUTPAINT_ADAPTER], [1.0])  # card: LoRA scale 1.0
+
+    prompt_embeds, prompt_mask = pipe.encode_prompt(prompt=prompt, device=device)
+
+    ref_packed, ref_h, ref_w = _encode_reference_latent(condition)
+
+    num_channels_latents = pipe.transformer.config.in_channels // (pipe.patch_size ** 2)
+    generator = torch.Generator(device=device).manual_seed(seed)
+    latents = pipe.prepare_latents(
+        1, num_channels_latents, height, width, DTYPE, device, generator, None
+    )
+
+    grid_h = height // (pipe.vae_scale_factor * pipe.patch_size)
+    grid_w = width // (pipe.vae_scale_factor * pipe.patch_size)
+    position_ids = _registered_position_ids(
+        prompt_embeds.shape[1], grid_h, grid_w, ref_h, ref_w, bbox_norm, device
+    )
+
+    sigmas = np.linspace(1.0, 1 / int(steps), int(steps))
+    timesteps, _ = retrieve_timesteps(pipe.scheduler, int(steps), device, sigmas=sigmas, mu=1.15)
+
+    _ensure_on_device(pipe.transformer)
+    pipe.scheduler.set_begin_index(0)
+    try:
+        for tstep in progress.tqdm(timesteps, desc="Outpainting"):
+            timestep = (tstep / pipe.scheduler.config.num_train_timesteps).expand(
+                latents.shape[0]
+            ).to(latents.dtype)
+            noise_pred = _edit_transformer_forward(
+                latents, [ref_packed], prompt_embeds, prompt_mask, timestep, position_ids
+            )
+            latents = pipe.scheduler.step(noise_pred, tstep, latents, return_dict=False)[0]
+
+        latents = pipe._unpack_latents(latents, height, width).to(pipe.vae.dtype)
+        mean = _LATENTS_MEAN.to(latents.device, latents.dtype)
+        std = _LATENTS_STD.to(latents.device, latents.dtype)
+        image = pipe.vae.decode(latents * std + mean, return_dict=False)[0][:, :, 0]
+        image = pipe.image_processor.postprocess(image, output_type="pil")[0]
+    except torch.OutOfMemoryError as exc:
+        torch.cuda.empty_cache()
+        raise gr.Error(
+            f"Ran out of VRAM extending to {width}x{height}. Reduce the extension "
+            "or use a smaller source image."
+        ) from exc
+
+    image = _outpaint_composite(image, placed, bbox)
+
+    if _check_nsfw(image):
+        raise gr.Error("Content blocked by safety filter (NSFW detected).")
+
+    image.save(os.path.join(IMAGES_DIR, datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"))
+    return image, seed, f"{width}x{height}, source at {bbox}"
 
 
 def generate(
@@ -767,7 +926,12 @@ with gr.Blocks(title="Krea 2 Turbo + Edit") as demo:
         "[Krea 2 Community License Agreement](https://krea.ai/krea-2-licensing).\n\n"
         "As required by the license (Section 4.2), generated images are checked by a "
         "[safety filter](https://huggingface.co/CompVis/stable-diffusion-safety-checker) "
-        "to prevent NSFW content."
+        "to prevent NSFW content.\n\n"
+        "Images produced here are **generated by artificial intelligence**. Where law, "
+        "regulation or platform policy requires it, disclose that when publishing them "
+        "(Section 4.3).\n\n"
+        "Commercial use is allowed only below **1,000,000 USD** of annual company-wide "
+        "revenue; above that an Enterprise License from Krea is required (Section 2.3)."
     )
 
     with gr.Tab("Generate"):
@@ -913,5 +1077,51 @@ with gr.Blocks(title="Krea 2 Turbo + Edit") as demo:
         ]
         edit_btn.click(edit, edit_inputs, [edit_output, edit_seed])
         edit_instruction.submit(edit, edit_inputs, [edit_output, edit_seed])
+
+    with gr.Tab("Outpaint"):
+        gr.Markdown(
+            "Extend an image into a larger canvas with the LoRA "
+            "[`yijunwang2/krea2-outpaint`](https://huggingface.co/yijunwang2/krea2-outpaint). "
+            "The source keeps its exact pixels; only the new area is generated.\n\n"
+            "Describe the **whole** output image, not just the part being added - the "
+            "prompt conditions the entire canvas."
+        )
+
+        with gr.Row(equal_height=False):
+            with gr.Column(scale=5):
+                op_source = gr.Image(label="Source image", type="pil", height=280)
+                op_prompt = gr.Textbox(
+                    label="Prompt (describes the complete output)",
+                    lines=3,
+                    placeholder="e.g. a wide sunlit kitchen interior, morning light",
+                )
+                op_direction = gr.Radio(
+                    ["Right", "Left", "Left + right", "Down", "Up", "Up + down"],
+                    value="Right",
+                    label="Extend towards",
+                )
+                op_extend = gr.Slider(
+                    10, 200, value=50, step=5, label="Extension (%)",
+                    info="How much canvas to add along that axis, relative to the source.",
+                )
+                op_btn = gr.Button("Outpaint", variant="primary")
+
+                with gr.Accordion("Advanced", open=False):
+                    op_steps = gr.Slider(
+                        4, 16, value=OUTPAINT_DEFAULT_STEPS, step=1, label="Steps",
+                        info="The adapter is trained for distilled 8-step inference.",
+                    )
+                    with gr.Row():
+                        op_seed = gr.Slider(0, MAX_SEED, value=0, step=1, label="Seed")
+                        op_randomize = gr.Checkbox(value=True, label="Randomize seed")
+
+            with gr.Column(scale=6):
+                op_output = gr.Image(label="Extended image", format="png")
+                op_info = gr.Textbox(label="Canvas", interactive=False)
+
+        op_inputs = [op_source, op_prompt, op_direction, op_extend,
+                     op_steps, op_seed, op_randomize]
+        op_btn.click(outpaint, op_inputs, [op_output, op_seed, op_info])
+        op_prompt.submit(outpaint, op_inputs, [op_output, op_seed, op_info])
 
 demo.launch(server_name="0.0.0.0")

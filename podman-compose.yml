@@ -26,6 +26,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Which per-architecture ROCm packages the image installs. Changing the
+        # GFX selection therefore needs a rebuild, not just a restart.
+        TARGET_GFX_ALL: ${TARGET_GFX_ALL:-gfx1100}
     image: rocm-ai-installer:latest
     container_name: rocm
     hostname: rocm
@@ -58,10 +62,21 @@ services:
     # Environment variables for ROCm
     environment:
       - ROCM_PATH=/opt/rocm
-      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-11.0.0}  # Configurable via setup.sh
-      - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Configurable via setup.sh
-      - PYTORCH_ROCM_ARCH=${TARGET_GFX:-gfx1100}  # PyTorch ROCm architecture
-      - GPU_DEVICE_ORDINAL=0
+      # No default and no "=": written this way the variable reaches the
+      # container only when install.sh exports it, and stays absent otherwise.
+      # It must never arrive empty - ROCm reads an empty override as "no
+      # architecture" and then reports no GPU at all. It used to default to
+      # 11.0.0, which on this machine also relabelled the integrated GPU as a
+      # 7900 XTX; the override is for cards ROCm has no kernels for, not for all.
+      - HSA_OVERRIDE_GFX_VERSION
+      - TARGET_GFX=${TARGET_GFX:-gfx1100}  # Primary architecture: prebuilt wheels are matched against this one
+      # Single-level defaults only: podman-compose does not parse a nested
+      # ${A:-${B:-c}} and leaves the inner closing brace in the value, which
+      # would hand the build an architecture list ending in "}".
+      - TARGET_GFX_ALL=${TARGET_GFX_ALL:-gfx1100}  # Every selected architecture, semicolon separated
+      # Source builds get the full list, so a machine with two different cards
+      # produces kernels for both instead of only for the primary one.
+      - PYTORCH_ROCM_ARCH=${TARGET_GFX_ALL:-gfx1100}
       - HF_TOKEN=${HF_TOKEN}
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
       # X11/Wayland display for GUI applications

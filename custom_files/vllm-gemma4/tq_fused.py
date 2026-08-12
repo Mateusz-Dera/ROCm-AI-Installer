@@ -51,9 +51,6 @@ def _dequant_norm_rope(
     base_s = scale_ptr + h * s_s_h + n * s_s_n
     base_z = zero_ptr + h * s_s_h + n * s_s_n
 
-    # Unpack: byte index and shift derived from the element index, so the same
-    # byte is read by the per_byte elements that live in it - cheap, it stays
-    # in cache.
     b1 = tl.load(base_d + d1 // per_byte).to(tl.int32)
     b2 = tl.load(base_d + d2 // per_byte).to(tl.int32)
     q1 = (b1 >> ((d1 % per_byte) * BITS)) & mask_bits
@@ -71,7 +68,6 @@ def _dequant_norm_rope(
     tl.store(v_out_ptr + out_base + d1, v1.to(tl.float16))
     tl.store(v_out_ptr + out_base + d2, v2.to(tl.float16))
 
-    # RMSNorm over the whole head dim, then the per-element weight.
     ssq = tl.sum(v1 * v1, axis=0) + tl.sum(v2 * v2, axis=0)
     inv = 1.0 / tl.sqrt(ssq / (2 * HALF) + eps)
     g1 = tl.load(gamma_ptr + d1).to(tl.float32)
@@ -79,8 +75,6 @@ def _dequant_norm_rope(
     n1 = v1 * inv * g1
     n2 = v2 * inv * g2
 
-    # NeoX rotation: the table row holds cos in the first half, sin in the
-    # second, both of length HALF.
     row = cos_sin_ptr + (start_pos + n) * s_cs
     cos = tl.load(row + d1).to(tl.float32)
     sin = tl.load(row + HALF + d1).to(tl.float32)
