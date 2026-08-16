@@ -267,6 +267,29 @@ install_llama_cpp_turboquant_vulkan() {
     basic_run "$REPO" "$COMMAND" "&&" "$FOLDER"
 }
 
+# ----- KoboldCPP -----
+
+install_koboldcpp() {
+    REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
+    COMMIT="d31a4f28eba0e33b867dfcf803efd1dce0e5ce3d"
+    COMMAND="DISPLAY=\\\$DISPLAY uv run koboldcpp.py"
+    FOLDER=$(basename "$REPO")
+
+    GPU_APP=1
+
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && \
+        sed -i '/if args.checkforupdates:/,+1d' koboldcpp.py"
+    basic_venv "$REPO"
+    basic_requirements "$REPO"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && \
+        make LLAMA_HIPBLAS=1 \
+            GPU_TARGETS=\"\$(echo \"\${TARGET_GFX_ALL:-\$TARGET_GFX}\" | tr ';' ' ')\" \
+            -j\$((\$(nproc) - 1))"
+    basic_run "$REPO" "$COMMAND"
+}
+
 # ----- vLLM Gemma 4 -----
 
 VLLM_ROCM_BASE="https://rocm.frameworks.amd.com/whl-multi-arch"
