@@ -4,97 +4,130 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+APP_DIR="/AI/TripoSplat"
+APP_PORT=7860
+APP_LOG="/tmp/triposplat_server.log"
+PROC_PAT="run_gradio"
+EXAMPLES="${APP_DIR}/static/example_inputs"
+SUBJECT_A="building_stone_house"
+SUBJECT_B="creature_butterfly"
+GAUSSIANS=65536
+STEPS=20
+COLOUR_MIN=0.60
+EXTENT_MIN=0.15
+OPACITY_MIN=0.05
+
+_cleanup() {
+    stop_app "$PROC_PAT" "$APP_PORT" > /dev/null 2>&1 || true
+    reset_container || true
+}
+trap _cleanup EXIT INT TERM
+
+_field() { printf '%s' "$1" | python3 -c "import sys,json; print(json.load(sys.stdin).get('$2'))"; }
+
+_gate() {
+    local label="$1" value="$2" expr="$3"
+    python3 -c "import sys; v=float('${value}'); sys.exit(0 if ${expr} else 1)" 2>/dev/null \
+        || abort "TripoSplat: ${label} = ${value}, expected ${expr}"
+}
+
+_generate() {
+    local subject="$1" out="$2"
+    local marker="/tmp/triposplat_marker_${subject}"
+    ctr "rm -f '${out}' && touch '${marker}'"
+
+    local payload="[{\"__file__\": \"${EXAMPLES}/${subject}.webp\"}, 42, ${STEPS}, 3.0, \"${GAUSSIANS}\", \"ply\"]"
+    ctr "cd ${APP_DIR}/tests && source .venv/bin/activate && \
+         python /tmp/gradio6_call.py ${APP_PORT} generate 1800 '${payload}' > /dev/null" \
+        || { dump_lines "tail -30 '${APP_LOG}'"; abort "TripoSplat: generating ${subject} failed"; }
+
+    local ply
+    ply=$(ctr "find ${APP_DIR}/gradio_outputs -name '*.ply' -newer '${marker}' 2>/dev/null | head -1")
+    [ -n "$ply" ] || abort "TripoSplat: no PLY was written for ${subject}"
+    ctr "cp '${ply}' '${out}' && rm -f '${marker}'"
+
+    ctr "head -c3 '${out}' | grep -q ply" \
+        || abort "TripoSplat: the output for ${subject} is not a PLY"
+    pass "PLY written for ${subject} ($(ctr "stat -c%s '${out}'") bytes, PLY header verified)"
+}
+
+_compare() {
+    ctr "cd ${APP_DIR}/tests && source .venv/bin/activate && \
+         python /tmp/splat_compare.py '$1' '${EXAMPLES}/$2.webp' 2>/dev/null | tail -1"
+}
+
+_check_subject() {
+    local subject="$1" ply="$2" other="$3" m cross own
+    m=$(_compare "$ply" "$subject")
+    [ -n "$m" ] || abort "TripoSplat: the splat comparer returned nothing for ${subject}"
+    info "  ${subject}: ${m}"
+
+    _gate "gaussian count for ${subject}" "$(_field "$m" gaussians)" "v > 1000"
+    _gate "extent ratio for ${subject}" "$(_field "$m" extent_ratio)" "v > ${EXTENT_MIN}"
+    pass "${subject}: $(_field "$m" gaussians) gaussians spread over three axes (extent ratio $(_field "$m" extent_ratio))"
+
+    _gate "mean opacity for ${subject}" "$(_field "$m" mean_opacity)" "v > ${OPACITY_MIN}"
+    pass "${subject}: gaussians are opaque enough to render (mean opacity $(_field "$m" mean_opacity))"
+
+    own=$(_field "$m" colour_match)
+    _gate "colour match for ${subject}" "$own" "v > ${COLOUR_MIN}"
+    pass "${subject}: colour matches its source image (match ${own})"
+
+    cross=$(_field "$(_compare "$ply" "$other")" colour_match)
+    _gate "cross match ${subject} against ${other}" "$cross" "v < ${own}"
+    pass "${subject}: matches its own image better than ${other} (${own} vs ${cross})"
+}
+
 test_triposplat() {
     info "============================================="
-    info "TEST: TripoSplat (install + verify)"
+    info "TEST: TripoSplat (image to 3D gaussians)"
     info "============================================="
 
-    basic_container || abort "Container 'rocm' is not running."
+    require_container
     clean_hf_incomplete
 
-    run_install "TripoSplat" install_triposplat "/AI/TripoSplat"
+    stop_app "$PROC_PAT" "$APP_PORT"
+    run_install "TripoSplat" install_triposplat "$APP_DIR"
+    require_gpu_pin "TripoSplat" TripoSplat
+    require_tests_venv "$APP_DIR" trimesh pillow numpy httpx
 
-    local app_dir="/AI/TripoSplat"
-    local app_port=7860
-    local app_log="/tmp/triposplat_server.log"
-    local helper_src="$TESTS_DIR/helpers/triposplat_api_helper.py"
-    local helper_dst="/tmp/triposplat_api_helper.py"
+    container_file_exists "${EXAMPLES}/${SUBJECT_A}.webp" \
+        || abort "TripoSplat: the source image ${EXAMPLES}/${SUBJECT_A}.webp is missing"
+    container_file_exists "${EXAMPLES}/${SUBJECT_B}.webp" \
+        || abort "TripoSplat: the source image ${EXAMPLES}/${SUBJECT_B}.webp is missing"
 
-    podman exec -t rocm bash -c \
-        "pkill -f '[p]ython.*run_gradio\.py' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; \
-         rm -f '${app_log}'; touch '${app_log}'" || true
+    start_app TripoSplat "$APP_LOG"
 
-    info "Starting TripoSplat on port ${app_port}..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         HSA_XNACK=0 \
-         PYTORCH_HIP_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128 \
-         python -u run_gradio.py >> '${app_log}' 2>&1"
-    sleep 5
+    info "Waiting for the server..."
+    wait_for_http_or_abort "TripoSplat" \
+        "curl -sf --max-time 3 http://localhost:${APP_PORT}/gradio_api/info > /dev/null" \
+        "$PROC_PAT" "$APP_LOG" 1800 "$APP_DIR"
+    pass "Server ready on port ${APP_PORT}"
 
-    wait_for_http \
-        "curl -sf --max-time 3 http://localhost:${app_port}/ > /dev/null" \
-        "python.*run_gradio\.py" \
-        "${app_log}" \
-        600 \
-        "Running on local URL"
-
-    local wait_rc=$?
-    if [ $wait_rc -eq 1 ]; then
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "TripoSplat process died during startup"
-    elif [ $wait_rc -eq 2 ]; then
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "TripoSplat did not become ready within 600s"
+    if ! listens_on_all_interfaces "$APP_PORT"; then
+        fail "  Listening addresses: $(port_listen_addrs "$APP_PORT" | tr '\n' ' ')"
+        abort "TripoSplat: not listening on 0.0.0.0:${APP_PORT}"
     fi
-    pass "TripoSplat HTTP server ready on port ${app_port}"
+    pass "Listening on 0.0.0.0:${APP_PORT}"
 
-    podman cp "$helper_src" "rocm:${helper_dst}"
+    podman cp "${TESTS_DIR}/helpers/gradio6_call.py" "rocm:/tmp/gradio6_call.py" \
+        || abort "TripoSplat: could not copy the API helper into the container"
+    podman cp "${TESTS_DIR}/helpers/splat_compare.py" "rocm:/tmp/splat_compare.py" \
+        || abort "TripoSplat: could not copy the comparer into the container"
 
-    info "Running image-to-3D generation (seed=42, steps=5, num_gaussians=32768)..."
-    local api_out
-    api_out=$(podman exec -t rocm bash -c \
-        "source '${app_dir}/.venv/bin/activate' && \
-         python3 '${helper_dst}' 2>/dev/null" \
-        | tr -d '\r') || {
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "triposplat_api_helper.py failed"
-    }
+    info "--- Generating ${SUBJECT_A} and ${SUBJECT_B} (seed 42, ${STEPS} steps, ${GAUSSIANS} gaussians) ---"
+    _generate "$SUBJECT_A" "/tmp/triposplat_${SUBJECT_A}.ply"
+    _generate "$SUBJECT_B" "/tmp/triposplat_${SUBJECT_B}.ply"
 
-    if ! printf '%s' "$api_out" | grep -q "^PLY_OK"; then
-        info "API output: $api_out"
-        abort "3D generation did not complete (PLY_OK not found)"
-    fi
-    pass "3D generation completed"
+    require_gpu_process "TripoSplat" "$PROC_PAT"
 
-    local ply_line
-    ply_line=$(printf '%s' "$api_out" | grep "^PLY_OK:" | head -1)
-    local ply_size
-    ply_size=$(printf '%s' "$ply_line" | cut -d: -f3)
-    if [ -z "$ply_size" ] || [ "$ply_size" -le 0 ] 2>/dev/null; then
-        abort "PLY file is empty or size unknown: $ply_line"
-    fi
-    pass "PLY exported successfully (${ply_size} bytes)"
+    _check_subject "$SUBJECT_A" "/tmp/triposplat_${SUBJECT_A}.ply" "$SUBJECT_B"
+    _check_subject "$SUBJECT_B" "/tmp/triposplat_${SUBJECT_B}.ply" "$SUBJECT_A"
 
-    local ply_path
-    ply_path=$(printf '%s' "$ply_line" | cut -d: -f2)
-    podman exec -t rocm bash -c "[ -s '${ply_path}' ] || [ -s '/tmp/triposplat_test.ply' ]" \
-        || abort "PLY file not found in container: ${ply_path}"
-    pass "PLY file verified in container"
-
-    info "Stopping TripoSplat..."
-    podman exec -t rocm bash -c \
-        "pkill -f '[p]ython.*run_gradio\.py' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; true" || true
-    local kw=0
-    while podman exec -t rocm bash -c \
-            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2))
-        [ $kw -ge 20 ] && break
-    done
+    stop_app "$PROC_PAT" "$APP_PORT"
     pass "TripoSplat stopped"
 
+    ctr "rm -f /tmp/triposplat_*.ply /tmp/gradio6_call.py /tmp/splat_compare.py '${APP_LOG}'"
     info "Test triposplat DONE"
 }
 

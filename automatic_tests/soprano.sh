@@ -4,98 +4,100 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+APP_DIR="/AI/soprano-rocm"
+APP_LOG="/tmp/soprano_server.log"
+PROC_PAT="soprano-webui"
+GPU_PAT="soprano-webui|VLLM::"
+WER_LIMIT=0.25
+
+_cleanup() {
+    stop_app "$PROC_PAT" "" > /dev/null 2>&1 || true
+    reset_container || true
+}
+trap _cleanup EXIT INT TERM
+
 test_soprano() {
     info "============================================="
-    info "TEST: Soprano (install + verify)"
+    info "TEST: Soprano (voice generation)"
     info "============================================="
 
-    basic_container || abort "Container 'rocm' is not running."
+    require_container
+    require_parakeet
     clean_hf_incomplete
 
-    run_install "Soprano" install_soprano "/AI/soprano-rocm"
+    stop_app "$PROC_PAT" ""
+    run_install "Soprano" install_soprano "$APP_DIR"
 
-    local app_dir="/AI/soprano-rocm"
-    local app_log="/tmp/soprano_server.log"
-    local REF_TEXT="Hello, this is a test of the soprano speech synthesis system."
+    local torch_info
+    torch_info=$(ctr "cd ${APP_DIR} && source .venv/bin/activate && \
+        python -c 'import torch; print(torch.__version__, torch.cuda.is_available())'")
+    case "$torch_info" in
+        *rocm*True*) pass "ROCm torch sees the GPU (${torch_info%% *})" ;;
+        *rocm*)      abort "Soprano: torch does not see the GPU (${torch_info})" ;;
+        *)           abort "Soprano: torch is not the ROCm build (${torch_info})" ;;
+    esac
 
-    podman exec -t rocm bash -c "pkill -9 -f '[s]oprano' 2>/dev/null; true" 2>/dev/null || true
-    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
-    sleep 3
-    podman exec -t rocm bash -c \
-        "fuser -k 7860/tcp 2>/dev/null; fuser -k 7861/tcp 2>/dev/null; \
-         sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+    require_gpu_pin "Soprano" soprano-rocm
 
-    info "Starting Soprano TTS..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         PYTHONPATH='${app_dir}'/.venv/lib/python3.14/site-packages/_rocm_sdk_core/share/amd_smi \
-         TORCH_BLAS_PREFER_HIPBLASLT=1 HIP_VISIBLE_DEVICES=0 soprano-webui \
-         >> '${app_log}' 2>&1"
+    start_app soprano-rocm "$APP_LOG"
 
-    info "Waiting for Soprano model to load and Gradio to start (up to 300s)..."
-    sleep 5
-    local app_port="" waited=5 max_wait=300
-    while [ $waited -lt $max_wait ]; do
-        app_port=$(podman exec -t rocm bash -c \
-            "grep -oP 'Starting Gradio interface on port \K[0-9]+' '${app_log}' 2>/dev/null | tail -1" \
-            | tr -d '\r\n') || app_port=""
-        [ -n "$app_port" ] && break
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if [ -z "$app_port" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "Soprano: could not detect port from log within ${max_wait}s"
+    info "Waiting for the model to load and Gradio to pick a port..."
+    wait_for_http_or_abort "Soprano" \
+        "grep -q 'Starting Gradio interface on port' '${APP_LOG}'" \
+        "$PROC_PAT" "$APP_LOG" 1800 "$APP_DIR"
+
+    local app_port
+    app_port=$(ctr "grep -oE 'Starting Gradio interface on port [0-9]+' '${APP_LOG}' \
+                    | tail -1 | grep -oE '[0-9]+$'")
+    [ -n "$app_port" ] || abort "Soprano: could not read the port from the log"
+    pass "Model loaded, Gradio announced port ${app_port}"
+
+    info "Waiting for the Gradio API on port ${app_port}..."
+    wait_for_http_or_abort "Soprano" \
+        "curl -sf http://localhost:${app_port}/gradio_api/info -o /dev/null" \
+        "$PROC_PAT" "$APP_LOG" 600 "$APP_DIR"
+    pass "Gradio API ready on port ${app_port}"
+
+    if ! listens_on_all_interfaces "$app_port"; then
+        fail "  Listening addresses for port ${app_port}: $(port_listen_addrs "$app_port" | tr '\n' ' ')"
+        abort "Soprano: not listening on 0.0.0.0:${app_port}"
     fi
-    pass "Soprano ready on port ${app_port} (model loaded)"
+    pass "Listening on 0.0.0.0:${app_port}"
 
-    info "Requesting speech synthesis: \"${REF_TEXT}\"..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call/generate_speech \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                \"${REF_TEXT}\",
-                0.0, 0.95, 1.2, 1, false
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '"event_id":"[^"]*"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
+    require_gpu_process "Soprano" "$GPU_PAT"
 
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "Soprano: no event_id returned from /generate_speech"
-    fi
-    info "Generation started (event_id: $event_id) – polling result..."
+    local text
+    text=$(tr -d '\n' < "${TESTS_DIR}/assets/tts_design.txt")
 
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 120 \
-            http://localhost:${app_port}/gradio_api/call/generate_speech/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
+    info "--- Voice generation ---"
+    local sse
+    sse=$(gradio_call "$app_port" generate_speech \
+          "{\"data\": [\"${text}\", 0.0, 0.95, 1.2, 1, false]}" 600) \
+        || abort "Soprano: /generate_speech did not return an event_id"
 
-    if echo "$gen_result" | grep -q '"path"'; then
-        pass "Soprano speech generation OK (audio returned)"
-    else
-        info "Raw result: $gen_result"
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "Soprano generation did not return audio data"
+    if ! printf '%s' "$sse" | grep -q '^event: complete'; then
+        fail "  SSE: $(printf '%s' "$sse" | head -5 | tr '\n' ' ')"
+        dump_lines "tail -30 '${APP_LOG}'"
+        abort "Soprano: no complete event in the SSE stream"
     fi
 
-    info "Stopping Soprano..."
-    podman exec -t rocm bash -c "pkill -9 -f '[s]oprano' 2>/dev/null; true" 2>/dev/null || true
-    podman exec -t rocm bash -c "pgrep 'VLLM' | xargs -r kill -9 2>/dev/null; true" || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
-    local kw=0
-    while podman exec -t rocm bash -c \
-            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
-    done
+    local wav status
+    wav=$(gradio_complete_data "$sse" \
+          | python3 -c 'import sys,json; d=json.load(sys.stdin); print((d[0] or {}).get("path",""))') \
+        || abort "Soprano: could not parse the result"
+    status=$(gradio_complete_data "$sse" \
+             | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d[1] if len(d)>1 else "")') \
+        || status=""
+    [ -n "$status" ] && info "  Status: ${status}"
+    [ -n "$wav" ] || abort "Soprano: no audio path in the complete event"
+
+    container_file_exists "$wav" || abort "Soprano: the audio file ${wav} does not exist"
+    check_speech "Voice generation" "$wav" "${TESTS_DIR}/assets/tts_design.txt" "$WER_LIMIT"
+
+    stop_app "$PROC_PAT" "$app_port"
     pass "Soprano stopped"
 
+    ctr "rm -f '${APP_LOG}'"
     info "Test soprano DONE"
 }
 

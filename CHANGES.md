@@ -7,8 +7,11 @@ Updated:
 - SillyTavern
 - KoboldCPP
 - GPU selection
+- Voice generation menu renamed to Voice
 
 Added:
+- Named backups
+- Parakeet
 - Krea 2 Turbo + Edit
 - vLLM Gemma 4
 - llama.cpp TurboQuant
@@ -22,3 +25,4 @@ Removed:
 - Kimodo
 - llama.cpp
 - turboquant-rocm-llamacpp
+- WhisperSpeech web UI

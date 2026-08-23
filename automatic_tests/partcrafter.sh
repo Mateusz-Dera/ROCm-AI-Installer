@@ -4,138 +4,155 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
+APP_DIR="/AI/PartCrafter"
+APP_PORT=7860
+APP_LOG="/tmp/partcrafter_server.log"
+PROC_PAT="partcrafter_webui"
+SOURCE_IMAGE="${APP_DIR}/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
+OUT_GLB="/tmp/partcrafter_test.glb"
+NUM_PARTS=3
+IOU_MIN=0.65
+HU_MAX=0.30
+
+_cleanup() {
+    stop_app "$PROC_PAT" "$APP_PORT" > /dev/null 2>&1 || true
+    reset_container || true
+}
+trap _cleanup EXIT INT TERM
+
+_field() { printf '%s' "$1" | python3 -c "import sys,json; print(json.load(sys.stdin).get('$2'))"; }
+
+_gate() {
+    local label="$1" value="$2" expr="$3"
+    python3 -c "import sys; v=float('${value}'); sys.exit(0 if ${expr} else 1)" 2>/dev/null \
+        || abort "PartCrafter: ${label} = ${value}, expected ${expr}"
+}
+
+_result_paths() {
+    printf '%s' "$1" | python3 -c '
+import sys, json
+data = json.load(sys.stdin)
+index = int(sys.argv[1])
+item = data[index] if index < len(data) else None
+items = item if isinstance(item, list) else [item]
+for entry in items:
+    if isinstance(entry, dict) and entry.get("path"):
+        print(entry["path"])
+' "$2"
+}
+
 test_partcrafter() {
     info "============================================="
-    info "TEST: PartCrafter (install + verify)"
+    info "TEST: PartCrafter (image to multi-part 3D)"
     info "============================================="
 
-    basic_container || abort "Container 'rocm' is not running."
+    require_container
     clean_hf_incomplete
 
-    run_install "PartCrafter" install_partcrafter "/AI/PartCrafter"
+    stop_app "$PROC_PAT" "$APP_PORT"
+    run_install "PartCrafter" install_partcrafter "$APP_DIR"
+    require_gpu_pin "PartCrafter" PartCrafter
+    require_tests_venv "$APP_DIR" trimesh pillow numpy httpx
 
-    local app_dir="/AI/PartCrafter"
-    local app_port=7860
-    local app_log="/tmp/partcrafter_server.log"
-    local example_img="/AI/PartCrafter/assets/images/np3_2f6ab901c5a84ed6bbdf85a67b22a2ee.png"
-    local output_glb="/tmp/partcrafter_object.glb"
+    container_file_exists "$SOURCE_IMAGE" \
+        || abort "PartCrafter: the source image ${SOURCE_IMAGE} is missing"
 
-    podman exec -t rocm bash -c "pkill -f '[p]artcrafter_webui' 2>/dev/null; pkill -f '[p]artcrafter' 2>/dev/null; true" 2>/dev/null || true
-    sleep 3
-    podman exec -t rocm bash -c \
-        "fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; rm -f '${app_log}'; touch '${app_log}'" || true
+    start_app PartCrafter "$APP_LOG"
 
-    info "Starting PartCrafter on port ${app_port}..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && source .venv/bin/activate && \
-         uv run partcrafter_webui.py >> '${app_log}' 2>&1"
+    info "Waiting for the server..."
+    wait_for_http_or_abort "PartCrafter" \
+        "curl -sf --max-time 3 http://localhost:${APP_PORT}/gradio_api/info > /dev/null" \
+        "$PROC_PAT" "$APP_LOG" 1800 "$APP_DIR"
+    pass "Server ready on port ${APP_PORT}"
 
-    info "Waiting for PartCrafter Gradio API to become ready (up to 600s)..."
-    local waited=0 max_wait=600 ready=false
-    while [ $waited -lt $max_wait ]; do
-        if podman exec -t rocm bash -c \
-               "curl -sf http://localhost:${app_port}/gradio_api/info \
-                | grep -q '\"named_endpoints\"'" 2>/dev/null; then
-            ready=true; break
-        fi
-        sleep 5; waited=$((waited + 5))
-        info "  ...waiting ($waited/${max_wait}s)"
-    done
-    if ! $ready; then
-        podman exec -t rocm bash -c "cat '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter did not become ready within ${max_wait}s"
+    if ! listens_on_all_interfaces "$APP_PORT"; then
+        fail "  Listening addresses: $(port_listen_addrs "$APP_PORT" | tr '\n' ' ')"
+        abort "PartCrafter: not listening on 0.0.0.0:${APP_PORT}"
     fi
-    pass "PartCrafter Gradio API ready on port ${app_port}"
+    pass "Listening on 0.0.0.0:${APP_PORT}"
 
-    local endpoint_name
-    endpoint_name=$(podman exec -t rocm bash -c "
-        curl -sf http://localhost:${app_port}/gradio_api/info | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"\/[a-zA-Z_0-9]*generate[a-zA-Z_0-9]*\"' \
-    | head -1 | tr -d '"') || endpoint_name=""
-    if [ -z "$endpoint_name" ]; then
-        endpoint_name="/generate_parts"
-        info "Could not detect endpoint – using default: ${endpoint_name}"
-    else
-        info "Detected endpoint: ${endpoint_name}"
-    fi
+    local endpoint
+    endpoint=$(ctr "curl -sf http://localhost:${APP_PORT}/gradio_api/info" \
+               | python3 -c '
+import sys, json
+for name in json.load(sys.stdin).get("named_endpoints", {}):
+    if "generate" in name:
+        print(name.lstrip("/")); break')
+    [ -n "$endpoint" ] || abort "PartCrafter: no generate endpoint in /gradio_api/info"
+    pass "Generate endpoint exposed: /${endpoint}"
 
-    info "Uploading example image..."
-    local upload_response
-    upload_response=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/upload \
-            -F 'files=@${example_img}' | tr -d '\r'
-    " 2>/dev/null) || upload_response=""
+    podman cp "${TESTS_DIR}/helpers/gradio6_call.py" "rocm:/tmp/gradio6_call.py" \
+        || abort "PartCrafter: could not copy the API helper into the container"
+    podman cp "${TESTS_DIR}/helpers/mesh_compare.py" "rocm:/tmp/mesh_compare.py" \
+        || abort "PartCrafter: could not copy the comparer into the container"
 
-    local uploaded_path
-    uploaded_path=$(echo "$upload_response" \
-        | grep -o '"[^"]*"' | head -1 \
-        | tr -d '"') || uploaded_path=""
-    if [ -z "$uploaded_path" ]; then
-        abort "PartCrafter: failed to upload example image"
-    fi
-    info "Image uploaded: ${uploaded_path}"
+    info "--- Generating ${NUM_PARTS} parts (seed 42, 1024 tokens, 50 steps) ---"
+    ctr "rm -f '${OUT_GLB}'"
 
-    info "Requesting 3D generation (2 parts, 10 inference steps)..."
-    local event_id
-    event_id=$(podman exec -t rocm bash -c "
-        curl -sf -X POST http://localhost:${app_port}/gradio_api/call${endpoint_name} \
-            -H 'Content-Type: application/json' \
-            -d '{\"data\": [
-                {\"path\": \"${uploaded_path}\", \"meta\": {\"_type\": \"gradio.FileData\"}},
-                2, 42, 512, 10, 7.0, false, false, false
-            ]}' | tr -d '\r'
-    " 2>/dev/null \
-    | grep -o '\"event_id\":\"[^\"]*\"' \
-    | grep -o '[^:]*$' \
-    | tr -d '"') || true
+    local payload
+    payload="[{\"__file__\": \"${SOURCE_IMAGE}\"}, ${NUM_PARTS}, 42, 1024, 50, 7.0, false, false, true]"
 
-    if [ -z "$event_id" ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter: no event_id returned from ${endpoint_name}"
-    fi
-    info "Generation started (event_id: $event_id) – polling result (up to 30 min)..."
+    local result
+    result=$(ctr "cd ${APP_DIR}/tests && source .venv/bin/activate && \
+              python /tmp/gradio6_call.py ${APP_PORT} ${endpoint} 3600 '${payload}'") \
+        || { dump_lines "tail -30 '${APP_LOG}'"; abort "PartCrafter: the generate call failed"; }
 
-    local gen_result
-    gen_result=$(podman exec -t rocm bash -c "
-        curl -sf --max-time 1800 \
-            http://localhost:${app_port}/gradio_api/call${endpoint_name}/${event_id} \
-        | tr -d '\r'
-    " 2>/dev/null) || true
+    local merged
+    merged=$(_result_paths "$result" 0 | head -1)
+    [ -n "$merged" ] || { fail "  Response: $(printf '%s' "$result" | head -c 300)"
+                          abort "PartCrafter: no merged GLB in the response"; }
+    ctr "cp '${merged}' '${OUT_GLB}'"
 
-    if echo "$gen_result" | grep -q '"path"'; then
-        pass "PartCrafter 3D generation OK (files returned)"
-        local glb_path
-        glb_path=$(echo "$gen_result" \
-            | grep -o '"path": *"[^"]*\.glb[^"]*"' | head -1 \
-            | sed 's/"path": *"//;s/"//') || glb_path=""
-        if [ -n "$glb_path" ]; then
-            podman exec -t rocm bash -c "cp '${glb_path}' '${output_glb}'" 2>/dev/null || true
-            local fsize
-            fsize=$(podman exec -t rocm bash -c \
-                "stat -c%s '${output_glb}' 2>/dev/null || echo 0" \
-                | tr -d '\r\n') || fsize=0
-            if [ "${fsize:-0}" -lt 1024 ]; then
-                abort "object.glb is suspiciously small (${fsize} bytes)"
-            fi
-        fi
-    else
-        info "Raw result: $gen_result"
-        podman exec -t rocm bash -c "tail -30 '${app_log}'" 2>/dev/null || true
-        abort "PartCrafter generation did not return file data"
-    fi
+    ctr "head -c4 '${OUT_GLB}' | grep -q glTF" \
+        || abort "PartCrafter: the merged output is not a GLB"
+    pass "Merged GLB written ($(ctr "stat -c%s '${OUT_GLB}'") bytes, glTF header verified)"
 
-    info "Stopping PartCrafter..."
-    podman exec -t rocm bash -c "pkill -f '[p]artcrafter_webui' 2>/dev/null; pkill -f '[p]artcrafter' 2>/dev/null; true" 2>/dev/null || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
-    local kw=0
-    while podman exec -t rocm bash -c \
-            "fuser ${app_port}/tcp > /dev/null 2>&1" 2>/dev/null; do
-        sleep 2; kw=$((kw + 2)); if [ $kw -ge 20 ]; then break; fi
-    done
+    local parts count
+    parts=$(_result_paths "$result" 3)
+    count=$(printf '%s' "$parts" | grep -c '\.glb$' || true)
+    [ "$count" -eq "$NUM_PARTS" ] \
+        || abort "PartCrafter: asked for ${NUM_PARTS} parts, got ${count} part files"
+    pass "Split into ${count} separate part GLBs"
+
+    local part
+    while read -r part; do
+        [ -n "$part" ] || continue
+        ctr "head -c4 '${part}' | grep -q glTF" \
+            || abort "PartCrafter: part ${part} is not a GLB"
+        ctr "test \$(stat -c%s '${part}') -gt 1024" \
+            || abort "PartCrafter: part ${part} is smaller than 1 KiB"
+    done <<< "$parts"
+    pass "Every part is a non-trivial GLB"
+
+    local gif
+    gif=$(_result_paths "$result" 2 | head -1)
+    [ -n "$gif" ] || abort "PartCrafter: no rendered GIF in the response"
+    ctr "head -c3 '${gif}' | grep -q GIF" \
+        || abort "PartCrafter: the rendered animation is not a GIF"
+    pass "Rendered animation produced ($(ctr "stat -c%s '${gif}'") bytes)"
+
+    require_gpu_process "PartCrafter" "$PROC_PAT"
+
+    local m
+    m=$(ctr "cd ${APP_DIR}/tests && source .venv/bin/activate && \
+         python /tmp/mesh_compare.py '${OUT_GLB}' '${SOURCE_IMAGE}' 2>/dev/null | tail -1")
+    [ -n "$m" ] || abort "PartCrafter: the mesh comparer returned nothing"
+    info "  ${m}"
+
+    _gate "vertex count" "$(_field "$m" vertices)" "v > 100"
+    _gate "face count" "$(_field "$m" faces)" "v > 100"
+    pass "Mesh has geometry ($(_field "$m" vertices) vertices, $(_field "$m" faces) faces)"
+
+    _gate "silhouette IoU" "$(_field "$m" silhouette_iou)" "v > ${IOU_MIN}"
+    pass "Silhouette matches the source image (IoU $(_field "$m" silhouette_iou))"
+
+    _gate "Hu distance" "$(_field "$m" hu_distance)" "v < ${HU_MAX}"
+    pass "Shape descriptor matches the source image (Hu distance $(_field "$m" hu_distance))"
+
+    stop_app "$PROC_PAT" "$APP_PORT"
     pass "PartCrafter stopped"
 
+    ctr "rm -f '${OUT_GLB}' /tmp/gradio6_call.py /tmp/mesh_compare.py '${APP_LOG}'"
     info "Test partcrafter DONE"
 }
 

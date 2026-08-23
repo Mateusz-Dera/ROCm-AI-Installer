@@ -77,6 +77,17 @@ services:
       # Source builds get the full list, so a machine with two different cards
       # produces kernels for both instead of only for the primary one.
       - PYTORCH_ROCM_ARCH=${TARGET_GFX_ALL:-gfx1100}
+      # Telemetry off for every application in the container. podman exec
+      # inherits these, so no generated run.sh has to repeat them.
+      - GRADIO_ANALYTICS_ENABLED=False
+      - HF_HUB_DISABLE_TELEMETRY=1
+      - DISABLE_TELEMETRY=1
+      - DO_NOT_TRACK=1
+      - VLLM_NO_USAGE_STATS=1
+      - VLLM_DO_NOT_TRACK=1
+      - ANONYMIZED_TELEMETRY=False
+      - WANDB_DISABLED=true
+      - WANDB_MODE=offline
       - HF_TOKEN=${HF_TOKEN}
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
       # X11/Wayland display for GUI applications

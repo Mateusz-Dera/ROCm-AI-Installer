@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y \
     python3-setuptools \
     python3-wheel \
     python3-tk \
+    rsync \
     pipx \
     cmake \
     make \
@@ -112,6 +113,14 @@ RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hu
     PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx inject huggingface-hub click
 
 ENV PATH="/usr/local/bin:${PATH}"
+
+# Every interpreter the installers ask for, baked into the image. Without this
+# uv downloads them into the container filesystem on first use, and recreating
+# the container leaves every venv pointing at an interpreter that no longer
+# exists - the packages under /AI survive, the interpreter does not.
+ENV UV_PYTHON_INSTALL_DIR="/root/.local/share/uv/python"
+ENV UV_PYTHON_PREFERENCE="only-managed"
+RUN uv python install 3.11 3.12 3.13 3.14
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

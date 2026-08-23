@@ -4,81 +4,97 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
-BACKEND="${1:-hip}"
-_install_trellis_cpp() { install_trellis_cpp "$BACKEND"; }
+APP_DIR="/AI/trellis.cpp"
+APP_PORT=8081
+APP_LOG="/tmp/trellis_cpp_server.log"
+PROC_PAT="trellis-server"
+SOURCE_IMAGE="${APP_DIR}/assets/goblin.png"
+OUT_GLB="/tmp/trellis_cpp_test.glb"
+IOU_MIN=0.65
+HU_MAX=0.30
+
+export TRELLIS_CPP_WEIGHTS="${TRELLIS_CPP_WEIGHTS:-q8}"
+
+_cleanup() {
+    stop_app "$PROC_PAT" "$APP_PORT" > /dev/null 2>&1 || true
+    reset_container || true
+}
+trap _cleanup EXIT INT TERM
+
+_field() { printf '%s' "$1" | python3 -c "import sys,json; print(json.load(sys.stdin).get('$2'))"; }
+
+_gate() {
+    local label="$1" value="$2" expr="$3"
+    python3 -c "import sys; v=float('${value}'); sys.exit(0 if ${expr} else 1)" 2>/dev/null \
+        || abort "trellis.cpp: ${label} = ${value}, expected ${expr}"
+}
 
 test_trellis_cpp() {
     info "============================================="
-    info "TEST: trellis.cpp ${BACKEND} (install + generate)"
+    info "TEST: trellis.cpp (image to 3D)"
     info "============================================="
 
-    basic_container || abort "Container 'rocm' is not running."
+    require_container
     clean_hf_incomplete
 
-    export TRELLIS_CPP_WEIGHTS="${TRELLIS_CPP_WEIGHTS:-q8}"
+    stop_app "$PROC_PAT" "$APP_PORT"
+    run_install "trellis.cpp" "install_trellis_cpp vulkan" "$APP_DIR"
+    require_tests_venv "$APP_DIR" trimesh pillow numpy
 
-    run_install "trellis.cpp ($BACKEND)" _install_trellis_cpp "/AI/trellis.cpp"
+    container_file_exists "$SOURCE_IMAGE" \
+        || abort "trellis.cpp: the source image ${SOURCE_IMAGE} is missing"
 
-    local app_dir="/AI/trellis.cpp"
-    local app_port=8081
-    local app_log="/tmp/trellis_cpp_server.log"
-    local out_glb="/tmp/trellis_cpp_out.glb"
-    local BACKEND_DIR server_env
-    if [ "$BACKEND" = "vulkan" ]; then
-        BACKEND_DIR="vulkan"
-        server_env="VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json GGML_VK_VISIBLE_DEVICES=0"
-    else
-        BACKEND_DIR="hip"
-        server_env="ROCM_PATH=/opt/rocm GGML_CUDA_DISABLE_GRAPHS=1 HIP_VISIBLE_DEVICES=0"
+    start_app trellis.cpp "$APP_LOG"
+
+    info "Waiting for the server..."
+    wait_for_http_or_abort "trellis.cpp" \
+        "curl -sf --max-time 3 http://localhost:${APP_PORT}/health > /dev/null" \
+        "$PROC_PAT" "$APP_LOG" 1800 "$APP_DIR"
+    pass "Server ready on port ${APP_PORT}"
+
+    if ! listens_on_all_interfaces "$APP_PORT"; then
+        fail "  Listening addresses: $(port_listen_addrs "$APP_PORT" | tr '\n' ' ')"
+        abort "trellis.cpp: not listening on 0.0.0.0:${APP_PORT}"
     fi
+    pass "Listening on 0.0.0.0:${APP_PORT}"
 
-    podman exec -t rocm bash -c \
-        "pkill -f '[t]rellis-server' 2>/dev/null; \
-         sleep 2; fuser -k ${app_port}/tcp 2>/dev/null; sleep 1; \
-         rm -f '${app_log}' '${out_glb}'; touch '${app_log}'" || true
+    info "--- Generating a GLB from goblin.png (resolution 512, seed 42) ---"
+    ctr "rm -f '${OUT_GLB}'"
+    ctr "curl -sf --max-time 3600 -o '${OUT_GLB}' \
+            -F 'image=@${SOURCE_IMAGE}' -F 'resolution=512' -F 'seed=42' \
+            http://localhost:${APP_PORT}/generate" \
+        || { dump_lines "tail -30 '${APP_LOG}'"; abort "trellis.cpp: /generate failed"; }
 
-    info "Starting trellis-server on port ${app_port}..."
-    podman exec -d rocm bash -c \
-        "cd '${app_dir}' && export ${server_env} && \
-         ./build-${BACKEND_DIR}/trellis-server --models /AI/trellis2-gguf \
-            --host 0.0.0.0 --port ${app_port} >> '${app_log}' 2>&1"
-    sleep 5
+    container_file_exists "$OUT_GLB" || abort "trellis.cpp: no GLB was written"
+    ctr "head -c4 '${OUT_GLB}' | grep -q glTF" \
+        || abort "trellis.cpp: the output is not a GLB"
+    pass "GLB written ($(ctr "stat -c%s '${OUT_GLB}'") bytes, glTF header verified)"
 
-    wait_for_http \
-        "curl -sf --max-time 3 http://localhost:${app_port}/health > /dev/null" \
-        "trellis-server" \
-        "$app_log" \
-        600 \
-        || abort "trellis.cpp: server did not become ready"
-    pass "trellis.cpp server ready on port ${app_port}"
+    require_gpu_process "trellis.cpp" "$PROC_PAT"
 
-    info "Generating a GLB from assets/goblin.png (res 512)..."
-    podman exec -t rocm bash -c \
-        "curl -sf --max-time 3600 -o '${out_glb}' \
-            -F 'image=@${app_dir}/assets/goblin.png' \
-            -F 'resolution=512' -F 'seed=42' \
-            http://localhost:${app_port}/generate" \
-        || abort "trellis.cpp: /generate request failed"
+    podman cp "${TESTS_DIR}/helpers/mesh_compare.py" "rocm:/tmp/mesh_compare.py" \
+        || abort "trellis.cpp: could not copy the comparer into the container"
 
-    local fsize
-    fsize=$(podman exec -t rocm bash -c "stat -c%s '${out_glb}' 2>/dev/null || echo 0" \
-        | tr -d '\r\n')
-    if [ "${fsize:-0}" -lt 100000 ]; then
-        podman exec -t rocm bash -c "tail -20 '${app_log}'" 2>/dev/null || true
-        abort "trellis.cpp: GLB suspiciously small (${fsize} bytes)"
-    fi
-    pass "trellis.cpp generated a GLB (${fsize} bytes)"
+    local m
+    m=$(ctr "cd ${APP_DIR}/tests && source .venv/bin/activate && \
+         python /tmp/mesh_compare.py '${OUT_GLB}' '${SOURCE_IMAGE}' 2>/dev/null | tail -1")
+    [ -n "$m" ] || abort "trellis.cpp: the mesh comparer returned nothing"
+    info "  ${m}"
 
-    podman exec -t rocm bash -c "head -c4 '${out_glb}' | grep -q 'glTF'" \
-        || abort "trellis.cpp: output is not a GLB"
-    pass "GLB header verified"
+    _gate "vertex count" "$(_field "$m" vertices)" "v > 100"
+    _gate "face count" "$(_field "$m" faces)" "v > 100"
+    pass "Mesh has geometry ($(_field "$m" vertices) vertices, $(_field "$m" faces) faces)"
 
-    info "Stopping trellis-server..."
-    podman exec -t rocm bash -c "pkill -f '[t]rellis-server' 2>/dev/null; true" || true
-    sleep 2
-    podman exec -t rocm bash -c "fuser -k ${app_port}/tcp 2>/dev/null; true" || true
+    _gate "silhouette IoU" "$(_field "$m" silhouette_iou)" "v > ${IOU_MIN}"
+    pass "Silhouette matches the source image (IoU $(_field "$m" silhouette_iou))"
+
+    _gate "Hu distance" "$(_field "$m" hu_distance)" "v < ${HU_MAX}"
+    pass "Shape descriptor matches the source image (Hu distance $(_field "$m" hu_distance))"
+
+    stop_app "$PROC_PAT" "$APP_PORT"
     pass "trellis.cpp stopped"
 
+    ctr "rm -f '${OUT_GLB}' /tmp/mesh_compare.py '${APP_LOG}'"
     info "Test trellis_cpp DONE"
 }
 

@@ -41,14 +41,42 @@ Installation scripts for an AI applications using ROCm on Linux.
 |Name|Links|API|GUI|Additional information|
 |:---|:---|:---:|:---:|:---|
 |SillyTavern|[SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern)|-|8000|1. Basic auth enabled, defaults: <b>user</b> / <b>password</b>.<br> 2. Change in <b>config.yaml</b>.|
-|llama.cpp TurboQuant|[TheTom/llama-cpp-turboquant](https://github.com/TheTom/llama-cpp-turboquant)<br> [unsloth/gemma-4-12b-it-GGUF](https://huggingface.co/unsloth/gemma-4-12b-it-GGUF)|8080|8080|1. Available as <b>ROCm</b> or <b>Vulkan</b> build.<br> 2. <b>TurboQuant 3-bit KV cache</b>.<br> 3. Model: <b>gemma-4-12b-it Q8_0</b>, downloading it is optional.<br> 4. Drop more GGUFs into <b>user-models/</b>.<br> 5. Default 1 model loaded at a time.<br> 6. Model is picked in the WebUI.|
+|llama.cpp TurboQuant|[TheTom/llama-cpp-turboquant](https://github.com/TheTom/llama-cpp-turboquant)<br> [unsloth/gemma-4-26B-A4B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-26B-A4B-it-qat-GGUF)|8080|8080|1. Available as <b>ROCm</b> or <b>Vulkan</b> build.<br> 2. <b>TurboQuant 3-bit KV cache</b>.<br> 3. Model: <b>gemma-4-26B-A4B-it-qat Q4_K_XL</b> with its <b>MTP</b> draft for speculative decoding, both downloaded as an example.<br> 4. Drop more GGUFs into the build's own <b>user-models/</b>, MTP drafts into its <b>drafts/</b>. The ROCm and Vulkan builds keep separate directories.<br> 5. Per-model configuration lives in <b>models.ini</b> - see below.<br> 6. Default 1 model loaded at a time.<br> 7. Model is picked in the WebUI.|
 |KoboldCPP|[YellowRoseCx/koboldcpp-rocm](https://github.com/YellowRoseCx/koboldcpp-rocm)|5001|5001||
-|vLLM Gemma 4|[vllm-project/vllm](https://github.com/vllm-project/vllm)<br> [0xSero/turboquant](https://github.com/0xSero/turboquant)<br> [google/gemma-4-31B-it-qat](https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-unquantized)|8000|8080|1. <b>TurboQuant 4-bit KV cache</b>.<br> 2. Model: <b>gemma-4-31B-it-qat</b>, quantized to W4A16 during install.<br> 3. <b>~59GB</b> download, <b>~50GB</b> RAM for the conversion.<br> 4. Tool calling and reasoning enabled.<br> 5. 2 concurrent 128k sessions on <b>24GB</b>.|
+|vLLM Gemma 4|[vllm-project/vllm](https://github.com/vllm-project/vllm)<br> [0xSero/turboquant](https://github.com/0xSero/turboquant)<br> [google/gemma-4-31B-it-qat](https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-unquantized)|8000|-|1. <b>TurboQuant 4-bit KV cache</b>.<br> 2. Model: <b>gemma-4-31B-it-qat</b>, quantized to W4A16 during install.<br> 3. <b>~59GB</b> download, <b>~50GB</b> RAM for the conversion.<br> 4. Tool calling and reasoning enabled.<br> 5. One session with the full <b>262144</b> token context on <b>24GB</b>.<br> 6. The KV pool holds about <b>337000</b> tokens, so editing <b>run.sh</b> to <b>--max-num-seqs 2 --max-model-len 130000</b> and <b>TQ_CAPACITY=130000</b> gives two concurrent sessions of <b>130k</b> each. Session isolation is verified by the test suite.|
 
-#### SillyTavern Extensions:
-|Name|Link|Additional information|
-|:---|:---|:---|
-|WhisperSpeech web UI|[Mateusz-Dera/whisperspeech-webui](https://github.com/Mateusz-Dera/whisperspeech-webui)|Install and run WhisperSpeech web UI first.|
+#### llama.cpp per-model configuration:
+
+`models.ini` in the application directory configures every model the router serves.
+The `[*]` section applies to all of them, a section named after a model applies to
+that one only, and command line arguments win over both.
+
+```ini
+version = 1
+
+[*]
+c = 262144
+n-gpu-layers = 999
+cache-type-k = turbo3
+cache-type-v = turbo3
+
+[gemma-4-26B-A4B-it-qat-UD-Q4_K_XL]
+model-draft = /AI/llama.cpp-turboquant/drafts/mtp-gemma-4-26B-A4B-it-Q8_0.gguf
+```
+
+The section name is the model id as `/v1/models` reports it, which is the GGUF file
+name without the extension. Keys are command line arguments without the leading
+dashes.
+
+A draft model has to be attached per model, never globally: llama.cpp refuses to
+start a model whose vocabulary does not match the draft, and a draft belonging to a
+different model of the same family is accepted but its guesses are rejected, which
+is slower than no speculation at all.
+
+Keep MTP drafts in `drafts/`, next to `user-models/` in the same application
+directory. Anything placed in `user-models/` is offered as a model to serve, and a
+subdirectory there is read as one multi-file model. Do not use llama.cpp's own
+`models/` directory - it ships vocabulary fixtures the router would serve as models.
 
 ###  Image & video generation:
 |Name|Links|API|GUI|Additional information|
@@ -73,19 +101,19 @@ Installation scripts for an AI applications using ROCm on Linux.
 |:---|:---|:---:|:---:|:---|
 |ACE-Step-1.5|[ace-step/ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5)|-|7860||
 
-###  Voice generation:
+###  Voice:
 |Name|Links|API|GUI|Additional information|
 |:---|:---|:---:|:---:|:---|
-|WhisperSpeech web UI|[Mateusz-Dera/whisperspeech-webui](https://github.com/Mateusz-Dera/whisperspeech-webui)<br> [collabora/WhisperSpeech](https://github.com/collabora/WhisperSpeech)|5050|7860||
 |Soprano|[ekwek1/soprano](https://github.com/ekwek1/soprano)<br> [Mateusz-Dera/soprano-rocm](https://github.com/Mateusz-Dera/soprano-rocm)|-|7860|1. Uses my experimental fork for ROCm with vLLM.|
 |OmniVoice|[k2-fsa/OmniVoice](https://github.com/k2-fsa/OmniVoice)|-|7860||
+|Parakeet|[nvidia/parakeet-tdt-0.6b-v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3)|-|7860|1. Speech recognition, 25 European languages.<br> 2. Added custom simple UI.|
 
 ###  3D generation:
 |Name|Links|API|GUI|Additional information|
 |:---|:---|:---:|:---:|:---|
 |PartCrafter|[wgsxm/PartCrafter](https://github.com/wgsxm/PartCrafter)<br>[Mateusz-Dera/pytorch_cluster_rocm](https://github.com/Mateusz-Dera/pytorch_cluster_rocm)|-|7860|1. Added custom simple UI.|
 |trellis.cpp|[pwilkin/trellis.cpp](https://github.com/pwilkin/trellis.cpp)<br> [ilintar/trellis2-gguf](https://huggingface.co/ilintar/trellis2-gguf)|8081|-|1. Available as <b>ROCm</b> or <b>Vulkan</b> build.<br> 2. TRELLIS.2-4B image-to-3D in <b>C++/GGML</b>, no Python at runtime.<br> 3. HTTP server: <b>GET /health</b>, <b>POST /generate</b> (image, seed, resolution, bg_removal) returns a GLB.<br> 4. Weights: <b>q8</b> (10GB), full (16.5GB) or q4 (6.5GB), chosen during installation.|
-|ARDY|[nv-tlabs/ardy](https://github.com/nv-tlabs/ardy)<br> [meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)|-|2333|1. NVIDIA autoregressive-diffusion <b>interactive human/robot motion generation</b> from text + kinematic constraints (successor to Kimodo).<br> 2. Interactive <b>viser web demo</b> on <b>port 2333</b> (run.sh); a headless CLI (<b>scripts/generate.py</b>) is also available.<br> 3. Set <b>HuggingFace Token</b> in Variables and request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a> (LLM2Vec text encoder, runs on CPU).<br> 4. Checkpoints download automatically on first use.|
+|ARDY|[nv-tlabs/ardy](https://github.com/nv-tlabs/ardy)<br> [meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)|-|2333|1. NVIDIA autoregressive-diffusion <b>interactive human/robot motion generation</b> from text + kinematic constraints (successor to Kimodo).<br> 2. Interactive <b>viser web demo</b> on <b>port 2333</b> (run.sh); a headless CLI (<b>scripts/generate.py</b>) is also available.<br> 3. Set <b>HuggingFace Token</b> in Variables and request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a>.<br> 4. <b>Partially runs on the CPU</b>: the LLM2Vec text encoder (Llama-3-8B) is started as a separate process with <b>--device cpu</b> and encodes the prompt; the motion diffusion model runs on the GPU. On the GPU the encoder needs about <b>14 GB VRAM</b> on top of the rest.<br> 5. Checkpoints download automatically on first use.|
 |TripoSplat|[VAST-AI-Research/TripoSplat](https://github.com/VAST-AI-Research/TripoSplat)|-|7860||
 |AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|-|7860|1. Automatic (not AI) quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps.|
 

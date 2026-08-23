@@ -146,18 +146,6 @@ KNOWN_GFX=(
     "gfx908|Instinct MI100 (CDNA)"
 )
 
-detect_gpus() {
-    local v major minor step props
-    for props in /sys/class/kfd/kfd/topology/nodes/*/properties; do
-        [ -r "$props" ] || continue
-        awk '$1=="simd_count"{s=$2} $1=="gfx_target_version"{v=$2}
-             END{if (s+0 > 0 && v+0 > 0) print v}' "$props"
-    done | while read -r v; do
-        major=$((v / 10000)); minor=$(((v / 100) % 100)); step=$((v % 100))
-        printf 'gfx%d%x%x\n' "$major" "$minor" "$step"
-    done
-}
-
 detect_gpu_archs() {
     detect_gpus | awk '!seen[$0]++' | tr '\n' ' '
 }
@@ -326,6 +314,113 @@ create_container() {
     fi
 }
 
+# llama.cpp TurboQuant
+llama_cpp() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "llama.cpp TurboQuant" --cancel-button "Back" --menu "Choose an option:" 15 100 2 \
+            1 "ROCm" \
+            2 "Vulkan" \
+            2>&1 > /dev/tty)
+        status=$?
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                llama_cpp_menu "llama.cpp TurboQuant (ROCm)" "llama.cpp-turboquant" install_llama_cpp_turboquant
+                ;;
+            "2")
+                llama_cpp_menu "llama.cpp TurboQuant (Vulkan)" "llama.cpp-turboquant-vulkan" install_llama_cpp_turboquant_vulkan
+                ;;
+            "")
+                echo "Previous menu..."
+                second=true
+                ;;
+            *)
+                echo "Invalid selection."
+                second=true
+                ;;
+        esac
+    done
+}
+
+llama_cpp_menu() {
+    local title="$1"
+    local folder="$2"
+    local install_fn="$3"
+
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "$title" --cancel-button "Back" --menu "Choose an option:" 15 100 4 \
+            1 "Backup" \
+            2 "Install" \
+            3 "Restore" \
+            4 "Delete a backup" \
+            2>&1 > /dev/tty)
+        status=$?
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                llama_cpp_backup "$folder"
+                ;;
+            "2")
+                "$install_fn"
+                ;;
+            "3")
+                llama_cpp_restore "$folder"
+                ;;
+            "4")
+                snapshot_delete "$folder"
+                ;;
+            "")
+                echo "Previous menu..."
+                second=true
+                ;;
+            *)
+                echo "Invalid selection."
+                second=true
+                ;;
+        esac
+    done
+}
+
+llama_cpp_backup() {
+    CHOICES=$(whiptail --separate-output --cancel-button "Back" --checklist "Backup:" 12 60 3 \
+        1 "Backup models" ON \
+        2 "Backup drafts" ON \
+        3 "Backup models.ini" ON 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ] || [ -z "$CHOICES" ]; then
+        return 0
+    fi
+
+    perform_llamacpp_backup "$1" "$CHOICES"
+    read -p "Press Enter to continue..."
+}
+
+llama_cpp_restore() {
+    CHOICES=$(whiptail --separate-output --cancel-button "Back" --checklist "Restore:" 12 60 3 \
+        1 "Restore models" ON \
+        2 "Restore drafts" ON \
+        3 "Restore models.ini" ON 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ] || [ -z "$CHOICES" ]; then
+        return 0
+    fi
+
+    perform_llamacpp_restore "$1" "$CHOICES"
+    read -p "Press Enter to continue..."
+}
+
 # SillyTavern
 sillytavern() {
     second=true
@@ -334,8 +429,8 @@ sillytavern() {
         choice=$(whiptail --title "SillyTavern" --cancel-button "Back" --menu "Choose an option:" 15 100 4 \
             1 "Backup" \
             2 "Install" \
-            3 "Install WhisperSpeech web UI extension" \
-            4 "Restore" \
+            3 "Restore" \
+            4 "Delete a backup" \
             2>&1 > /dev/tty)
         status=$?
         
@@ -352,10 +447,10 @@ sillytavern() {
                 install_sillytavern
                 ;;
             "3")
-                install_sillytavern_whisperspeech_web_ui
+                sillytavern_restore
                 ;;
             "4")
-                sillytavern_restore
+                snapshot_delete "SillyTavern"
                 ;;
             "")
                 echo "Previous menu..."
@@ -426,12 +521,11 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --cancel-button "Back" --menu "Choose an option:" 16 100 6 \
-            1 "SillyTavern" \
-            2 "Install llama.cpp TurboQuant (ROCm)" \
-            3 "Install llama.cpp TurboQuant (Vulkan)" \
-            4 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
-            5 "Install KoboldCPP" \
+        choice=$(whiptail --title "Text generation" --cancel-button "Back" --menu "Choose an option:" 16 100 4 \
+            1 "llama.cpp TurboQuant" \
+            2 "SillyTavern" \
+            3 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
+            4 "Install KoboldCPP" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -441,18 +535,15 @@ text_generation() {
 
         case "$choice" in
             "1")
-                sillytavern
+                llama_cpp
                 ;;
             "2")
-                install_llama_cpp_turboquant
+                sillytavern
                 ;;
             "3")
-                install_llama_cpp_turboquant_vulkan
-                ;;
-            "4")
                 install_vllm_gemma4
                 ;;
-            "5")
+            "4")
                 install_koboldcpp
                 ;;
             "")
@@ -548,10 +639,10 @@ voice_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "Voice generation" --cancel-button "Back" --menu "Choose an option:" 15 100 4 \
-            1 "Install WhisperSpeech web UI" \
-            2 "Install Soprano" \
-            3 "Install OmniVoice" \
+        choice=$(whiptail --title "Voice" --cancel-button "Back" --menu "Choose an option:" 15 100 3 \
+            1 "Install Soprano" \
+            2 "Install OmniVoice" \
+            3 "Install Parakeet" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -561,13 +652,13 @@ voice_generation() {
 
         case "$choice" in
             "1")
-                install_whisperspeech_web_ui
-                ;;
-            "2")
                 install_soprano
                 ;;
-            "3")
+            "2")
                 install_omnivoice
+                ;;
+            "3")
+                install_parakeet
                 ;;
             "")
                 echo "Previous menu..."
@@ -588,7 +679,7 @@ show_menu() {
     3 "Text generation" \
     4 "Image & video generation" \
     5 "Music generation" \
-    6 "Voice generation" \
+    6 "Voice" \
     7 "3D generation" \
     8 "Fine-tuning" \
     --cancel-button "Exit" \
