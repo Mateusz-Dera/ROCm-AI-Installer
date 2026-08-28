@@ -3,7 +3,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
 [![Version](https://img.shields.io/badge/Version-17-grey.svg?labelColor=white)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
-![ROCm](https://img.shields.io/badge/ROCm-7.14-grey.svg?labelColor=white)
+![ROCm](https://img.shields.io/badge/ROCm-10.0-grey.svg?labelColor=white)
 
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
 [![Podman](https://img.shields.io/badge/Podman-892CA0?logo=podman&logoColor=fff)](#)
@@ -18,10 +18,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 > some applications may not work, pinned versions change often, and
 > <b>not everything will necessarily be merged into the main branch</b>.<br>
 > Use the main branch if you want a stable installer.
-
-> [!Note]
-> From version 10.0, the script is distribution-independent thanks to the use of Podman.<br>
-> All you need is a correctly configured <b>Podman</b> and <b>amdgpu</b>.
 
 > [!Important]
 > All models and applications are tested on a GPU with 24GB of VRAM.<br>
@@ -82,7 +78,7 @@ subdirectory there is read as one multi-file model. Do not use llama.cpp's own
 |Name|Links|API|GUI|Additional information|
 |:---|:---|:---:|:---:|:---|
 |ComfyUI|[Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI)<br> [city96/ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)|8188|8188|Workflows templates are in the workflows folder.<br> Extension manager is installed by default.<br> <b>ComfyUI-GGUF</b> is installed by default.|
-|Krea 2 Turbo + Edit|[krea-ai/krea-2](https://github.com/krea-ai/krea-2)<br> [krea/Krea-2-Turbo](https://huggingface.co/krea/Krea-2-Turbo)<br> [krea/krea-2-loras](https://huggingface.co/collections/krea/krea-2-loras)<br> [conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit)<br> [lbouaraba/comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit)<br> [yijunwang2/krea2-outpaint](https://huggingface.co/yijunwang2/krea2-outpaint)|-|7860|1. Custom UI gathering generation, LoRAs, editing and outpainting in one place.<br> 2. 4-bit NF4 quantized to fit 24 GB VRAM.<br> 3. Turbo model (8 steps).<br> 4. 9 official style LoRAs available.<br> 5. Custom LoRA upload supported (native Krea 2 LoRAs are auto-converted to diffusers format).<br> 6. <b>Identity Edit</b> tab: instruction-based, identity-preserving editing of one photo, or combining two (scene + person).<br> 7. <b>Outpaint</b> tab: extends an image into a larger canvas - source pixels kept, only the new area generated.<br> 8. Identity Edit LoRA: <a href="https://huggingface.co/conradlocke/krea2-identity-edit">conradlocke/krea2-identity-edit</a> (unofficial community LoRA).<br> 9. Outpaint LoRA: <a href="https://huggingface.co/yijunwang2/krea2-outpaint">yijunwang2/krea2-outpaint</a> (unofficial community LoRA).<br> 10. Krea 2 and the LoRAs are licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>: the weights are <b>gated</b>, so accept it on <a href="https://huggingface.co/krea/Krea-2-Turbo">the model page</a> and set <b>HuggingFace Token</b> in Variables.<br> 11. Commercial use only below <b>1,000,000USD</b> annual revenue; outputs are AI-generated and must be disclosed as such where required.|
+|Krea 2 Turbo + Edit|[krea-ai/krea-2](https://github.com/krea-ai/krea-2)<br> [krea/Krea-2-Turbo](https://huggingface.co/krea/Krea-2-Turbo)<br> [krea/krea-2-loras](https://huggingface.co/collections/krea/krea-2-loras)<br> [conradlocke/krea2-identity-edit](https://huggingface.co/conradlocke/krea2-identity-edit)<br> [lbouaraba/comfyui-krea2edit](https://github.com/lbouaraba/comfyui-krea2edit)|-|7860|1. Custom UI gathering generation, LoRAs and editing in one place.<br> 2. 4-bit NF4 quantized to fit 24 GB VRAM.<br> 3. Turbo model (8 steps).<br> 4. 9 official style LoRAs available.<br> 5. Custom LoRA upload supported (native Krea 2 LoRAs are auto-converted to diffusers format).<br> 6. <b>Identity Edit</b> tab: instruction-based, identity-preserving editing of one photo, or combining two (scene + person).<br> 7. Identity Edit LoRA: <a href="https://huggingface.co/conradlocke/krea2-identity-edit">conradlocke/krea2-identity-edit</a> (unofficial community LoRA).<br> 8. Krea 2 and the LoRAs are licensed under the <a href="https://krea.ai/krea-2-licensing">Krea 2 Community License Agreement</a>: the weights are <b>gated</b>, so accept it on <a href="https://huggingface.co/krea/Krea-2-Turbo">the model page</a> and set <b>HuggingFace Token</b> in Variables.<br> 9. Commercial use only below <b>1,000,000USD</b> annual revenue; outputs are AI-generated and must be disclosed as such where required.|
 
 #### ComfyUI Addons:
 |Name|Link|Additional information|
@@ -90,11 +86,6 @@ subdirectory there is read as one multi-file model. Do not use llama.cpp's own
 |Z-Image-Turbo|[Tongyi-MAI/Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo)<br> [Comfy-Org/z_image_turbo](https://huggingface.co/Comfy-Org/z_image_turbo)|
 |Z-Anime|[SeeSee21/Z-Anime](https://huggingface.co/SeeSee21/Z-Anime)<br> [Comfy-Org/z_image_turbo](https://huggingface.co/Comfy-Org/z_image_turbo)|
 |Wan2.2-TI2V-5B|[Wan-AI/Wan2.2-TI2V-5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B)<br> [Comfy-Org/Wan_2.2_ComfyUI_Repackaged](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged)|
-
-###  Fine-tuning:
-|Name|Links|API|GUI|Additional information|
-|:---|:---|:---:|:---:|:---|
-|Unsloth|[unslothai/unsloth](https://github.com/unslothai/unsloth)<br> [unsloth.ai](https://unsloth.ai/docs/basics/amd)|-|8888||
 
 ###  Music generation:
 |Name|Links|API|GUI|Additional information|
@@ -115,7 +106,7 @@ subdirectory there is read as one multi-file model. Do not use llama.cpp's own
 |trellis.cpp|[pwilkin/trellis.cpp](https://github.com/pwilkin/trellis.cpp)<br> [ilintar/trellis2-gguf](https://huggingface.co/ilintar/trellis2-gguf)|8081|-|1. Available as <b>ROCm</b> or <b>Vulkan</b> build.<br> 2. TRELLIS.2-4B image-to-3D in <b>C++/GGML</b>, no Python at runtime.<br> 3. HTTP server: <b>GET /health</b>, <b>POST /generate</b> (image, seed, resolution, bg_removal) returns a GLB.<br> 4. Weights: <b>q8</b> (10GB), full (16.5GB) or q4 (6.5GB), chosen during installation.|
 |ARDY|[nv-tlabs/ardy](https://github.com/nv-tlabs/ardy)<br> [meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)|-|2333|1. NVIDIA autoregressive-diffusion <b>interactive human/robot motion generation</b> from text + kinematic constraints (successor to Kimodo).<br> 2. Interactive <b>viser web demo</b> on <b>port 2333</b> (run.sh); a headless CLI (<b>scripts/generate.py</b>) is also available.<br> 3. Set <b>HuggingFace Token</b> in Variables and request access to <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct">meta-llama/Meta-Llama-3-8B-Instruct</a>.<br> 4. <b>Partially runs on the CPU</b>: the LLM2Vec text encoder (Llama-3-8B) is started as a separate process with <b>--device cpu</b> and encodes the prompt; the motion diffusion model runs on the GPU. On the GPU the encoder needs about <b>14 GB VRAM</b> on top of the rest.<br> 5. Checkpoints download automatically on first use.|
 |TripoSplat|[VAST-AI-Research/TripoSplat](https://github.com/VAST-AI-Research/TripoSplat)|-|7860||
-|AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|-|7860|1. Automatic (not AI) quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps.|
+|AutoRemesher|[huxingyi/autoremesher](https://github.com/huxingyi/autoremesher)|-|-|1. Automatic (not AI) quad-remeshing tool, added as a helper.<br> 2. Retopologizes the triangle-soup meshes from the 3D-generation apps.|
 
 ## Instalation:
 

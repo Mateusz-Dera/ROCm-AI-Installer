@@ -1,5 +1,5 @@
 index-strategy = "unsafe-first-match"
 
 [[index]]
-url = "https://repo.amd.com/rocm/whl-multi-arch/"
+url = "https://stable.repo.amd.com/rocm/whl-next/"
 ignore-error-codes = [403]

@@ -206,7 +206,7 @@ basic_pip(){
 # ----- llama.cpp -----
 
 LLAMA_TQ_REPO="https://github.com/TheTom/llama-cpp-turboquant"
-LLAMA_TQ_COMMIT="2168b0cd8b87c75c29a1e6588692ebbb805b9bd2"
+LLAMA_TQ_COMMIT="f97400563641837efeeb2c6b9b45badfc5d35530"
 
 LLAMA_TQ_HF="https://huggingface.co/unsloth/gemma-4-26B-A4B-it-qat-GGUF/resolve/main"
 LLAMA_TQ_MODEL="gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf"
@@ -320,34 +320,35 @@ install_koboldcpp() {
 # ----- vLLM Gemma 4 -----
 
 VLLM_ROCM_BASE="https://rocm.frameworks.amd.com/whl-multi-arch"
-VLLM_ROCM_WHEEL="vllm-0.23.1.dev1%2Brocm7.14.0.g9ddef7117.d20260715-cp314-cp314-linux_x86_64.whl"
-VLLM_ROCM_FLASH="flash_attn-2.8.3-py3-none-any.whl"
-VLLM_ROCM_TORCH="2.11.0+rocm7.14.0"
-VLLM_ROCM_TORCHVISION="0.26.0+rocm7.14.0"
-VLLM_ROCM_TORCHAUDIO="2.11.0+rocm7.14.0"
+VLLM_ROCM_WHEEL="vllm-0.27.1.dev5%2Brocm10.0.0.gf46a9dfe2.d20260826-cp314-cp314-linux_x86_64.whl"
+VLLM_ROCM_FLASH="flash_attn-2.8.3-cp314-cp314-linux_x86_64.whl"
+VLLM_ROCM_TORCH="2.12.0+rocm10.0.0"
+VLLM_ROCM_TORCHVISION="0.27.0+rocm10.0.0"
+VLLM_ROCM_TORCHAUDIO="2.11.0+rocm10.0.0"
 
 VLLM_G4_TQ_REPO="https://github.com/0xSero/turboquant"
 VLLM_G4_TQ_COMMIT="7ac9b8d165a3f7d5e6df33b0450bc1f88ec0d4d5"
 
-vllm_rocm_family() {
-    case "${TARGET_GFX:-gfx1100}" in
-        gfx9*) echo cdna ;;
-        *)     echo rdna ;;
-    esac
-}
 
 vllm_rocm_install() {
     local FOLDER=$1
-    local FAMILY
-    FAMILY=$(vllm_rocm_family)
 
     podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
         uv pip install $(rocm_torch_spec "torch==$VLLM_ROCM_TORCH" \
             "torchvision==$VLLM_ROCM_TORCHVISION") 'torchaudio==$VLLM_ROCM_TORCHAUDIO'"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install $VLLM_ROCM_BASE/vllm-$FAMILY/flash-attn/$VLLM_ROCM_FLASH && \
-        uv pip install $VLLM_ROCM_BASE/vllm-$FAMILY/vllm/$VLLM_ROCM_WHEEL"
+        uv pip install $VLLM_ROCM_BASE/vllm/flash-attn/$VLLM_ROCM_FLASH && \
+        uv pip install --index $VLLM_ROCM_BASE/vllm/ --index-strategy unsafe-first-match \
+            $VLLM_ROCM_BASE/vllm/vllm/$VLLM_ROCM_WHEEL"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        uv pip uninstall tensorizer"
+
+    if podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
+        python -c 'import tensorizer' 2>/dev/null"; then
+        echo "Error: tensorizer is still installed - it does not import on Python 3.14."
+        return 1
+    fi
 }
 
 install_vllm_gemma4() {
@@ -448,30 +449,6 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
 }
 
-# ----- Fine-tuning -----
-
-# Unsloth
-install_unsloth() {
-    FOLDER="unsloth"
-    COMMAND="unsloth studio -p 8888 -H 0.0.0.0"
-
-    GPU_APP=1
-    basic_container
-
-    podman exec -t rocm bash -c "if [ -d /AI/$FOLDER ]; then rm -rf /AI/$FOLDER; fi && mkdir -p /AI/$FOLDER"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && uv venv --python 3.12"
-
-    podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/uv.toml"
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        uv pip install $(rocm_torch_spec torch torchvision) && uv pip install unsloth"
-
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && \
-        curl -fsSL https://unsloth.ai/install.sh -o /tmp/unsloth_install.sh && \
-        printf 'n\n' | sh /tmp/unsloth_install.sh --no-torch --skip-autostart --python /AI/$FOLDER/.venv/bin/python; \
-        rm -f /tmp/unsloth_install.sh"
-
-    basic_run "unsloth" "$COMMAND" "&&"
-}
 
 # SillyTavern
 install_sillytavern(){
@@ -627,9 +604,9 @@ comfy_wait() {
 # ComfyUI
 install_comfyui() {
     REPO="https://github.com/Comfy-Org/ComfyUI"
-    COMMIT="bf4c9a08fc854df6d3b2bef1b92b509e2ef2d2c9"
+    COMMIT="d8e7bbc9d586d95f758d6b0ed23d519088be578a"
     TUNABLEOP=""
-    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --enable-dynamic-vram --enable-manager --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
+    COMMAND="PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 TORCH_BLAS_PREFER_HIPBLASLT=1 $TUNABLEOP uv run main.py --listen 0.0.0.0 --disable-dynamic-vram --enable-manager --preview-method auto --dont-upcast-attention --bf16-vae --use-pytorch-cross-attention --reserve-vram 2.0"
     FOLDER=$(basename "$REPO")
     ADDONS="$@"
 
@@ -639,68 +616,15 @@ install_comfyui() {
     basic_venv "$REPO"
     basic_requirements "$REPO"
 
-    podman exec -it rocm bash -c "
-mkdir -p /AI/ComfyUI/comfy_aimdo
-cat > /AI/ComfyUI/comfy_aimdo/__init__.py << 'PYEOF'
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/control.py << 'PYEOF'
-def init(): pass
-def init_device(index): return False
-def set_log_debug(): pass
-def set_log_critical(): pass
-def set_log_error(): pass
-def set_log_warning(): pass
-def set_log_info(): pass
-def get_total_vram_usage(): return 0
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/model_vbar.py << 'PYEOF'
-class _VbarSlot:
-    pass
-class ModelVBAR:
-    def __init__(self, size, device_index): pass
-    def alloc(self, size): return _VbarSlot()
-    def loaded_size(self): return 0
-def vbars_analyze(): return 0
-def vbar_fault(v): return None
-def vbar_signature_compare(signature, v): return False
-def vbar_unpin(v): pass
-def vbars_reset_watermark_limits(): pass
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/vram_buffer.py << 'PYEOF'
-class VRAMBuffer:
-    def __init__(self, size, device_index):
-        raise RuntimeError('comfy_aimdo stub: VRAMBuffer not available on AMD')
-    def get(self, size, offset=0): return None
-    def size(self): return 0
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/host_buffer.py << 'PYEOF'
-class HostBuffer:
-    def __init__(self, size):
-        raise RuntimeError('comfy_aimdo stub: HostBuffer not available on AMD')
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/torch.py << 'PYEOF'
-def hostbuf_to_tensor(hostbuf): return None
-def aimdo_to_tensor(obj, device): return None
-PYEOF
-cat > /AI/ComfyUI/comfy_aimdo/model_mmap.py << 'PYEOF'
-import mmap, ctypes, os
-class ModelMMAP:
-    def __init__(self, path):
-        self._f = open(path, 'rb')
-        size = os.path.getsize(path)
-        self._mm = mmap.mmap(self._f.fileno(), size, access=mmap.ACCESS_READ)
-        self._arr = (ctypes.c_uint8 * size).from_buffer(self._mm)
-    def get(self):
-        return ctypes.addressof(self._arr)
-    def __del__(self):
-        try:
-            del self._arr
-            self._mm.close()
-            self._f.close()
-        except Exception:
-            pass
-PYEOF
-"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && uv pip install comfy-aimdo"
+
+    podman exec -t rocm bash -c "mkdir -p /AI/$FOLDER/user/default/workflows /AI/$FOLDER/input"
+    for wf in "$SCRIPT_DIR"/workflows/*.json; do
+        podman cp "$wf" "rocm:/AI/$FOLDER/user/default/workflows/$(basename "$wf")"
+    done
+    for img in "$SCRIPT_DIR"/workflows/images/*; do
+        podman cp "$img" "rocm:/AI/$FOLDER/input/$(basename "$img")"
+    done
 
     podman exec -t rocm bash -c "python3 - << 'PYEOF'
 import pathlib
@@ -766,7 +690,7 @@ PYEOF"
 # ACE-Step-1.5
 install_ace_step_1_5() {
     REPO="https://github.com/ace-step/ACE-Step-1.5"
-    COMMIT="6d467e4b5081ccb0abf1ec1bf4fdf9051a2d34b0"
+    COMMIT="14c0211d5a0653b0f63e27686f4c3f151b4d8629"
     COMMAND="ACESTEP_LM_BACKEND=pt MIOPEN_FIND_MODE=FAST python -m acestep.acestep_v15_pipeline --server-name 0.0.0.0 --port 7860 --config_path acestep-v15-turbo --lm_model_path acestep-5Hz-lm-4B --init_service true --backend pt"
     FOLDER=$(basename "$REPO")
 
@@ -860,7 +784,7 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
 # OmniVoice
 install_omnivoice(){
     REPO="https://github.com/k2-fsa/OmniVoice"
-    COMMIT="38e992bc60f85548faeb77e8fa70158ba71deb30"
+    COMMIT="08be0b4ccbac3e13e374e86fbfead4b4cac343e2"
     COMMAND="omnivoice-demo --ip 0.0.0.0 --port 7860"
     FOLDER=$(basename "$REPO")
 
@@ -955,7 +879,7 @@ install_partcrafter(){
 # ----- trellis.cpp -----
 
 TRELLIS_CPP_REPO="https://github.com/pwilkin/trellis.cpp"
-TRELLIS_CPP_COMMIT="1f2e1e71bef9a7a933d504dd3f9b64cba8556d91"
+TRELLIS_CPP_COMMIT="16f3109e82f3922033bfa62b83c42899678b7b6f"
 TRELLIS_CPP_HF="ilintar/trellis2-gguf"
 TRELLIS_CPP_DIR="/AI/trellis.cpp"
 TRELLIS_CPP_MODELS="/AI/trellis2-gguf"
@@ -1082,7 +1006,7 @@ chmod +x /AI/$FOLDER/run.sh"
 # TripoSplat
 install_triposplat(){
     REPO="https://github.com/VAST-AI-Research/TripoSplat"
-    COMMIT="a78fa12d06dbf1381ca548bfac32bb68cb8c451d"
+    COMMIT="d8db9e018b413dd9c4a9fe22463781bf98e8e68d"
     COMMAND="python run_gradio.py"
     FOLDER=$(basename "$REPO")
 
@@ -1121,7 +1045,7 @@ triposplat_vendor_viewer() {
 # AutoRemesher
 install_autoremesher() {
     REPO="https://github.com/huxingyi/autoremesher"
-    COMMIT="525acf5c156120257383a5cb8a7d13cdedaf4c42"
+    COMMIT="d9ef96bd72f0b134dd7e51acf5904f32a5679704"
     FOLDER=$(basename "$REPO")
 
     basic_container

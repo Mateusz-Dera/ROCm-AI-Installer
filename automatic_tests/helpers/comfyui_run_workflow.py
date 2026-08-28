@@ -9,10 +9,13 @@ Output lines (stdout):
   OUTPUT_OK:<abs_path>:<bytes>   – one line per output file
   OUTPUT_FAIL:<reason>           – on failure
 """
-import sys, os, json, time, uuid
+import sys, os, json, time, uuid, asyncio
+import aiohttp
 import requests
 
 BASE_URL   = "http://localhost:8188"
+WS_URL     = "ws://localhost:8188/ws"
+STALL_SECS = float(os.environ.get("COMFY_STALL_SECS", "600"))
 CLIENT_ID  = str(uuid.uuid4())
 OUTPUT_DIR = "/AI/ComfyUI/output"
 
@@ -104,29 +107,63 @@ def submit_prompt(prompt):
         raise RuntimeError(f"Prompt validation error: {resp['error']}")
     return resp["prompt_id"]
 
-def poll_until_done(prompt_id, timeout=7200):
-    deadline = time.time() + timeout
-    dots = 0
-    while time.time() < deadline:
-        r = requests.get(f"{BASE_URL}/history/{prompt_id}", timeout=10)
-        r.raise_for_status()
-        data = r.json()
-        if prompt_id in data:
-            entry  = data[prompt_id]
-            status = entry.get("status", {})
-            # Check for execution errors
-            for msg_type, msg_data in status.get("messages", []):
-                if msg_type == "execution_error":
+async def _watch(prompt):
+    async with aiohttp.ClientSession() as session:
+        async with session.ws_connect(f"{WS_URL}?clientId={CLIENT_ID}", heartbeat=30) as ws:
+            prompt_id = submit_prompt(prompt)
+            log(f"  prompt_id={prompt_id}")
+            last = time.monotonic()
+            node = None
+            while True:
+                left = STALL_SECS - (time.monotonic() - last)
+                if left <= 0:
+                    raise TimeoutError(
+                        f"no progress for {STALL_SECS:.0f}s"
+                        + (f" while running node {node}" if node else ""))
+                try:
+                    msg = await asyncio.wait_for(ws.receive(), timeout=left)
+                except asyncio.TimeoutError:
+                    continue
+                if msg.type == aiohttp.WSMsgType.BINARY:
+                    last = time.monotonic()
+                    continue
+                if msg.type != aiohttp.WSMsgType.TEXT:
                     raise RuntimeError(
-                        f"Execution error in node {msg_data.get('node_id')}: "
-                        f"{msg_data.get('exception_type')}: {msg_data.get('exception_message')}")
-            if status.get("completed"):
-                return entry.get("outputs", {})
-        time.sleep(5)
-        dots += 1
-        if dots % 12 == 0:
-            log(f"  ...still waiting ({dots * 5}s)")
-    raise TimeoutError(f"Timeout after {timeout}s waiting for prompt {prompt_id}")
+                        "ComfyUI closed the websocket - the server died or was restarted "
+                        f"(frame {msg.type})")
+
+                event = json.loads(msg.data)
+                etype = event.get("type")
+                data = event.get("data", {})
+                if data.get("prompt_id") not in (None, prompt_id):
+                    continue
+                last = time.monotonic()
+
+                if etype == "executing":
+                    node = data.get("node")
+                    if node is not None:
+                        log(f"  node {node}")
+                elif etype == "progress":
+                    v, m = data.get("value", 0), data.get("max", 0)
+                    if m and (v == m or v % max(1, m // 4) == 0):
+                        log(f"  node {node}: {v}/{m}")
+                elif etype == "execution_error":
+                    raise RuntimeError(
+                        f"node {data.get('node_id')} ({data.get('node_type')}): "
+                        f"{data.get('exception_type')}: {data.get('exception_message')}")
+                elif etype == "execution_interrupted":
+                    raise RuntimeError(f"execution interrupted at node {data.get('node_id')}")
+                elif etype == "execution_success":
+                    return prompt_id
+
+
+def run_and_wait(prompt):
+    prompt_id = asyncio.run(_watch(prompt))
+    r = requests.get(f"{BASE_URL}/history/{prompt_id}", timeout=30)
+    r.raise_for_status()
+    entry = r.json().get(prompt_id, {})
+    return entry.get("outputs", {})
+
 
 def find_outputs(outputs):
     """Return list of (abs_path, size) for all output files."""
@@ -162,20 +199,18 @@ def main():
     with open(wf_path) as f:
         workflow_json = json.load(f)
 
-    log("Fetching ComfyUI node object_info...")
-    object_info = fetch_object_info()
-    log(f"  {len(object_info)} node types known")
-
-    log("Converting workflow to API format...")
-    prompt = convert(workflow_json, object_info)
+    if "nodes" in workflow_json:
+        log("Fetching ComfyUI node object_info...")
+        object_info = fetch_object_info()
+        log(f"  {len(object_info)} node types known")
+        log("Converting workflow to API format...")
+        prompt = convert(workflow_json, object_info)
+    else:
+        prompt = workflow_json
     log(f"  {len(prompt)} nodes in prompt")
 
-    log("Submitting prompt...")
-    prompt_id = submit_prompt(prompt)
-    log(f"  prompt_id={prompt_id}")
-
-    log("Waiting for completion (up to 2h)...")
-    outputs = poll_until_done(prompt_id, timeout=7200)
+    log(f"Submitting prompt (abort after {STALL_SECS:.0f}s without progress)...")
+    outputs = run_and_wait(prompt)
     log("  Prompt completed!")
 
     results = find_outputs(outputs)

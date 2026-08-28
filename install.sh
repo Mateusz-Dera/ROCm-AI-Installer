@@ -673,7 +673,7 @@ voice_generation() {
 }
 
 show_menu() {
-    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 20 100 9 \
+    choice=$(whiptail --title "ROCm-AI-Installer $VERSION" --menu "Choose an option:" 20 100 7 \
     1 "Variables" \
     2 "Create a container" \
     3 "Text generation" \
@@ -681,7 +681,6 @@ show_menu() {
     5 "Music generation" \
     6 "Voice" \
     7 "3D generation" \
-    8 "Fine-tuning" \
     --cancel-button "Exit" \
     2>&1 > /dev/tty)
 
@@ -707,41 +706,10 @@ show_menu() {
         7)
             d3_generation
             ;;
-        8)
-            fine_tuning
-            ;;
         *)
             exit 0
             ;;
     esac
-}
-fine_tuning() {
-    second=true
-    while $second; do
-
-        choice=$(whiptail --title "Fine-tuning" --cancel-button "Back" --menu "Choose an option:" 15 100 1 \
-            1 "Install Unsloth (LoRA/QLoRA fine-tuning + Studio)" \
-            2>&1 > /dev/tty)
-
-        case "$choice" in
-            "1")
-                install_unsloth
-                ;;
-            "")
-                echo "Previous menu..."
-                second=false
-                ;;
-            *)
-                echo "Invalid selection."
-                second=false
-                ;;
-        esac
-        status=$?
-
-        if [ $status -ne 0 ]; then
-            return 0
-        fi
-    done
 }
 
 # 3D generation

@@ -16,7 +16,6 @@ Added:
 - vLLM Gemma 4
 - llama.cpp TurboQuant
 - trellis.cpp
-- Unsloth
 - ARDY
 - AutoRemesher
 

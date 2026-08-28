@@ -117,8 +117,9 @@ app_gpu_clause() {
 }
 
 start_app() {
-    local folder="$1" log_file="$2" cmd
+    local folder="$1" log_file="$2" env_prefix="${3:-}" cmd
     cmd=$(app_command "$folder")
+    [ -n "$env_prefix" ] && cmd="export ${env_prefix} && ${cmd}"
     info "Launch command from run.sh: $cmd"
     ctr ": > '${log_file}'"
     podman exec -d rocm bash -c "${cmd} >> '${log_file}' 2>&1" > /dev/null

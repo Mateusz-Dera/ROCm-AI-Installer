@@ -139,7 +139,7 @@
     },
     {
       "id": 11,
-      "type": "VAEDecode",
+      "type": "VAEDecodeTiled",
       "pos": [
         1484.8181693168492,
         983.2248083937924
@@ -175,9 +175,14 @@
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.4.0",
-        "Node name for S&R": "VAEDecode"
+        "Node name for S&R": "VAEDecodeTiled"
       },
-      "widgets_values": []
+      "widgets_values": [
+        256,
+        32,
+        16,
+        4
+      ]
     },
     {
       "id": 12,

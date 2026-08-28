@@ -24,6 +24,19 @@ from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionS
 from transformers import CLIPImageProcessor, AutoProcessor
 
 DTYPE = torch.bfloat16
+
+VRAM_HEADROOM_BYTES = int(os.environ.get("KREA_VRAM_HEADROOM_MB", "0")) * 1024 ** 2
+
+if VRAM_HEADROOM_BYTES > 0 and torch.cuda.is_available():
+    _total = torch.cuda.get_device_properties(0).total_memory
+    _fraction = max(0.05, (_total - VRAM_HEADROOM_BYTES) / _total)
+    torch.cuda.set_per_process_memory_fraction(_fraction)
+    print(
+        f"VRAM cap: {_fraction * _total / 1024 ** 3:.2f} GiB of "
+        f"{_total / 1024 ** 3:.2f} GiB "
+        f"({VRAM_HEADROOM_BYTES // 1024 ** 2} MiB left for the driver)",
+        flush=True,
+    )
 TURBO_REPO = "krea/Krea-2-Turbo"
 MAX_SEED = 2**31 - 1
 CUSTOM_LORA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "loras")
@@ -42,13 +55,6 @@ EDIT_DEFAULT_GUIDANCE = 0.0     # card: CFG 1.0 == guidance disabled (Krea conve
 EDIT_DEFAULT_GROUNDING_PX = 768  # card: v1.1 trained range 384-768
 EDIT_MAX_MEGAPIXELS = 1.0       # card: <=2MP; two-ref prefers 1-1.5MP. The edit path
 
-OUTPAINT_LORA_REPO = "yijunwang2/krea2-outpaint"
-OUTPAINT_LORA_WEIGHT = "krea2_outpaint_rank32.safetensors"
-OUTPAINT_ADAPTER = "outpaint"
-OUTPAINT_SOURCE_MAX_EDGE = 384   # card: reference conditioning encoded at max edge 384
-OUTPAINT_SEAM_PX = 32            # card: 32 px inward feather when compositing back
-OUTPAINT_DEFAULT_STEPS = 8       # card: distilled 8-step inference
-OUTPAINT_MAX_MEGAPIXELS = 1.5    # canvas cap so the extended image still fits 24 GB
 
 
 _GROUNDED_SYSTEM = (
@@ -540,7 +546,7 @@ def _target_size(source, max_megapixels):
     return h, w
 
 
-@torch.inference_mode()
+@torch.no_grad()
 def edit(
     source_image,
     person_image=None,
@@ -643,86 +649,10 @@ def edit(
     return image, seed
 
 
-def _ensure_outpaint_lora():
-    """Load the outpaint LoRA on first use (kept alongside the other adapters)."""
-    if OUTPAINT_ADAPTER in _loaded_adapters():
-        return
-    print(f"[Outpaint] Downloading {OUTPAINT_LORA_REPO}/{OUTPAINT_LORA_WEIGHT} ...")
-    src = hf_hub_download(OUTPAINT_LORA_REPO, OUTPAINT_LORA_WEIGHT)
-    dst = os.path.join(CUSTOM_LORA_DIR, ".outpaint_diffusers.safetensors")
-    if not os.path.exists(dst):
-        _convert_krea2_native_to_diffusers(src, dst)
-    pipe.load_lora_weights(
-        os.path.dirname(dst), weight_name=os.path.basename(dst), adapter_name=OUTPAINT_ADAPTER
-    )
-    print("[Outpaint] LoRA ready.")
 
 
-def _outpaint_plan(source, direction, extend_pct):
-    """Canvas size and source box for a one-pass extension.
-
-    The card allows a single pass only when the source box spans the full canvas
-    width or height, so the box always covers the axis that is not being
-    extended. Its other side follows from the source aspect ratio, which the
-    model requires the box to preserve.
-    """
-    unit = 16  # canvas sides must be multiples of 16
-    src_w, src_h = source.size
-    horizontal = direction in ("Right", "Left", "Left + right")
-    factor = 1.0 + max(0.0, float(extend_pct)) / 100.0
-
-    if horizontal:
-        box_h = max(unit, int(round(src_h / unit)) * unit)
-        box_w = max(1, round(src_w * box_h / src_h))
-        canvas_h = box_h
-        canvas_w = max(box_w + unit, int(round(box_w * factor / unit)) * unit)
-    else:
-        box_w = max(unit, int(round(src_w / unit)) * unit)
-        box_h = max(1, round(src_h * box_w / src_w))
-        canvas_w = box_w
-        canvas_h = max(box_h + unit, int(round(box_h * factor / unit)) * unit)
-
-    budget = OUTPAINT_MAX_MEGAPIXELS * 1_000_000
-    if canvas_w * canvas_h > budget:
-        scale = (budget / (canvas_w * canvas_h)) ** 0.5
-        if horizontal:
-            box_h = max(unit, int(round(box_h * scale / unit)) * unit)
-            box_w = max(1, round(src_w * box_h / src_h))
-            canvas_h = box_h
-            canvas_w = max(box_w + unit, int(round(canvas_w * scale / unit)) * unit)
-        else:
-            box_w = max(unit, int(round(box_w * scale / unit)) * unit)
-            box_h = max(1, round(src_h * box_w / src_w))
-            canvas_w = box_w
-            canvas_h = max(box_h + unit, int(round(canvas_h * scale / unit)) * unit)
-
-    if horizontal:
-        free = canvas_w - box_w
-        x0 = 0 if direction == "Right" else (free if direction == "Left" else free // 2)
-        bbox = (x0, 0, x0 + box_w, canvas_h)
-    else:
-        free = canvas_h - box_h
-        y0 = 0 if direction == "Down" else (free if direction == "Up" else free // 2)
-        bbox = (0, y0, canvas_w, y0 + box_h)
-
-    return (canvas_w, canvas_h), bbox
 
 
-def _outpaint_composite(generated, placed_source, bbox, seam_px=OUTPAINT_SEAM_PX):
-    """Paste the exact source pixels back over the generated canvas.
-
-    The decoder does not reproduce the known region bit for bit, so the original
-    pixels are restored; the feather only hides the small difference at the
-    boundary. Ported from the model's own outpaint.py (Apache-2.0).
-    """
-    w, h = placed_source.size
-    yy, xx = np.mgrid[:h, :w]
-    edge = np.minimum.reduce((xx, yy, w - 1 - xx, h - 1 - yy))
-    alpha = np.clip(edge / max(1, seam_px), 0.0, 1.0)
-    mask = Image.fromarray((alpha * 255).astype(np.uint8), mode="L")
-    out = generated.convert("RGB").copy()
-    out.paste(placed_source, bbox[:2], mask)
-    return out
 
 
 def _encode_reference_latent(image):
@@ -759,89 +689,6 @@ def _registered_position_ids(text_seq_len, grid_h, grid_w, ref_h, ref_w, bbox_no
     return torch.cat([text_ids, ref_ids.reshape(-1, 3), tgt_ids.reshape(-1, 3)], dim=0)
 
 
-def outpaint(
-    source_image,
-    prompt="",
-    direction="Right",
-    extend_pct=50,
-    steps=OUTPAINT_DEFAULT_STEPS,
-    seed=0,
-    randomize=True,
-    progress=gr.Progress(track_tqdm=True),
-):
-    if source_image is None:
-        raise gr.Error("Upload an image to extend.")
-    if not prompt or not prompt.strip():
-        raise gr.Error("Describe the complete output image, not just the new part.")
-
-    prompt = prompt.strip()
-    if randomize:
-        seed = random.randint(0, MAX_SEED)
-    seed = int(seed)
-
-    source = source_image if isinstance(source_image, Image.Image) else Image.fromarray(source_image)
-    source = source.convert("RGB")
-
-    (width, height), bbox = _outpaint_plan(source, direction, extend_pct)
-    placed = source.resize((bbox[2] - bbox[0], bbox[3] - bbox[1]), Image.LANCZOS)
-    condition = placed.copy()
-    condition.thumbnail((OUTPAINT_SOURCE_MAX_EDGE, OUTPAINT_SOURCE_MAX_EDGE), Image.LANCZOS)
-    bbox_norm = [bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height]
-
-    device = pipe._execution_device
-    _ensure_outpaint_lora()
-    _set_active_adapters([OUTPAINT_ADAPTER], [1.0])  # card: LoRA scale 1.0
-
-    prompt_embeds, prompt_mask = pipe.encode_prompt(prompt=prompt, device=device)
-
-    ref_packed, ref_h, ref_w = _encode_reference_latent(condition)
-
-    num_channels_latents = pipe.transformer.config.in_channels // (pipe.patch_size ** 2)
-    generator = torch.Generator(device=device).manual_seed(seed)
-    latents = pipe.prepare_latents(
-        1, num_channels_latents, height, width, DTYPE, device, generator, None
-    )
-
-    grid_h = height // (pipe.vae_scale_factor * pipe.patch_size)
-    grid_w = width // (pipe.vae_scale_factor * pipe.patch_size)
-    position_ids = _registered_position_ids(
-        prompt_embeds.shape[1], grid_h, grid_w, ref_h, ref_w, bbox_norm, device
-    )
-
-    sigmas = np.linspace(1.0, 1 / int(steps), int(steps))
-    timesteps, _ = retrieve_timesteps(pipe.scheduler, int(steps), device, sigmas=sigmas, mu=1.15)
-
-    _ensure_on_device(pipe.transformer)
-    pipe.scheduler.set_begin_index(0)
-    try:
-        for tstep in progress.tqdm(timesteps, desc="Outpainting"):
-            timestep = (tstep / pipe.scheduler.config.num_train_timesteps).expand(
-                latents.shape[0]
-            ).to(latents.dtype)
-            noise_pred = _edit_transformer_forward(
-                latents, [ref_packed], prompt_embeds, prompt_mask, timestep, position_ids
-            )
-            latents = pipe.scheduler.step(noise_pred, tstep, latents, return_dict=False)[0]
-
-        latents = pipe._unpack_latents(latents, height, width).to(pipe.vae.dtype)
-        mean = _LATENTS_MEAN.to(latents.device, latents.dtype)
-        std = _LATENTS_STD.to(latents.device, latents.dtype)
-        image = pipe.vae.decode(latents * std + mean, return_dict=False)[0][:, :, 0]
-        image = pipe.image_processor.postprocess(image, output_type="pil")[0]
-    except torch.OutOfMemoryError as exc:
-        torch.cuda.empty_cache()
-        raise gr.Error(
-            f"Ran out of VRAM extending to {width}x{height}. Reduce the extension "
-            "or use a smaller source image."
-        ) from exc
-
-    image = _outpaint_composite(image, placed, bbox)
-
-    if _check_nsfw(image):
-        raise gr.Error("Content blocked by safety filter (NSFW detected).")
-
-    image.save(os.path.join(IMAGES_DIR, datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"))
-    return image, seed, f"{width}x{height}, source at {bbox}"
 
 
 def generate(
@@ -1078,50 +925,5 @@ with gr.Blocks(title="Krea 2 Turbo + Edit") as demo:
         edit_btn.click(edit, edit_inputs, [edit_output, edit_seed])
         edit_instruction.submit(edit, edit_inputs, [edit_output, edit_seed])
 
-    with gr.Tab("Outpaint"):
-        gr.Markdown(
-            "Extend an image into a larger canvas with the LoRA "
-            "[`yijunwang2/krea2-outpaint`](https://huggingface.co/yijunwang2/krea2-outpaint). "
-            "The source keeps its exact pixels; only the new area is generated.\n\n"
-            "Describe the **whole** output image, not just the part being added - the "
-            "prompt conditions the entire canvas."
-        )
-
-        with gr.Row(equal_height=False):
-            with gr.Column(scale=5):
-                op_source = gr.Image(label="Source image", type="pil", height=280)
-                op_prompt = gr.Textbox(
-                    label="Prompt (describes the complete output)",
-                    lines=3,
-                    placeholder="e.g. a wide sunlit kitchen interior, morning light",
-                )
-                op_direction = gr.Radio(
-                    ["Right", "Left", "Left + right", "Down", "Up", "Up + down"],
-                    value="Right",
-                    label="Extend towards",
-                )
-                op_extend = gr.Slider(
-                    10, 200, value=50, step=5, label="Extension (%)",
-                    info="How much canvas to add along that axis, relative to the source.",
-                )
-                op_btn = gr.Button("Outpaint", variant="primary")
-
-                with gr.Accordion("Advanced", open=False):
-                    op_steps = gr.Slider(
-                        4, 16, value=OUTPAINT_DEFAULT_STEPS, step=1, label="Steps",
-                        info="The adapter is trained for distilled 8-step inference.",
-                    )
-                    with gr.Row():
-                        op_seed = gr.Slider(0, MAX_SEED, value=0, step=1, label="Seed")
-                        op_randomize = gr.Checkbox(value=True, label="Randomize seed")
-
-            with gr.Column(scale=6):
-                op_output = gr.Image(label="Extended image", format="png")
-                op_info = gr.Textbox(label="Canvas", interactive=False)
-
-        op_inputs = [op_source, op_prompt, op_direction, op_extend,
-                     op_steps, op_seed, op_randomize]
-        op_btn.click(outpaint, op_inputs, [op_output, op_seed, op_info])
-        op_prompt.submit(outpaint, op_inputs, [op_output, op_seed, op_info])
 
 demo.launch(server_name="0.0.0.0")

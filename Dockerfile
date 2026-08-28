@@ -58,8 +58,8 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0t64
 
 RUN mkdir -p /etc/apt/keyrings && \
-    wget https://repo.amd.com/rocm/packages-multi-arch/gpg/rocm.gpg -O - | gpg --dearmor | tee /etc/apt/keyrings/amdrocm.gpg > /dev/null
-RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/amdrocm.gpg] https://repo.amd.com/rocm/packages-multi-arch/ubuntu2604 stable main" \
+    wget https://stable.repo.amd.com/rocm/gpg/packages.gpg -O - | gpg --dearmor | tee /etc/apt/keyrings/amdrocm.gpg > /dev/null
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/amdrocm.gpg] https://stable.repo.amd.com/rocm/core/packages/ubuntu2604 stable main" \
         > /etc/apt/sources.list.d/rocm.list
 
 RUN apt-get update
@@ -69,13 +69,13 @@ ARG TARGET_GFX_ALL=gfx1100
 RUN set -eu; \
     pkgs=""; \
     for arch in $(echo "$TARGET_GFX_ALL" | tr ';' ' '); do \
-        pkgs="$pkgs amdrocm7.14-$arch amdrocm-core-dev7.14-$arch"; \
+        pkgs="$pkgs amdrocm10.0-$arch amdrocm-core-dev10.0-$arch"; \
     done; \
     echo "ROCm packages:$pkgs"; \
     apt-get install -y $pkgs
 
 RUN for d in bin lib include share libexec; do \
-        [ -d "/opt/rocm/core-7.14/$d" ] && ln -sfn "core-7.14/$d" "/opt/rocm/$d"; \
+        [ -d "/opt/rocm/core-10.0/$d" ] && ln -sfn "core-10.0/$d" "/opt/rocm/$d"; \
     done; true
 
 # Vulkan

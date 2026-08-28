@@ -46,7 +46,6 @@ fastapi-cloud-cli==0.23.0
 fastar==0.11.0
 fastsafetensors==0.3.3
 filelock==3.29.1
-flash-attn @ https://rocm.frameworks.amd.com/whl-multi-arch/vllm-rdna/flash-attn/flash_attn-2.8.3-py3-none-any.whl
 frozenlist==1.8.0
 fsspec==2026.4.0
 gguf==0.19.0
@@ -196,7 +195,6 @@ sse-starlette==3.4.8
 starlette==1.6.0
 supervisor==4.3.0
 sympy==1.14.0
-tensorizer==2.12.1
 tiktoken==0.13.0
 tilelang==0.1.10
 timm==1.0.28
@@ -214,7 +212,6 @@ urllib3==2.7.0
 uvicorn==0.52.1
 uvloop==0.22.1
 vcs-versioning==2.2.4
-vllm @ https://rocm.frameworks.amd.com/whl-multi-arch/vllm-rdna/vllm/vllm-0.23.1.dev1%2Brocm7.14.0.g9ddef7117.d20260715-cp314-cp314-linux_x86_64.whl
 watchfiles==1.2.0
 websockets==17.0.1
 xgrammar==0.2.3
