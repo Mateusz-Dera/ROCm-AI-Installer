@@ -58,6 +58,13 @@ test_ardy() {
     fi
     pass "Encoder listening on 0.0.0.0:${ENCODER_PORT}"
 
+    info "Waiting for the demo to be launched..."
+    local waited=0
+    while [ -z "$(app_pid "$DEMO_PAT")" ] && [ $waited -lt 60 ]; do
+        sleep 2
+        waited=$((waited + 2))
+    done
+
     info "Waiting for the demo..."
     wait_for_http_or_abort "ARDY demo" \
         "curl -sf --max-time 3 http://localhost:${DEMO_PORT}/ > /dev/null" \

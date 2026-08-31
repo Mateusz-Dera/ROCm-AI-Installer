@@ -995,9 +995,9 @@ if ! podman ps --format '{{.Names}}' | grep -q '^rocm\$'; then
 fi
 podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
 podman exec -it rocm bash -c 'cd /AI/ardy ${GPU_CLAUSE:-} && source .venv/bin/activate && \
-    export PYTORCH_HIP_ALLOC_CONF=expandable_segments:True && \
-    { python scripts/run_text_encoder_server.py --device cpu & } && \
-    sleep 20 && python scripts/run_demo.py'
+    { CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= python scripts/run_text_encoder_server.py --device cpu & } && \
+    n=0; until curl -sf --max-time 2 http://localhost:9550/ > /dev/null 2>&1 || [ \$n -ge 120 ]; do n=\$((n+1)); sleep 5; done && \
+    python scripts/run_demo.py'
 podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"

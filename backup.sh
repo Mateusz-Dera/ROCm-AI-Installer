@@ -66,6 +66,29 @@ snapshot_pick() {
     whiptail --title "$title" --radiolist "$prompt" 20 74 10 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
+snapshot_select() {
+    local app="$1" chosen
+    chosen=$(snapshot_pick "$app" "Restore" "Which backup of ${app} should be restored?") || return 1
+    [ -n "$chosen" ] || return 1
+    SNAPSHOT_DIR="${BACKUP_ROOT}/${app}/${chosen}"
+    SNAPSHOT_NAME="$chosen"
+}
+
+snapshot_contains() {
+    podman exec -t rocm bash -c "[ -e '${SNAPSHOT_DIR}/$1' ]" 2>/dev/null
+}
+
+snapshot_entries() {
+    local -n _out=$1
+    shift
+    local id label path
+    _out=()
+    while [ $# -ge 3 ]; do
+        id="$1"; label="$2"; path="$3"; shift 3
+        snapshot_contains "$path" && _out+=("$id" "$label" ON)
+    done
+}
+
 snapshot_create() {
     local app="$1"
     local suggested name path
@@ -417,16 +440,11 @@ perform_llamacpp_restore() {
     local folder="$1"
     local choices="$2"
 
-    basic_container || return 1
-
-    local chosen
-    chosen=$(snapshot_pick "$folder" "Restore" "Which backup of ${folder} should be restored?") || return 0
-    [ -n "$chosen" ] || return 0
-    SNAPSHOT_DIR="${BACKUP_ROOT}/${folder}/${chosen}"
+    [ -n "${SNAPSHOT_DIR:-}" ] || return 1
 
     reset_backup_tracking
 
-    log_message "INFO" "Starting $folder restore operation from ${chosen}"
+    log_message "INFO" "Starting $folder restore operation from ${SNAPSHOT_NAME}"
 
     for choice in $choices; do
         case $choice in
@@ -513,16 +531,11 @@ perform_sillytavern_backup() {
 perform_sillytavern_restore() {
     local choices="$1"
 
-    basic_container || return 1
-
-    local chosen
-    chosen=$(snapshot_pick "SillyTavern" "Restore" "Which backup of SillyTavern should be restored?") || return 0
-    [ -n "$chosen" ] || return 0
-    SNAPSHOT_DIR="${BACKUP_ROOT}/SillyTavern/${chosen}"
+    [ -n "${SNAPSHOT_DIR:-}" ] || return 1
 
     reset_backup_tracking
 
-    log_message "INFO" "Starting SillyTavern restore operation from ${chosen}"
+    log_message "INFO" "Starting SillyTavern restore operation from ${SNAPSHOT_NAME}"
     
     for choice in $choices; do
         case $choice in

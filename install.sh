@@ -408,10 +408,22 @@ llama_cpp_backup() {
 }
 
 llama_cpp_restore() {
-    CHOICES=$(whiptail --separate-output --cancel-button "Back" --checklist "Restore:" 12 60 3 \
-        1 "Restore models" ON \
-        2 "Restore drafts" ON \
-        3 "Restore models.ini" ON 3>&1 1>&2 2>&3)
+    basic_container || return 0
+    snapshot_select "$1" || return 0
+
+    local entries
+    snapshot_entries entries \
+        1 "Restore models"      "user-models" \
+        2 "Restore drafts"      "drafts" \
+        3 "Restore models.ini"  "models.ini"
+
+    if [ ${#entries[@]} -eq 0 ]; then
+        whiptail --title "Restore" --msgbox "Backup ${SNAPSHOT_NAME} holds nothing that can be restored." 10 60
+        return 0
+    fi
+
+    CHOICES=$(whiptail --separate-output --cancel-button "Back" \
+        --checklist "Restore from ${SNAPSHOT_NAME}:" 12 60 3 "${entries[@]}" 3>&1 1>&2 2>&3)
 
     if [ $? -ne 0 ] || [ -z "$CHOICES" ]; then
         return 0
@@ -491,25 +503,36 @@ sillytavern_backup() {
 }
 
 sillytavern_restore() {
-    CHOICES=$(whiptail --separate-output --cancel-button "Back" --checklist "Restore:" 21 50 14 \
-        1 "Restore config.yaml" ON \
-        2 "Restore settings.json" ON \
-        3 "Restore characters" ON \
-        4 "Restore groups" ON \
-        5 "Restore worlds" ON \
-        6 "Restore chats" ON \
-        7 "Restore group chats" ON \
-        8 "Restore user avatars images" ON \
-        9 "Restore backgrounds images" ON \
-        10 "Restore themes" ON \
-        11 "Restore presets" ON \
-        12 "Restore context" ON \
-        13 "Restore instruct" ON \
-        14 "Restore sysprompt" ON 3>&1 1>&2 2>&3)
+    basic_container || return 0
+    snapshot_select "SillyTavern" || return 0
 
-    status=$?
-    
-    if [ $status -ne 0 ]; then
+    local D="data/default-user"
+    local entries
+    snapshot_entries entries \
+        1  "Restore config.yaml"          "config.yaml" \
+        2  "Restore settings.json"        "$D/settings.json" \
+        3  "Restore characters"           "$D/characters" \
+        4  "Restore groups"               "$D/groups" \
+        5  "Restore worlds"               "$D/worlds" \
+        6  "Restore chats"                "$D/chats" \
+        7  "Restore group chats"          "$D/group chats" \
+        8  "Restore user avatars images"  "$D/User Avatars" \
+        9  "Restore backgrounds images"   "$D/backgrounds" \
+        10 "Restore themes"               "$D/themes" \
+        11 "Restore presets"              "$D/TextGen Settings" \
+        12 "Restore context"              "$D/context" \
+        13 "Restore instruct"             "$D/instruct" \
+        14 "Restore sysprompt"            "$D/sysprompt"
+
+    if [ ${#entries[@]} -eq 0 ]; then
+        whiptail --title "Restore" --msgbox "Backup ${SNAPSHOT_NAME} holds nothing that can be restored." 10 60
+        return 0
+    fi
+
+    CHOICES=$(whiptail --separate-output --cancel-button "Back" \
+        --checklist "Restore from ${SNAPSHOT_NAME}:" 21 50 14 "${entries[@]}" 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ] || [ -z "$CHOICES" ]; then
         return 0
     fi
 
