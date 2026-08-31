@@ -132,7 +132,18 @@ _bracket() {
     esac
 }
 
-app_pid() { ctr "pgrep -f '$(_bracket "$1")' | head -1"; }
+_worker_pid() {
+    ctr "all=\$(pgrep -f '$1'); \
+         for p in \$all; do \
+             case \"\$(cat /proc/\$p/comm 2>/dev/null)\" in \
+                 bash|sh|dash|'') ;; \
+                 *) echo \$p; exit 0 ;; \
+             esac; \
+         done; \
+         printf '%s' \"\$all\" | head -1"
+}
+
+app_pid() { _worker_pid "$(_bracket "$1")"; }
 
 stop_app() {
     local proc_pat="$1" port="$2"
@@ -148,7 +159,7 @@ stop_app() {
 
 _proc_progress() {
     ctr "awk '{print \$14+\$15}' /proc/$1/stat 2>/dev/null; \
-         awk '/^read_bytes/{print \$2}' /proc/$1/io 2>/dev/null; \
+         awk '/^read_bytes|^write_bytes/{print \$2}' /proc/$1/io 2>/dev/null; \
          awk '/^VmRSS/{print \$2}' /proc/$1/status 2>/dev/null"
 }
 
@@ -167,7 +178,7 @@ wait_for_http() {
     local waited=0 stalled=0 last_log="" last_prog="" cur_log cur_prog pid
 
     while [ $waited -lt "$max_wait" ]; do
-        pid=$(ctr "pgrep -f '${pat}' | head -1")
+        pid=$(_worker_pid "${pat}")
         if [ -z "$pid" ]; then
             fail "  Process '${proc_pat}' is gone. Last log lines:"
             dump_lines "tail -5 '${log_file}'"

@@ -16,8 +16,9 @@ TEST_FILES=()
 if [ $# -eq 0 ]; then
     mapfile -t TEST_FILES < <(
         find "$TESTS_DIR" -maxdepth 1 -name '*.sh' \
-            -not -name 'run.sh' -not -name 'common.sh' | sort
+            -not -name 'run.sh' -not -name 'common.sh' -not -name 'parakeet.sh' | sort
     )
+    TEST_FILES=("$TESTS_DIR/parakeet.sh" "${TEST_FILES[@]}")
 else
     for name in "$@"; do
         case "$name" in
