@@ -21,7 +21,7 @@ import time
 os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
 
 DEFAULT_MODEL = os.environ.get(
-    "TQ_MODEL", "/AI/models/gemma-4-31B-qat-W4A16-sym-g128")
+    "TQ_MODEL", "/AI/vllm-gemma4/models/gemma-4-31B-qat-W4A16-sym-g128")
 DEPTHS = [0.0, 0.25, 0.50, 0.75, 0.95]
 
 ALPHABETS = [

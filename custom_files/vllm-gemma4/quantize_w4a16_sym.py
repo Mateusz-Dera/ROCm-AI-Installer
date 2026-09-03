@@ -30,7 +30,7 @@ from llmcompressor import oneshot
 from llmcompressor.modifiers.quantization import GPTQModifier, QuantizationModifier
 
 DEFAULT_MODEL = "google/gemma-4-31B-it-qat-q4_0-unquantized"
-DEFAULT_OUT = "/AI/models/gemma-4-31B-qat-W4A16-sym-g128"
+DEFAULT_OUT = "/AI/vllm-gemma4/models/gemma-4-31B-qat-W4A16-sym-g128"
 
 IGNORE = ["lm_head"]
 

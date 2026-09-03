@@ -5,11 +5,11 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/common.sh"
 
 APP_DIR="/AI/vllm-gemma4"
-APP_PORT=8000
+APP_PORT=8002
 APP_LOG="/tmp/vllm_gemma4.log"
 PROC_PAT="tq_serve"
 GPU_PAT="tq_serve|VLLM::"
-MODEL="/AI/models/gemma-4-31B-qat-W4A16-sym-g128"
+MODEL="/AI/vllm-gemma4/models/gemma-4-31B-qat-W4A16-sym-g128"
 NEEDLE_TARGET=250000
 
 _stop_vllm() {

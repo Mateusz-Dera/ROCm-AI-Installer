@@ -12,6 +12,7 @@ KB_GPU_CLAUSE=""
 
 _cleanup() {
     stop_app "$PROC_PAT" "$APP_PORT" > /dev/null 2>&1 || true
+    restore_user_models || true
     reset_container || true
 }
 trap _cleanup EXIT INT TERM
@@ -97,11 +98,13 @@ test_koboldcpp() {
 
     require_container
     clean_hf_incomplete
-    require_text_model
 
     stop_app "$PROC_PAT" "$APP_PORT"
+    stash_user_models koboldcpp-rocm models
     run_install "KoboldCPP" install_koboldcpp "$APP_DIR"
     require_gpu_pin "KoboldCPP" koboldcpp-rocm
+    restore_user_models
+    require_text_model
 
     container_file_exists "${APP_DIR}/koboldcpp_hipblas.so" \
         || abort "KoboldCPP: koboldcpp_hipblas.so missing - the HIP backend was not built"

@@ -51,9 +51,9 @@ def gibberish_report(text):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--url", default="http://localhost:8000")
+    ap.add_argument("--url", default="http://localhost:8002")
     ap.add_argument("--model", default="gemma-4-31b")
-    ap.add_argument("--tokenizer", default="/AI/models/gemma-4-31B-qat-W4A16-sym-g128")
+    ap.add_argument("--tokenizer", default="/AI/vllm-gemma4/models/gemma-4-31B-qat-W4A16-sym-g128")
     ap.add_argument("--target", type=int, default=250000)
     ap.add_argument("--code", default="DELTA-8842")
     ap.add_argument("--max-tokens", type=int, default=192)

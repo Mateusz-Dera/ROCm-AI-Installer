@@ -105,11 +105,12 @@ ENV TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 ENV TORCH_BLAS_PREFER_HIPBLASLT=0
 ENV FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
 ENV MIOPEN_LOG_LEVEL=3
+ENV HF_HUB_DISABLE_UPDATE_CHECK=1
 
 WORKDIR /AI
 
 RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install uv
-RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hub[cli]==1.12.0' && \
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'huggingface_hub[cli]==1.29.0' && \
     PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx inject huggingface-hub click
 
 ENV PATH="/usr/local/bin:${PATH}"

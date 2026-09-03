@@ -65,7 +65,7 @@ for test_file in "${TEST_FILES[@]}"; do
     log "========================================"
     log " Running: $(basename "$test_file")"
     log "========================================"
-    if bash "$test_file"; then
+    if bash "$test_file" < /dev/null; then
         log " PASS: $(basename "$test_file")"
         passed=$((passed + 1))
     else

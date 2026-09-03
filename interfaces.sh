@@ -369,10 +369,10 @@ install_vllm_gemma4() {
 
     GPU_APP=1
 
-    local MODEL="/AI/models/gemma-4-31B-qat-W4A16-sym-g128"
+    local MODEL="/AI/$FOLDER/models/gemma-4-31B-qat-W4A16-sym-g128"
 
     local SMI="/AI/$FOLDER/.venv/lib/python3.14/site-packages/_rocm_sdk_core/share/amd_smi"
-    local SERVE="PYTHONPATH=$SMI TQ_KV_SHARE=1 TQ_VALUE_BITS=4 TQ_CAPACITY=262144 python tq_serve.py --model $MODEL --served-model-name gemma-4-31b --max-model-len 262144 --max-num-seqs 1 --max-num-batched-tokens 512 --kv-cache-memory-bytes 2200000000 --kv-cache-dtype fp8 --enforce-eager --no-enable-prefix-caching --enable-auto-tool-choice --tool-call-parser gemma4 --reasoning-parser gemma4 --default-chat-template-kwargs '{\\\"enable_thinking\\\":true}' --allowed-origins '[\\\"*\\\"]' --host 0.0.0.0 --port 8000"
+    local SERVE="PYTHONPATH=$SMI TQ_KV_SHARE=1 TQ_VALUE_BITS=4 TQ_CAPACITY=262144 python tq_serve.py --model $MODEL --served-model-name gemma-4-31b --max-model-len 262144 --max-num-seqs 1 --max-num-batched-tokens 512 --kv-cache-memory-bytes 2200000000 --kv-cache-dtype fp8 --enforce-eager --no-enable-prefix-caching --enable-auto-tool-choice --tool-call-parser gemma4 --reasoning-parser gemma4 --default-chat-template-kwargs '{\\\"enable_thinking\\\":true}' --allowed-origins '[\\\"*\\\"]' --host 0.0.0.0 --port 8002"
     COMMAND="$SERVE"
 
     basic_container
@@ -397,8 +397,12 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     -o /usr/lib/x86_64-linux-gnu/libmpi_cxx.so.40 \
     /tmp/mpi_cxx_stub.cpp && ldconfig"
 
-    podman exec -t rocm bash -c "cd /AI && if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
+    podman exec -t rocm bash -c "cd /AI && \
+        if [ -d $FOLDER/models ]; then rm -rf .$FOLDER-models && mv $FOLDER/models .$FOLDER-models; fi
+        if [ -d $FOLDER ]; then rm -rf $FOLDER; fi"
     podman exec -it rocm bash -c "cd /AI && git clone $REPO $FOLDER && cd $FOLDER && git checkout $COMMIT"
+    podman exec -t rocm bash -c "cd /AI && \
+        if [ -d .$FOLDER-models ]; then mv .$FOLDER-models $FOLDER/models; fi"
 
     basic_venv "$REPO" "3.14" "$FOLDER"
     vllm_rocm_install "$FOLDER"
@@ -428,17 +432,17 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     if podman exec rocm test -f "$MODEL/config.json"; then
         echo "Quantized model already present, skipping."
     else
-        podman exec -it rocm bash -c "cd /AI && mkdir -p gemma4-quant && cd gemma4-quant && uv venv --clear --python 3.12"
-        podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/gemma4-quant/uv.toml"
-        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER && mkdir -p gemma4-quant && cd gemma4-quant && uv venv --clear --python 3.12"
+        podman cp "$SCRIPT_DIR/uv.toml" "rocm:/AI/$FOLDER/gemma4-quant/uv.toml"
+        podman exec -it rocm bash -c "cd /AI/$FOLDER/gemma4-quant && source .venv/bin/activate && \
             uv pip install $(rocm_torch_spec torch)"
-        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
+        podman exec -it rocm bash -c "cd /AI/$FOLDER/gemma4-quant && source .venv/bin/activate && \
             uv pip install llmcompressor accelerate datasets"
-        podman cp "$SCRIPT_DIR/custom_files/gemma4-quant/quantize_w4a16_sym.py" \
-            "rocm:/AI/gemma4-quant/quantize_w4a16_sym.py"
-        podman exec -it rocm bash -c "cd /AI/gemma4-quant && source .venv/bin/activate && \
-            mkdir -p /AI/models && CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= \
-            python quantize_w4a16_sym.py"
+        podman cp "$SCRIPT_DIR/custom_files/vllm-gemma4/quantize_w4a16_sym.py" \
+            "rocm:/AI/$FOLDER/gemma4-quant/quantize_w4a16_sym.py"
+        podman exec -it rocm bash -c "cd /AI/$FOLDER/gemma4-quant && source .venv/bin/activate && \
+            mkdir -p /AI/$FOLDER/models && CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= \
+            python quantize_w4a16_sym.py --output $MODEL"
         if ! podman exec rocm test -f "$MODEL/config.json"; then
             echo "Error: quantization did not produce $MODEL."
             read -p "Press Enter to continue..."
@@ -943,9 +947,16 @@ install_trellis_cpp() {
         HF_FILTER="--include '$WEIGHTS/*'"
         FLATTEN="mv $TRELLIS_CPP_MODELS/$WEIGHTS/*.gguf $TRELLIS_CPP_MODELS/ && rmdir $TRELLIS_CPP_MODELS/$WEIGHTS"
     fi
-    podman exec -it rocm bash -c "if [ ! -f $TRELLIS_CPP_MODELS/ss_flow.gguf ]; then \
+    podman exec -t rocm bash -c "if [ ! -f $TRELLIS_CPP_MODELS/ss_flow.gguf ]; then \
+        HF_HUB_DISABLE_UPDATE_CHECK=1 \
         hf download $TRELLIS_CPP_HF --local-dir $TRELLIS_CPP_MODELS $HF_FILTER && $FLATTEN; \
       else echo 'trellis.cpp weights already present - reusing'; fi"
+
+    if ! podman exec rocm test -f "$TRELLIS_CPP_MODELS/ss_flow.gguf"; then
+        echo "Error: the trellis.cpp weights were not downloaded to $TRELLIS_CPP_MODELS."
+        read -p "Press Enter to continue..."
+        return 1
+    fi
 
     local GPU_IDX
     GPU_IDX=$(printf '%s' "${GPU_CLAUSE:-}" | grep -oE 'HIP_VISIBLE_DEVICES=[0-9]+' | grep -oE '[0-9]+$')
@@ -1017,7 +1028,7 @@ install_triposplat(){
     basic_requirements "$REPO"
     basic_run "$REPO" "$COMMAND"
 
-    podman exec -it rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && hf download VAST-AI/TripoSplat --local-dir ckpts/ --exclude 'vae/triposplat_vae_encoder_fp16.safetensors'"
+    podman exec -t rocm bash -c "cd /AI/$FOLDER && source .venv/bin/activate && HF_HUB_DISABLE_UPDATE_CHECK=1 hf download VAST-AI/TripoSplat --local-dir ckpts/ --exclude 'vae/triposplat_vae_encoder_fp16.safetensors'"
 
     triposplat_vendor_viewer "$FOLDER"
 }

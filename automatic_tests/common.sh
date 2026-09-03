@@ -95,7 +95,7 @@ run_install() {
     info "--- Installing: $name ---"
     local -a install_cmd
     read -r -a install_cmd <<< "$install_fn"
-    "${install_cmd[@]}" || abort "$name: install function returned non-zero"
+    "${install_cmd[@]}" < /dev/null || abort "$name: install function returned non-zero"
     container_dir_exists "$check_dir" \
         || abort "$name: $check_dir not found after install"
     container_file_exists "$check_dir/run.sh" \
@@ -345,14 +345,15 @@ require_gpu_pin() {
 }
 
 USER_MODELS_STASH=""
+USER_MODELS_SUBDIR="user-models"
 
-_stash_dir() { printf '/AI/.user-models-stash-%s' "$1"; }
+_stash_dir() { printf '/AI/.%s-stash-%s' "$USER_MODELS_SUBDIR" "$1"; }
 
 restore_user_models() {
     [ -n "$USER_MODELS_STASH" ] || return 0
     local folder="$USER_MODELS_STASH"
     local src dst
-    src=$(_stash_dir "$folder"); dst="/AI/${folder}/user-models"
+    src=$(_stash_dir "$folder"); dst="/AI/${folder}/${USER_MODELS_SUBDIR}"
 
     container_dir_exists "$src" || { USER_MODELS_STASH=""; return 0; }
 
@@ -361,15 +362,16 @@ restore_user_models() {
         info "Warning: files left in ${src} (name clash) - not deleted, move them back by hand"
     else
         ctr "rmdir '${src}' 2>/dev/null || true"
-        info "Restored ${folder}/user-models"
+        info "Restored ${folder}/${USER_MODELS_SUBDIR}"
     fi
     USER_MODELS_STASH=""
 }
 
 stash_user_models() {
     local folder="$1"
+    USER_MODELS_SUBDIR="${2:-user-models}"
     local src dst
-    src="/AI/${folder}/user-models"; dst=$(_stash_dir "$folder")
+    src="/AI/${folder}/${USER_MODELS_SUBDIR}"; dst=$(_stash_dir "$folder")
 
     USER_MODELS_STASH="$folder"
     restore_user_models
@@ -382,17 +384,17 @@ stash_user_models() {
     size=$(ctr "du -sh '${src}' 2>/dev/null | cut -f1")
     ctr "mv '${src}' '${dst}'" || abort "Could not move ${src} out of the way"
     USER_MODELS_STASH="$folder"
-    info "Moved ${folder}/user-models aside for the reinstall (${count} .gguf, ${size})"
+    info "Moved ${folder}/${USER_MODELS_SUBDIR} aside for the reinstall (${count} .gguf, ${size})"
 }
 
-TEXT_MODEL_DIR="/AI/models"
+TEXT_MODEL_DIR="/AI/koboldcpp-rocm/models"
 TEXT_MODEL_PATH=""
 TEXT_DRAFT_PATH=""
 
 _fetch_shared() {
     local name="$1" url="$2" dst="${TEXT_MODEL_DIR}/$1"
     if container_file_exists "$dst"; then
-        pass "Shared file available: ${name}"
+        pass "Model available: ${name}"
         return 0
     fi
     info "Downloading ${name}..."
