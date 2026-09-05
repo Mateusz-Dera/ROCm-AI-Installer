@@ -124,7 +124,6 @@ RESOLUTIONS = {
     "Square 1024": (1024, 1024),
     "Portrait 1024": (832, 1216),
     "Landscape 1024": (1216, 832),
-    "Square 2K": (2048, 2048),
 }
 
 BUILTIN_LORAS = {
@@ -838,8 +837,8 @@ with gr.Blocks(title="Krea 2 Turbo + Edit") as demo:
                         0.0, 10.0, value=0.0, step=0.1, label="Guidance scale"
                     )
                     with gr.Row():
-                        width = gr.Slider(512, 2048, value=1024, step=16, label="Width")
-                        height = gr.Slider(512, 2048, value=1024, step=16, label="Height")
+                        width = gr.Slider(512, 1536, value=1024, step=16, label="Width")
+                        height = gr.Slider(512, 1536, value=1024, step=16, label="Height")
                     with gr.Row():
                         seed = gr.Slider(0, MAX_SEED, value=0, step=1, label="Seed")
                         randomize = gr.Checkbox(value=True, label="Randomize seed")

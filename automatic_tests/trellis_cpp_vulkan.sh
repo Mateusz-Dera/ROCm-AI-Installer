@@ -14,13 +14,13 @@ trap _cleanup EXIT INT TERM
 
 main() {
     info "============================================="
-    info "TEST: trellis.cpp (ROCm, every weight set)"
+    info "TEST: trellis.cpp (Vulkan, every weight set)"
     info "============================================="
 
-    trellis_run_variant "trellis.cpp ROCm" \
-        "trellis.cpp" install_trellis_cpp
+    trellis_run_variant "trellis.cpp Vulkan" \
+        "trellis.cpp-vulkan" install_trellis_cpp_vulkan
 
-    info "Test trellis_cpp DONE"
+    info "Test trellis_cpp_vulkan DONE"
 }
 
 main "$@"

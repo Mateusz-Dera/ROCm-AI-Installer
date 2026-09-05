@@ -314,6 +314,40 @@ create_container() {
     fi
 }
 
+# trellis.cpp
+trellis_cpp() {
+    second=true
+    while $second; do
+
+        choice=$(whiptail --title "trellis.cpp" --cancel-button "Back" --menu "Choose an option:" 15 100 2 \
+            1 "ROCm" \
+            2 "Vulkan" \
+            2>&1 > /dev/tty)
+        status=$?
+
+        if [ $status -ne 0 ]; then
+            return 0
+        fi
+
+        case "$choice" in
+            "1")
+                install_trellis_cpp
+                ;;
+            "2")
+                install_trellis_cpp_vulkan
+                ;;
+            "")
+                echo "Previous menu..."
+                second=true
+                ;;
+            *)
+                echo "Invalid selection."
+                second=true
+                ;;
+        esac
+    done
+}
+
 # llama.cpp TurboQuant
 llama_cpp() {
     second=true
@@ -741,13 +775,12 @@ d3_generation() {
     second=true
     while $second; do
 
-        choice=$(whiptail --title "3D generation" --cancel-button "Back" --menu "Choose an option:" 17 100 6 \
+        choice=$(whiptail --title "3D generation" --cancel-button "Back" --menu "Choose an option:" 17 100 5 \
             1 "Install PartCrafter" \
-            2 "Install trellis.cpp (ROCm)" \
-            3 "Install trellis.cpp (Vulkan)" \
-            4 "Install ARDY" \
-            5 "Install TripoSplat" \
-            6 "Install AutoRemesher (retopology helper, non-AI)" \
+            2 "Install trellis.cpp" \
+            3 "Install ARDY" \
+            4 "Install TripoSplat" \
+            5 "Install AutoRemesher (retopology helper, non-AI)" \
             2>&1 > /dev/tty)
 
         case "$choice" in
@@ -755,18 +788,15 @@ d3_generation() {
                 install_partcrafter
                 ;;
             "2")
-                install_trellis_cpp hip
+                trellis_cpp
                 ;;
             "3")
-                install_trellis_cpp vulkan
-                ;;
-            "4")
                 install_ardy
                 ;;
-            "5")
+            "4")
                 install_triposplat
                 ;;
-            "6")
+            "5")
                 install_autoremesher
                 ;;
             "")

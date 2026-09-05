@@ -84,6 +84,26 @@ def hu(mask):
     return [float(np.sign(v) * np.log10(abs(v) + 1e-30)) for v in h]
 
 
+def texture_stats(loaded):
+    visual = getattr(loaded, "visual", None)
+    material = getattr(visual, "material", None)
+    texture = getattr(material, "baseColorTexture", None)
+    if texture is None:
+        return {"has_texture": 0}
+
+    rgb = np.asarray(texture.convert("RGB"), dtype=np.float32)
+    uv = np.asarray(getattr(visual, "uv", []), dtype=np.float64)
+    return {
+        "has_texture": 1,
+        "texture_width": int(rgb.shape[1]),
+        "texture_height": int(rgb.shape[0]),
+        "texture_std": round(float(rgb.std()), 3),
+        "texture_unique_ratio": round(
+            float(len(np.unique(rgb.astype(np.uint8))) / 256.0), 3),
+        "uv_coords": int(len(uv)),
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("mesh")
@@ -98,6 +118,7 @@ def main():
     out = {
         "vertices": int(len(vertices)),
         "faces": int(len(faces)),
+        **texture_stats(loaded),
     }
     if not len(vertices):
         return print(json.dumps({**out, "error": "geometry has no vertices"}))

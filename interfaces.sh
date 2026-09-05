@@ -299,7 +299,7 @@ install_llama_cpp_turboquant_vulkan() {
 install_koboldcpp() {
     REPO="https://github.com/YellowRoseCx/koboldcpp-rocm"
     COMMIT="d31a4f28eba0e33b867dfcf803efd1dce0e5ce3d"
-    COMMAND="DISPLAY=\\\$DISPLAY uv run koboldcpp.py"
+    COMMAND="DISPLAY=\\\$DISPLAY XAUTHORITY=\\\$XAUTHORITY uv run koboldcpp.py"
     FOLDER=$(basename "$REPO")
 
     GPU_APP=1
@@ -307,7 +307,8 @@ install_koboldcpp() {
     basic_container
     basic_git "$REPO" "$COMMIT"
     podman exec -t rocm bash -c "cd /AI/$FOLDER && \
-        sed -i '/if args.checkforupdates:/,+1d' koboldcpp.py"
+        sed -i '/if args.checkforupdates:/,+1d' koboldcpp.py && \
+        sed -i '/^runopts = \[opt for lib, opt in lib_option_pairs if file_exists(lib)\]/a antirunopts = [opt.replace(\"Use \", \"\") for lib, opt in lib_option_pairs if opt not in runopts]' koboldcpp.py"
     basic_venv "$REPO"
     basic_requirements "$REPO"
     podman exec -it rocm bash -c "cd /AI/$FOLDER && \
@@ -885,37 +886,43 @@ install_partcrafter(){
 TRELLIS_CPP_REPO="https://github.com/pwilkin/trellis.cpp"
 TRELLIS_CPP_COMMIT="16f3109e82f3922033bfa62b83c42899678b7b6f"
 TRELLIS_CPP_HF="ilintar/trellis2-gguf"
-TRELLIS_CPP_DIR="/AI/trellis.cpp"
-TRELLIS_CPP_MODELS="/AI/trellis2-gguf"
 TRELLIS_CPP_PORT="8081"
+TRELLIS_CPP_UI_PORT="7860"
 
-trellis_cpp_ask_weights() {
-    whiptail --title "trellis.cpp weights" --radiolist \
-        "Which weight set to download?" 14 72 3 \
-        "q8"   "10.0 GB - default"          ON \
-        "full" "16.5 GB - bf16/f16 originals" OFF \
-        "q4"   "6.5 GB - smallest"          OFF \
-        3>&1 1>&2 2>&3
+trellis_cpp_weights() {
+    local FOLDER="$1"
+    local MODELS="/AI/$FOLDER/models"
+    local VARIANT HF_FILTER
+
+    for VARIANT in q8 full q4; do
+        if podman exec rocm test -f "$MODELS/$VARIANT/ss_flow.gguf"; then
+            echo "trellis.cpp: the $VARIANT weights are already present - reusing"
+            continue
+        fi
+        if [ "$VARIANT" = "full" ]; then
+            HF_FILTER="--include '*.gguf' --exclude 'q4/*' --exclude 'q8/*'"
+        else
+            HF_FILTER="--include '$VARIANT/*'"
+        fi
+        podman exec -t rocm bash -c "HF_HUB_DISABLE_UPDATE_CHECK=1 \
+            hf download $TRELLIS_CPP_HF --local-dir $MODELS/$VARIANT $HF_FILTER && \
+            if [ -d $MODELS/$VARIANT/$VARIANT ]; then \
+                mv $MODELS/$VARIANT/$VARIANT/*.gguf $MODELS/$VARIANT/ && \
+                rmdir $MODELS/$VARIANT/$VARIANT; \
+            fi"
+        if ! podman exec rocm test -f "$MODELS/$VARIANT/ss_flow.gguf"; then
+            echo "Error: the trellis.cpp $VARIANT weights were not downloaded to $MODELS/$VARIANT."
+            read -p "Press Enter to continue..."
+            return 1
+        fi
+    done
 }
 
-install_trellis_cpp() {
-    local BACKEND="${1:-vulkan}"
-    local BUILD_DIR RUN_LAUNCH WEIGHTS
-    FOLDER="trellis.cpp"
-
-    if [ "$BACKEND" = "hip" ]; then
-        BUILD_DIR="build-hip"
-    else
-        BACKEND="vulkan"
-        BUILD_DIR="build-vulkan"
-    fi
-
-    if [ -n "${TRELLIS_CPP_WEIGHTS:-}" ]; then
-        WEIGHTS="$TRELLIS_CPP_WEIGHTS"
-    else
-        WEIGHTS=$(trellis_cpp_ask_weights) || return 0
-    fi
-    [ -z "$WEIGHTS" ] && return 0
+trellis_cpp_install() {
+    local BACKEND="$1"
+    local FOLDER="$2"
+    local APP_DIR="/AI/$FOLDER"
+    local GPU_IDX RUN_LAUNCH
 
     GPU_APP=1
     basic_container
@@ -928,49 +935,60 @@ install_trellis_cpp() {
         git submodule update --init --recursive"
 
     if [ "$BACKEND" = "hip" ]; then
-        podman exec -it rocm bash -c "cd $TRELLIS_CPP_DIR && \
+        podman exec -it rocm bash -c "cd $APP_DIR && \
             export ROCM_PATH=/opt/rocm PATH=/opt/rocm/bin:\$PATH && \
-            cmake -B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON \
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON \
                 -DAMDGPU_TARGETS=\"${TARGET_GFX_ALL:-${TARGET_GFX:-}}\" && \
-            cmake --build $BUILD_DIR -j\$(nproc)"
+            cmake --build build -j\$(nproc)"
     else
-        podman exec -it rocm bash -c "cd $TRELLIS_CPP_DIR && \
-            cmake -B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON && \
-            cmake --build $BUILD_DIR -j\$(nproc)"
+        podman exec -it rocm bash -c "apt-get install -y libvulkan-dev vulkan-tools glslc"
+        podman exec -it rocm bash -c "cd $APP_DIR && \
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON && \
+            cmake --build build -j\$(nproc)"
     fi
 
-    local HF_FILTER FLATTEN
-    if [ "$WEIGHTS" = "full" ]; then
-        HF_FILTER="--include '*.gguf' --exclude 'q4/*' 'q8/*'"
-        FLATTEN="true"
-    else
-        HF_FILTER="--include '$WEIGHTS/*'"
-        FLATTEN="mv $TRELLIS_CPP_MODELS/$WEIGHTS/*.gguf $TRELLIS_CPP_MODELS/ && rmdir $TRELLIS_CPP_MODELS/$WEIGHTS"
-    fi
-    podman exec -t rocm bash -c "if [ ! -f $TRELLIS_CPP_MODELS/ss_flow.gguf ]; then \
-        HF_HUB_DISABLE_UPDATE_CHECK=1 \
-        hf download $TRELLIS_CPP_HF --local-dir $TRELLIS_CPP_MODELS $HF_FILTER && $FLATTEN; \
-      else echo 'trellis.cpp weights already present - reusing'; fi"
+    podman exec -t rocm bash -c "mkdir -p $APP_DIR/examples"
+    podman cp "$SCRIPT_DIR/workflows/images/bottle.png" \
+        "rocm:$APP_DIR/examples/bottle.png"
+    podman cp "$SCRIPT_DIR/custom_files/trellis.cpp/app.py" "rocm:$APP_DIR/app.py"
 
-    if ! podman exec rocm test -f "$TRELLIS_CPP_MODELS/ss_flow.gguf"; then
-        echo "Error: the trellis.cpp weights were not downloaded to $TRELLIS_CPP_MODELS."
-        read -p "Press Enter to continue..."
-        return 1
-    fi
+    podman exec -it rocm bash -c "cd $APP_DIR && uv venv --clear --python 3.13"
+    basic_requirements "$TRELLIS_CPP_REPO" "$FOLDER"
 
-    local GPU_IDX
+    trellis_cpp_weights "$FOLDER" || return 1
+
     GPU_IDX=$(printf '%s' "${GPU_CLAUSE:-}" | grep -oE 'HIP_VISIBLE_DEVICES=[0-9]+' | grep -oE '[0-9]+$')
 
     if [ "$BACKEND" = "hip" ]; then
-        RUN_LAUNCH="cd $TRELLIS_CPP_DIR && export ROCM_PATH=/opt/rocm GGML_CUDA_DISABLE_GRAPHS=1 && mkdir -p output"
+        RUN_LAUNCH="export ROCM_PATH=/opt/rocm GGML_CUDA_DISABLE_GRAPHS=1 HIP_VISIBLE_DEVICES=${GPU_IDX:-0}"
     else
-        RUN_LAUNCH="cd $TRELLIS_CPP_DIR && export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json \
-GGML_VK_VISIBLE_DEVICES=${GPU_IDX:-0} && mkdir -p output"
+        RUN_LAUNCH="export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json \
+GGML_VK_VISIBLE_DEVICES=${GPU_IDX:-0} HIP_VISIBLE_DEVICES=${GPU_IDX:-0}"
     fi
-    RUN_LAUNCH="$RUN_LAUNCH && ./$BUILD_DIR/trellis-server --models $TRELLIS_CPP_MODELS --host 0.0.0.0 --port $TRELLIS_CPP_PORT"
 
-    COMMAND="$RUN_LAUNCH"
-    basic_run "$TRELLIS_CPP_REPO" "$COMMAND" "&&"
+    podman exec -t rocm bash -c "cat > $APP_DIR/run.sh << 'RUNEOF'
+#!/bin/bash
+if ! podman ps -a --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Error: Container rocm does not exist.'
+    exit 1
+fi
+if ! podman ps --format '{{.Names}}' | grep -q '^rocm\$'; then
+    echo 'Container rocm is not running. Starting...'
+    podman start rocm
+fi
+podman exec -it rocm bash -c 'cd $APP_DIR && $RUN_LAUNCH && mkdir -p output && \\
+    export TRELLIS_DIR=$APP_DIR TRELLIS_BUILD_DIR=build TRELLIS_PORT=$TRELLIS_CPP_PORT && \\
+    source .venv/bin/activate && python app.py --ip 0.0.0.0 --port $TRELLIS_CPP_UI_PORT'
+RUNEOF
+chmod +x $APP_DIR/run.sh"
+}
+
+install_trellis_cpp() {
+    trellis_cpp_install hip "trellis.cpp"
+}
+
+install_trellis_cpp_vulkan() {
+    trellis_cpp_install vulkan "trellis.cpp-vulkan"
 }
 
 # ARDY
@@ -1008,7 +1026,7 @@ podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
 podman exec -it rocm bash -c 'cd /AI/ardy ${GPU_CLAUSE:-} && source .venv/bin/activate && \
     { CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= python scripts/run_text_encoder_server.py --device cpu & } && \
     n=0; until curl -sf --max-time 2 http://localhost:9550/ > /dev/null 2>&1 || [ \$n -ge 120 ]; do n=\$((n+1)); sleep 5; done && \
-    python scripts/run_demo.py'
+    python scripts/run_demo.py --no-compile'
 podman exec -t rocm bash -c 'chown -R root:root /AI/ardy/ 2>/dev/null || true'
 RUNEOF
 chmod +x /AI/$FOLDER/run.sh"
