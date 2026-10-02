@@ -65,8 +65,7 @@ load_config() {
         HF_TOKEN="${HF_TOKEN:-$DEFAULT_HF_TOKEN}"
     else
         HSA_VERSION="$DEFAULT_HSA_VERSION"
-        GFX_LIST="$(detect_gpus)"
-        GFX_LIST="$(IFS=' '; set -- $GFX_LIST; IFS=';'; echo "$*")"
+        GFX_LIST="$(detect_gpus | paste -sd ';')"
         GFX_VERSION="${GFX_LIST%%;*}"
         GFX_VERSION="${GFX_VERSION:-$DEFAULT_GFX}"
         AI_DIR="$DEFAULT_AI_DIR"

@@ -618,15 +618,15 @@ install_strata() {
 
     GPU_IDX=$(printf '%s' "${GPU_CLAUSE:-}" | grep -oE 'HIP_VISIBLE_DEVICES=[0-9]+' | grep -oE '[0-9]+$')
 
-    podman exec -it rocm bash -c "cd $FOLDER && ./setup.sh --backend hip --yes --no-start --model IQ2_XS --context 262144 --port $STRATA_PORT --host 0.0.0.0 --data-dir $FOLDER/data --gpu ${GPU_IDX:-0}"
+    podman exec -it rocm bash -c "cd /AI/$FOLDER && ./setup.sh --backend hip --yes --no-start --model IQ2_XS --context 262144 --port 8003 --host 0.0.0.0 --data-dir /AI/Strata-data --gpu ${GPU_IDX:-0}"
 
-    if ! podman exec rocm test -d "$FOLDER/data/models"; then
-        echo "Error: Strata did not place the model files in $FOLDERdata/models."
+    if ! podman exec rocm test -d "/AI/Strata-data/models"; then
+        echo "Error: Strata did not place the model files in /AI/Strata-data/models."
         read -p "Press Enter to continue..."
         return 1
     fi
 
-    COMMAND="./setup.sh --yes --host 0.0.0.0 --port 8003 --data-dir $FOLDER/data --gpu ${GPU_IDX:-0}"
+    COMMAND="./setup.sh --yes --host 0.0.0.0 --port 8003 --data-dir /AI/Strata-data --gpu ${GPU_IDX:-0}"
     basic_run "$REPO" "$COMMAND" "&&"
 }
 

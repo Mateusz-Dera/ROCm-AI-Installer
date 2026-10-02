@@ -39,7 +39,7 @@ Installation scripts for an AI applications using ROCm on Linux.
 |llama.cpp TurboQuant|[TheTom/llama-cpp-turboquant](https://github.com/TheTom/llama-cpp-turboquant)<br> [unsloth/gemma-4-26B-A4B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-26B-A4B-it-qat-GGUF)|8080|8080|1. Available as <b>ROCm</b> or <b>Vulkan</b> build.<br> 2. <b>TurboQuant 3-bit KV cache</b>.<br> 3. Model: <b>gemma-4-26B-A4B-it-qat Q4_K_XL</b> with its <b>MTP</b> <br> 4. GGUF: <b>user-models/</b><br> 5. MTP: <b>drafts/</b>.<br> 6. Models: <b>models.ini</b>|
 |KoboldCPP|[YellowRoseCx/koboldcpp-rocm](https://github.com/YellowRoseCx/koboldcpp-rocm)|5001|5001||
 |vLLM Gemma 4|[vllm-project/vllm](https://github.com/vllm-project/vllm)<br> [0xSero/turboquant](https://github.com/0xSero/turboquant)<br> [google/gemma-4-31B-it-qat](https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-unquantized)|8002|-|1. <b>TurboQuant 4-bit KV cache</b>.<br> 2. Model: <b>gemma-4-31B-it-qat</b>, quantized to W4A16 during install.<br> 3. <b>~59GB</b> download, <b>~50GB</b> RAM for the conversion.|
-|Strata|[Niko1221/Strata](https://github.com/Niko1221/Strata)|8003||1. Default quantization: <b>IQ2_XS</b>.|
+|Strata|[Niko1221/Strata](https://github.com/Niko1221/Strata)|8003|8003|1. Default quantization: <b>IQ2_XS</b>.|
 
 ###  Image & video generation:
 |Name|Links|API|GUI|Additional information|
