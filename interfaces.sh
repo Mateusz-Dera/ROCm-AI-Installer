@@ -454,7 +454,6 @@ g++ -shared -fPIC -Wl,-soname,libmpi_cxx.so.40 \
     basic_run "$REPO" "$COMMAND" "&& source .venv/bin/activate &&" "$FOLDER"
 }
 
-
 # SillyTavern
 install_sillytavern(){
     REPO="https://github.com/SillyTavern/SillyTavern"
@@ -604,6 +603,31 @@ comfy_wait() {
 
     for s in "${statuses[@]}"; do [[ "$s" -ne 0 ]] && return 1; done
     return 0
+}
+
+# Strata
+install_strata() {
+    REPO="https://github.com/Niko1221/Strata"
+    COMMIT="d9ab8435f654c368c586340d490915f6addf56a3"
+    FOLDER=$(basename "$REPO")
+    local GPU_IDX
+
+    GPU_APP=1
+    basic_container
+    basic_git "$REPO" "$COMMIT"
+
+    GPU_IDX=$(printf '%s' "${GPU_CLAUSE:-}" | grep -oE 'HIP_VISIBLE_DEVICES=[0-9]+' | grep -oE '[0-9]+$')
+
+    podman exec -it rocm bash -c "cd $FOLDER && ./setup.sh --backend hip --yes --no-start --model IQ2_XS --context 262144 --port $STRATA_PORT --host 0.0.0.0 --data-dir $FOLDER/data --gpu ${GPU_IDX:-0}"
+
+    if ! podman exec rocm test -d "$FOLDER/data/models"; then
+        echo "Error: Strata did not place the model files in $FOLDERdata/models."
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+
+    COMMAND="./setup.sh --yes --host 0.0.0.0 --port 8003 --data-dir $FOLDER/data --gpu ${GPU_IDX:-0}"
+    basic_run "$REPO" "$COMMAND" "&&"
 }
 
 # ComfyUI

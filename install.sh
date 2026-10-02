@@ -578,11 +578,12 @@ text_generation() {
     second=true
     while $second; do
         
-        choice=$(whiptail --title "Text generation" --cancel-button "Back" --menu "Choose an option:" 16 100 4 \
+        choice=$(whiptail --title "Text generation" --cancel-button "Back" --menu "Choose an option:" 16 100 5 \
             1 "llama.cpp TurboQuant" \
             2 "SillyTavern" \
             3 "Install vLLM Gemma 4 (31B w4a16, compressed KV)" \
             4 "Install KoboldCPP" \
+            5 "Install Strata" \
             2>&1 > /dev/tty)
         status=$?
 
@@ -602,6 +603,9 @@ text_generation() {
                 ;;
             "4")
                 install_koboldcpp
+                ;;
+            "5")
+                install_strata
                 ;;
             "")
                 echo "Previous menu..."
