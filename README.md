@@ -2,7 +2,7 @@
 Installation scripts for an AI applications using ROCm on Linux.
 
 ## Info:
-[![Version](https://img.shields.io/badge/Version-17-grey.svg?labelColor=white)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
+[![Version](https://img.shields.io/badge/Version-17.1-grey.svg?labelColor=white)](https://github.com/Mateusz-Dera/ROCm-AI-Installer/blob/main/README.md)
 ![ROCm](https://img.shields.io/badge/ROCm-10.0-grey.svg?labelColor=white)
 
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
@@ -12,6 +12,11 @@ Installation scripts for an AI applications using ROCm on Linux.
 [![Node.js](https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white)](#)
 [![Gradio](https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white)](#)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=fff)](#)
+
+> [!Warning]
+> This is a test branch.<br>
+> Some applications may not work.<br>
+> Not everything will necessarily be merged into the main branch.<br>
 
 > [!Important]
 > All models and applications are tested on a GPU with 24GB of VRAM.<br>
