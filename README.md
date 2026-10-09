@@ -13,11 +13,6 @@ Installation scripts for an AI applications using ROCm on Linux.
 [![Gradio](https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white)](#)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=fff)](#)
 
-> [!Warning]
-> This is a test branch.<br>
-> Some applications may not work.<br>
-> Not everything will necessarily be merged into the main branch.<br>
-
 > [!Important]
 > All models and applications are tested on a GPU with 24GB of VRAM.<br>
 > Some applications may not work on GPUs with less VRAM.
